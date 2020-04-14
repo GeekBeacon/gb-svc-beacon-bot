@@ -168,7 +168,7 @@ These are commands that don't fit into any other category. Not much to say about
 ping | [api \| websocket] | Gets the response time for the Discord api or the bot's websocket. Defaults to websocket if no argument provided | Users | !ping api
 help | [command] | Shows the list of all commands with the ones the user who triggered the command can't use striked out. If you pass in a command name (or alias) you will get specific details on that command, if you have the proper permissions! | Users | !help numfact
 testdb | N/A | Used to test if the bot is connected to the database | Admin | !testdb
-
+usage | N/A | Provides a link to this guide | Users | !usage
 ___
 
 ## Final Notes
