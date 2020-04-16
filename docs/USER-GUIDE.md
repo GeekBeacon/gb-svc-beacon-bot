@@ -92,6 +92,8 @@ Moderation commands are used to enable moderators and super moderators (Master C
 * Logs
    * Message Deleted
    * Message Edited
+   * Message Pinned
+   * Message Unpinned
    * User Joined
    * User Left
    * User Kicked
@@ -110,7 +112,7 @@ Moderation commands are used to enable moderators and super moderators (Master C
 | --- | :---: | --- | :---: | --- |
 warn | \<mention \| user id\>, \<reason\> | Adds a note to the database about a user | Mod | !warn @user, flaming others
 kick | \<mention \| user id\>, \<reason\> | Kicks a user from the guild | Mod | !kick @User, spamming
-ban | \<mention \| user id\>, \<reason\> | Bans a user from the guild | Mod | !ban @user, graphic content
+ban | \<mention \| user id\>, \<reason\>, \<time\>* | Bans a user from the guild | Mod | !ban @user, graphic content, 1w
 unban | \<user id\>, \<reason\> | Unbans a user from the guild | Mod | !unban 12345, apologized
 purge | \<count\>* | Bulk deletes messages in the channel this command was used in | Super | !purge 25
 warnings | \<recent \| specific \| user\> \<count \| warn id \| user id \| username*\> | Get the warning(s) for a user or recent warning(s) | Mod | !warnings specific 1hsj3ls
@@ -118,6 +120,8 @@ warnings | \<recent \| specific \| user\> \<count \| warn id \| user id \| usern
 \*count - The maximum count for a single purge is 100
 
 \*username - This is the user's **username** *NOT* their nickname
+
+\*time - This can be any format supported by [Moment's Add method (including shorthands)](https://momentjs.com/docs/#/manipulating/add/) or `p`, `perm`, `perma`, and `permanent` for a permanent ban (999 years)
 
 ___
 
