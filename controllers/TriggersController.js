@@ -1,6 +1,6 @@
 // Import the required files
 const moment = require('moment');
-const {prefix, admin_role, super_role, mod_role, admin_channel, super_channel, mod_channel, super_log_channel, action_log_channel, db_name, db_host, db_port, db_user, db_pass} = require("../config");
+const {prefix, admin_role, super_role, mod_role, mod_trainee_role, admin_channel, super_channel, mod_channel, super_log_channel, action_log_channel} = require("../config");
 const Trigger = require("../models/Trigger");
 const Warning = require("../models/Warning");
 const shortid = require('shortid');
@@ -20,6 +20,8 @@ module.exports = {
         const superRole = message.member.roles.cache.some(role => role.name.includes(super_role));
         const adminRole = message.member.roles.cache.some(role => role.name.includes(admin_role));
         const ownerRole = message.member.guild.owner;
+        const modChannel = message.guild.channels.cache.find((c => c.name.includes(mod_channel)));
+        const logChannel = message.guild.channels.cache.find((c => c.name.includes(action_log_channel)));
             
         // Check the length of the args
         if (args.length > 1) {
@@ -42,18 +44,17 @@ module.exports = {
                     data.forEach((item) => {
                         triggers.push(item.get('trigger'));
                     });
-                // Send the triggers to the user in a DM
+                // Send the triggers to the mod channel
                 }).then(() => {
                     if (triggers.length) {
-                        message.author.send('**Triggers:** '+triggers.map(trigger => `\`${trigger}\``).join(', '))
-                        // Let user know they have been DMed
+                        modChannel.send('**Triggers:** '+triggers.map(trigger => `\`${trigger}\``).join(', '))
+                        // Let user know to check the mod channel
                         .then(() => {
-                            if (message.channel.type === "dm") return;
-                            message.reply("I've sent you a DM with all of the triggers!");
-                        })
-                        // If failed to dm, let user know and ask if they have DMs disabled
-                        .catch(() => {
-                            message.reply("It seems like I can't DM you! Do you have DMs disables?");
+                            // Check if the current channel is the mod channel
+                            if(message.channel !== modChannel) {
+                                // If not let the user know the information was sent to the mod channel
+                                message.reply(`I've sent the list of triggers to ${modChannel}`);
+                            }
                         });
                     } else {
                         message.channel.send("Uh oh! It seems there aren't any triggers yet!");
@@ -68,7 +69,7 @@ module.exports = {
                 Trigger.findOne({where: {trigger: trigger}}).then((data) => {
                     triggerData.id = data.get('id'); //get id
                     triggerData.trigger = data.get('trigger'); //get trigger
-                    triggerData.creator = client.users.get(data.get('user_id'));
+                    triggerData.creator = client.users.cache.get(data.get('user_id'));
                     triggerData.severity = data.get('severity'); //get severity level
                     triggerData.enabled = data.get('enabled'); //get enabled
                     triggerData.created = moment(data.get('createdAt')).format('YYYY-MM-DD HH:mm:ss'); //get created date in YYYY-MM-DD HH:mm:ss format
@@ -121,17 +122,16 @@ module.exports = {
 
                     };
 
-                    message.author.send({embed: triggerEmbed})
-                    // Let user know they have been DMed
+                    // Send the info to the mod channel
+                    modChannel.send({embed: triggerEmbed})
                     .then(() => {
-                        if (message.channel.type === "dm") return;
-                        message.reply(`I've sent you a DM with the information on \`${trigger}\`!`);
-                    })
-                    // If failed to dm, let user know and ask if they have DMs disabled
-                    .catch(() => {
-                        message.reply("it seems like I can't DM you! Do you have DMs disables?");
+                        // Check if the current channel is the mod channel
+                        if(message.channel !== modChannel) {
+                            // If not in the mod channel let the user know it was sent there
+                            message.reply(`I've sent you the information on \`${trigger}\` to ${modChannel}!`);
+                        }
                     });
-                }).catch(() => {
+                }).catch((e) => {
                     message.reply(`it looks like \`${trigger}\` doesn't exist!`);
                 });
 
@@ -279,6 +279,7 @@ module.exports = {
         let warnId = shortid.generate(); // generate a uid
         let severityArr = [];
         const modRole = message.member.roles.cache.find(role => role.name.includes(mod_role));
+        const modTraineeRole = message.member.roles.cache.find(role => role.name.includes(mod_trainee_role));
         const superRole = message.member.roles.cache.find(role => role.name.includes(super_role));
         const adminRole = message.member.roles.cache.find(role => role.name.includes(admin_role));
 
@@ -421,12 +422,10 @@ module.exports = {
 
         // Sends reports of triggers based on user's permissions and the existence of specific channels
         function reportLadder(t, e) {
-            const modChannel = message.guild.channels.cache.find((c => c.name.includes(mod_channel))); //mod channel
             const superChannel = message.guild.channels.cache.find((c => c.name.includes(super_channel))); //super channel
             const adminChannel = message.guild.channels.cache.find((c => c.name.includes(admin_channel))); //admin channel
             const superLog = message.guild.channels.cache.find((c => c.name.includes(super_log_channel))); //super log channel
             const logChannel = message.guild.channels.cache.find((c => c.name.includes(action_log_channel))); //action log channel
-            const owner = client.users.cache.get(message.guild.ownerID); // server owner
             // Gets the guildMember instance of the user so we can get more information on them and their information within our server.
             warnedUser = client.guilds.cache.get(message.guild.id).members.cache.get(message.author.id);
 
@@ -460,60 +459,44 @@ module.exports = {
                 timestamp: new Date(),
             };
 
-            // If not server owner
+            // If not server owner or admin
             if(message.author.id !== message.guild.ownerID) {
+
+                // If admin then ignore
+                if (adminRole) {
+                    return;
+                }
 
                 // If super uses a trigger
                 if (superRole) {
                     // Set embed title
-                    e.title = `A Member Of The ${super_role} Group Has Hit A Trigger!`
-
-                    // If there is an admin channel
-                    if (adminChannel) {
-                        if (severity === "high") {
-                            // Delete the message
-                            message.delete().then(() => {
-                                // Send the embed with a copy of the message to the admin channel
-                                adminChannel.send({embed: delMsgEmbed}).then(d => {
-                                    // Update the db's message link
-                                    Warning.update({message_link: d.url}, {
-                                        where: {
-                                            warning_id: warnId
-                                        }
-                                    });
-                                });
-                            });
-                        } else if (severity === "medium") {
-                            // Send embed to the admin channel with here tag
-                            adminChannel.send("@ here", {embed: e});
-                        } else if (severity === "low") {
-                            // Send embed to the admin channel
-                            adminChannel.send({embed: e});
-                        }
-
-                    // If an admin channel isn't found
-                    } else {
+                    e.title = `A Member Of The ${superRole.name} Group Has Hit A Trigger!`
+                    if (severity === "high") {
                         // Delete the message
                         message.delete().then(() => {
-                            // Send the embed with a copy of the message to the owner
-                            owner.send({embed: delMsgEmbed}).then(d => {
+                            // Send the embed with a copy of the message to the super log
+                            superLog.send({embed: delMsgEmbed}).then(d => {
                                 // Update the db's message link
                                 Warning.update({message_link: d.url}, {
                                     where: {
                                         warning_id: warnId
                                     }
                                 });
-                            }).catch(() => {
-                                // If unable to dm owner
-                                console.log(`Unable to dm server owner!`);
                             });
                         });
+                    } else if (severity === "medium" || severity === "low") {
+                        // Send embed to the super log
+                        superLog.send({embed: e});
                     }
 
                 // If mod uses a trigger
-                } else if (modRole) {
-                    // Set embed title
-                    e.title = `A Member Of The ${mod_role} Group Has Hit A Trigger!`
+                } else if (modRole || modTraineeRole) {
+                    // Set embed title based on role
+                    if(modRole) {
+                        e.title = `A Member Of The ${modRole.name} Group Has Hit A Trigger!`;
+                    } else {
+                        e.title = `A Member Of The ${modTraineeRole.name} Group Has Hit A Trigger!`
+                    }
 
                     // If there is an super channel
                     if (superChannel) {
@@ -528,7 +511,7 @@ module.exports = {
                                         // Change the url for the mod channel's embed to link to log in the log channel
                                         e.fields[4].value = d.url;
                                         // Send embed to the super channel
-                                        superChannel.send("@ everyone", {embed: e});
+                                        superChannel.send({embed: e});
 
                                         // Update the db's message link
                                         Warning.update({message_link: d.url}, {
@@ -540,7 +523,7 @@ module.exports = {
 
                                 // If no super log channel, just send deleted embed to super channel
                                 } else {
-                                    superChannel.send("@ everyone", {embed: delMsgEmbed}).then(d => {
+                                    superChannel.send({embed: delMsgEmbed}).then(d => {
                                         // Update the db's message link
                                         Warning.update({message_link: d.url}, {
                                             where: {
@@ -550,12 +533,9 @@ module.exports = {
                                     });
                                 }
                             });
-                        } else if (severity === "medium") {
-                            // Send embed to the super channel with here tag
-                            superChannel.send("@ here", {embed: e});
-                        } else if (severity === "low") {
-                            // Send embed to the super channel
-                            superChannel.send({embed: e});
+                        } else if (severity === "medium" || severity === "low") {
+                            // Send embed to the super log
+                            superLog.send({embed: e});
                         }
 
                     // If a super channel isn't found
@@ -566,30 +546,10 @@ module.exports = {
                                 // Send the embed with a copy of the message to the admin channel
                                 adminChannel.send({embed: delMsgEmbed});
                             });
-                        } else if (severity === "medium") {
-                            // Send embed to the admin channel with here tag
-                            adminChannel.send("@ here", {embed: e});
-                        } else if (severity === "low") {
+                        } else if (severity === "medium" || severity === "low") {
                             // Send embed to the admin channel
                             adminChannel.send({embed: e});
                         }
-                    // If a super or admin channel isn't found
-                    } else {
-                        // Delete the message
-                        message.delete().then(() => {
-                            // Send the embed with a copy of the message to the owner
-                            owner.send({embed: delMsgEmbed}).then( d => {
-                                // Update the db's message link
-                                Warning.update({message_link: d.url}, {
-                                    where: {
-                                        warning_id: warnId
-                                    }
-                                });
-                            }).catch(() => {
-                                // If unable to dm owner
-                                console.log(`Unable to dm server owner!`);
-                            });
-                        });
                     }
 
                 // If any other role uses a trigger
@@ -601,8 +561,8 @@ module.exports = {
                             logChannel.send({embed: delMsgEmbed}).then(d => {
                                 // Change the url for the mod channel's embed to link to log in the log channel
                                 e.fields[4].value = d.url;
-                                // Send embed to the mod channel
-                                modChannel.send("@ everyone", {embed: e});
+                                // Send embed to the mod log
+                                logChannel.send("@here", {embed: e});
 
                                 // Update the db's message link
                                 Warning.update({message_link: d.url}, {
@@ -616,14 +576,14 @@ module.exports = {
                         // Warn the user
                         message.reply(`please try to refrain from using words such as: \`${t}\``);
 
-                        // Send embed to the moderation channel with here tag
-                        modChannel.send("@ here", {embed: e});
+                        // Send embed to the moderation log with here tag
+                        logChannel.send({embed: e});
                     } else if (severity === "low") {
                         // Warn the user
                         message.reply(`please try to refrain from using words such as: \`${t}\``);
 
-                        // Send embed to the moderation channel
-                        modChannel.send({embed: e});
+                        // Send embed to the moderation log
+                        logChannel.send({embed: e});
                     }
                 }
             }

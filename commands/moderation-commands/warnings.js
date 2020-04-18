@@ -5,9 +5,9 @@ const DatabaseController = require("../../controllers/DatabaseController");
 // Create a new module export
 module.exports = {
     name: "warnings",
-    description: 'Gets informations on a specific warning using the warning id, warnings from a specific user by username or user id, or the 10 most recent warnings with "recent".',
+    description: 'Gets informations on a specific warning using the warning id, warnings from a specific user by user mention or user id, or the 10 most recent warnings with "recent".',
     aliases: ["warns", "infractions"],
-    usage: "<user | specific | recent> [username | user id | warning id | recent count]",
+    usage: "<user | specific | recent> [mention | user id | warning id | recent count]",
     mod: true, // Minimum level required is Mod
     super: false,
     admin: false,

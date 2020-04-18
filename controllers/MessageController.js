@@ -31,7 +31,7 @@ module.exports = {
             ownerRole = message.member.guild.owner;
 
         // If not a bot and not in a text channel
-        } else if(!message.author.bot && message.channel.type !== "text") {
+        } else if(!message.author.bot && message.channel.type === "dm") {
             return message.channel.send(`Ohai, ${message.author.username}!\n\nIt seems you tried to message me within a dm, I appreciate you sliding up into my dms, but at this time I do not support any dm-based commands!`);
 
         // Else (if a bot) then just ignore
@@ -95,7 +95,7 @@ module.exports = {
 
         // If the command doesn't exist, then ignore the message
         if (!command) {
-            return message.reply(`uh oh! It seems you tried to use a command that doesn't exist!`);
+            return;
         };
 
         // Check if the channel is a text channel and the command is for guild only

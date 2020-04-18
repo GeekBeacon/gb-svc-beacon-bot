@@ -115,11 +115,9 @@ kick | \<mention \| user id\>, \<reason\> | Kicks a user from the guild | Mod | 
 ban | \<mention \| user id\>, \<reason\>, \<time\>* | Bans a user from the guild | Mod | !ban @user, graphic content, 1w
 unban | \<user id\>, \<reason\> | Unbans a user from the guild | Mod | !unban 12345, apologized
 purge | \<count\>* | Bulk deletes messages in the channel this command was used in | Super | !purge 25
-warnings | \<recent \| specific \| user\> \<count \| warn id \| user id \| username*\> | Get the warning(s) for a user or recent warning(s) | Mod | !warnings specific 1hsj3ls
+warnings | \<recent \| specific \| user\> \<count \| warn id \| user id \| mention\> | Get the warning(s) for a user or recent warning(s) | Mod | !warnings specific 1hsj3ls
 
 \*count - The maximum count for a single purge is 100
-
-\*username - This is the user's **username** *NOT* their nickname
 
 \*time - This can be any format supported by [Moment's Add method (including shorthands)](https://momentjs.com/docs/#/manipulating/add/) or `p`, `perm`, `perma`, and `permanent` for a permanent ban (999 years)
 
@@ -134,9 +132,9 @@ Triggers are ways to ensure specific words or phrases aren't used within the gui
 Triggers have severity levels; low, medium, and high. These are used to determine how the bot will take action. Any time a trigger is seen, the bot will create a log about it in the mod log channel. This follows role hierarchy; meaning that if a mod posts a trigger word/phrase in a non-excluded channel it will report to the super mods (Master Control) and so forth.
 
 **Here is a simple outline of how the bot handles triggers by severity:**
-* **High** - These triggers have no place within the guild. Because of this, when these are seen, the bot will instantly delete the message, create a log of it in the appropiate log channel, and send a message to the appropiate channel (tagging everyone) to let them know that further action may be required.
-* **Medium** - These triggers are important to keep an eye out for. Because of this, the bot will ask the offender to refrain from using the word/phrase, then will post in the appropiate channel (tagging here) to let them know they might need to take further action.
-* **Low** - These triggers aren't as serious, but might need to be kept in specific channels. When these are seen the bot will ask the user to refrain from using the word/phrase then post in the appropiate channel (no tagging).
+* **High** - These triggers have no place within the guild. Because of this, when these are seen, the bot will instantly delete the message, create a log of it in the appropiate log channel and send a message tagging @here to let mod online know that further action may be required.
+* **Medium** - These triggers are important to keep an eye out for. Because of this, the bot will ask the offender to refrain from using the word/phrase.
+* **Low** - These triggers aren't as serious, but might need to be kept in specific channels. When these are seen the bot will ask the user to refrain from using the word/phrase.
 
 
 ### **Command(s) Usage**
