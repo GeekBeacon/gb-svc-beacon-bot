@@ -1,6 +1,6 @@
 // Import the required files
 const moment = require('moment');
-const {prefix, super_role, admin_role, special_permission_flags} = require('../config');
+const {prefix, super_role, admin_role, super_channel, special_permission_flags} = require('../config');
 const JoinableRole = require("../models/JoinableRole");
 
 // Create a new module export
@@ -13,6 +13,7 @@ module.exports = {
         const superRole = message.member.roles.cache.some(role => role.name.includes(super_role));
         const adminRole = message.member.roles.cache.some(role => role.name.includes(admin_role));
         const ownerRole = message.member.guild.owner;
+        const superChannel = message.guild.channels.cache.find((c => c.name.includes(super_channel)));
         let joinableRole;
             
         // Check the length of the args
@@ -171,8 +172,9 @@ module.exports = {
 
         /*********** LIST JOINABLEROLES ***********/
         } else if (command.name === 'listjoinableroles') {
+
             // If user is a super and passed in any args give data for that role
-            if ((superRole || adminRole || ownerRole) && args.length) {
+            if ((superRole || adminRole || message.author.id === ownerRole.id) && args.length) {
                 // Find the role within the guild
                 const role = message.guild.roles.cache.find(role => role.name.toLowerCase().includes(joinableRole));
                 let joinableRoleData = {};
@@ -182,7 +184,7 @@ module.exports = {
 
                     joinableRoleData.id = data.get('id'); //get id
                     joinableRoleData.role = data.get('role'); //get role
-                    joinableRoleData.creator = client.users.get(data.get('user_id')); //get user id
+                    joinableRoleData.creator = client.users.cache.get(data.get('user_id')); //get user id
                     joinableRoleData.created = moment(data.get('createdAt')).format('YYYY-MM-DD HH:mm:ss'); //get created date in YYYY-MM-DD HH:mm:ss format
                     joinableRoleData.updated = moment(data.get('updatedAt')).format('YYYY-MM-DD HH:mm:ss'); //get updated date in YYYY-MM-DD HH:mm:ss format
 
@@ -194,13 +196,19 @@ module.exports = {
                         color: 0x330066,
                         author: {
                             name: joinableRoleData.creator.username+'#'+joinableRoleData.creator.discriminator,
-                            icon_url: joinableRoleData.creator.displayAvatarURL,
+                            icon_url: joinableRoleData.creator.displayAvatarURL(),
                         },
 
                         fields: [
                             {
                                 name: 'Role',
                                 value: joinableRoleData.role,
+                                inline: true,
+                            },
+                            {
+                                name: `Added By`,
+                                value: joinableRoleData.creator,
+                                inline: true,
                             }
                         ],
                         footer: {
@@ -209,17 +217,13 @@ module.exports = {
 
                     };
 
-                    message.author.send({embed: joinableRoleEmbed})
-                    // Let user know they have been DMed
+                    // Send the information to the Super channel
+                    superChannel.send({embed: joinableRoleEmbed})
+                    // Let user know to check the super channel for more information
                     .then(() => {
-                        if (message.channel.type === "dm") return;
-                        message.reply(`I've sent you a DM with the information on \`${joinableRoleData.role}\`!`);
-                    })
-                    // If failed to dm, let user know and ask if they have DMs disabled
-                    .catch(() => {
-                        message.reply("it seems like I can't DM you! Do you have DMs disables?");
+                        message.reply(`I've sent you the information on \`${joinableRoleData.role}\` to ${superChannel}!`);
                     });
-                }).catch(() => {
+                }).catch((e) => {
                     message.reply(`it looks like \`${joinableRole}\` doesn't exist!`);
                 });
                 
@@ -236,18 +240,9 @@ module.exports = {
                     data.forEach((item) => {
                         joinableRoles.push(item.get('role'));
                     });
-                // Send the joinable roles to the user in a DM
+                // Send the joinable roles to the channel
                 }).then(() => {
-                    message.author.send('**Joinable Roles:** '+joinableRoles.map(role => `\`${role}\``).join(', '))
-                    // Let user know they have been DMed
-                    .then(() => {
-                        if (message.channel.type === "dm") return;
-                        message.reply("I've sent you a DM with all of the joinable roles!");
-                    })
-                    // If failed to dm, let user know and ask if they have DMs disabled
-                    .catch(() => {
-                        message.reply("It seems like I can't DM you! Do you have DMs disables?");
-                    });
+                    message.channel.send('**Joinable Roles:** '+joinableRoles.map(role => `\`${role}\``).join(', '));
                 });
             };
         };

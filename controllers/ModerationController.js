@@ -74,7 +74,7 @@ module.exports = {
             }
 
             // Perform bulk deletion
-            message.channel.bulkDelete(count).then(() => {
+            message.channel.bulkDelete(count+1).then(() => {
                 bulkEmbed = {
                     color: 0xFF5500,
                     title: "Bulk Deleted Messages",

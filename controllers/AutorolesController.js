@@ -1,6 +1,6 @@
 // Import the required files
 const moment = require('moment');
-const {prefix, super_role, admin_role, special_permission_flags} = require('../config');
+const {prefix, super_role, admin_role, super_channel, mod_channel, special_permission_flags} = require('../config');
 const AutoRole = require("../models/AutoRole");
 
 // Create a new module export
@@ -10,8 +10,10 @@ module.exports = {
     autoroleHandler: function(cmd, c, a, m) {
         // Create vars
         const command = cmd, client = c, args = a, message = m;
+        const modChannel = message.guild.channels.cache.find((c => c.name.includes(mod_channel)));
+        const superChannel = message.guild.channels.cache.find((c => c.name.includes(super_channel)));
         let autorole;
-            
+
         // Check the length of the args
         if (args.length > 1) {
             // If more than 1 arg, join to create a string, make lowercase, and assign to autorole
@@ -130,16 +132,11 @@ module.exports = {
                     });
                 // Send the autoroles to the user in a DM
                 }).then(() => {
-                    message.author.send('**Autoroles:** '+autoroles.map(role => `\`${role}\``).join(', '))
-                    // Let user know they have been DMed
+                    modChannel.send('**Autoroles:** '+autoroles.map(role => `\`${role}\``).join(', '))
+                    // Let user know to check the mod channel for the information
                     .then(() => {
-                        if (message.channel.type === "dm") return;
-                        message.reply("I've sent you a DM with all of the autoroles!");
+                        message.reply(`I've sent the list of autoroles to ${modChannel}!`);
                     })
-                    // If failed to dm, let user know and ask if they have DMs disabled
-                    .catch(error => {
-                        message.reply("It seems like I can't DM you! Do you have DMs disables?");
-                    });
                 });
 
             // If user is a super mod and passed in args, then give all data about that autorole
@@ -170,7 +167,12 @@ module.exports = {
                             {
                                 name: 'Role',
                                 value: autoroleData.role,
-                                inline: false,
+                                inline: true,
+                            },
+                            {
+                                name: `Added By`,
+                                value: autoroleData.creator,
+                                inline: true,
                             }
                         ],
                         footer: {
@@ -179,16 +181,11 @@ module.exports = {
 
                     };
 
-                    message.author.send({embed: autoroleEmbed})
-                    // Let user know they have been DMed
+                    superChannel.send({embed: autoroleEmbed})
+                    // Let user know to check the super channel for the information
                     .then(() => {
-                        if (message.channel.type === "dm") return;
-                        message.reply(`I've sent you a DM with the information on \`${autoroleData.role}\`!`);
+                        message.reply(`I've sent the information on \`${autoroleData.role}\` to the ${superChannel}!`);
                     })
-                    // If failed to dm, let user know and ask if they have DMs disabled
-                    .catch((err) => {
-                        message.reply("it seems like I can't DM you! Do you have DMs disables?");
-                    });
                 }).catch((err) => {
                     message.reply(`it looks like \`${autorole}\` doesn't exist!`);
                 });
