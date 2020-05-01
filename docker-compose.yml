@@ -1,7 +1,7 @@
-version: '3.3'
+version: '3.7'
 services:
   bot:
-    image: geekbeacon/beacon-bot:latest
+    image: geekbeacon/beacon-bot:0.1.0
     restart: always
     build:
         context: . 

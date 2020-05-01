@@ -12,3 +12,4 @@ website/build
 data
 .docusaurus/
 build
+.idea

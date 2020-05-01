@@ -30,7 +30,7 @@ jobs:
     script:
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
     - "/usr/local/bin/docker-compose build bot"
-    - docker push geekbeacon/beacon-bot:latest
+    - "/usr/local/bin/docker-compose push bot"
   - stage: Deploy Docks
     if: type != pull_request and branch = 'master'
     script:
@@ -39,6 +39,3 @@ jobs:
     - git config --global user.name "${GH_NAME}"
     - echo "machine github.com login ${GH_NAME} password ${GH_TOKEN}" > ~/.netrc
     - yarn && GIT_USER="${GH_NAME}" yarn deploy
-
-
-
