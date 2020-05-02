@@ -23,24 +23,19 @@ module.exports = {
                     const verifyEmbed = {
                         color: 0x886ce4,
                         title: `Welcome To GeekBeacon!`,
-                        description: `GeekBeacon is a community of geeks that transcent language barriers, cultural differences, and political climates!`,
+                        description: `Gamers, Techies, Coders Unite - GeekBeacon is the inclusive, friendly spot for you. Join our daily community events!`,
                         thumbnail: {
                             url: `attachment://verify-thumbnail.gif`,
                         },
                         fields: [
                             {
-                                name: `**Rules**`,
-                                value: `• Be polite and kind.\n• No racism, sexism, or bigotry of any kind.\n• No excessive political or religious discussions.\n• No spamming, even in DMs.\n• No NSFW content.\n• Do not mention/tag/ping (@) Nixie or any other staff member multiple times, one is enough.\n• Do not beg for roles.\n• Do not share anyone's personal information, even with permission.\n• Do not post content that breaks [Discord’s Terms of Service](https://discordapp.com/terms).\n• If a staff member asks you to stop doing something, stop it. If you want clarification, feel free to DM them for information. If you feel the need you can request an oversight by a member of Master Control.\n• Keep all conversations within their respective channels.\n• No insulting or explicit profile pictures or names, impersonating others, and avoid names made out of special characters that would make it difficult to tag and/or read your name.\n• Do not use ANY link shorteners. If your link isn't trustworthy by its destination URL, it doesn't need to be here.`,
-                                inline: false,
-                            },
-                            {
                                 name: `**Resources**`,
-                                value: `• [Discord How-To](https://support.discordapp.com/hc/en-us)\n• [Ask Nixie](https://forum.geekbeacon.org/c/ask-nixie)\n• [Suggestions](https://forum.geekbeacon.org/c/feedback)\n• [Invite Others Here](https://discord.gg/geekbeacon) or <#363750021436276746>`,
+                                value: `• Server Rules & Info - <#361832841677373452>\n • Channel Navigation - <#326648883037995009>\n• Introduce Yourself - <#330952061053304832>\n• Need Help? - <#363750021436276746>\n• [Discord How-To](https://support.discordapp.com/hc/en-us)\n• [Ask Nixie](https://forum.geekbeacon.org/c/ask-nixie)\n• [Suggestions](https://forum.geekbeacon.org/c/feedback)\n`,
                                 inline: false,
                             },
                             {
                                 name: `**Access Full Server!**`,
-                                value: `**To view all the channels, you need to verify you are a human by simply clicking on the emoji below this message (✅)**`,
+                                value: `**To view all the channels, you need to verify you are a human by simply clicking on the emoji below this message ( ✅ )**`,
                                 inline: false,
                             }
                         ],

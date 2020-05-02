@@ -1,9 +1,6 @@
 const moment = require("moment");
 const {prefix, admin_role, super_role, mod_role, mod_trainee_role, action_log_channel, super_log_channel} = require('../config');
-const Kick = require("../models/Kick");
-const Ban = require("../models/Ban");
-const Unban = require("../models/Unban");
-const Warning = require("../models/Warning");
+const Models = require("../models/AllModels");
 const shortid = require('shortid');
 const Discord = require('discord.js');
 
@@ -42,7 +39,7 @@ module.exports = {
 
             // Create the delete embed
             const delEmbed = {
-                color: 0xff0000,
+                color: 0x33ccff,
                 title: `Message Deleted in ${message.channel.name}`,
                 author: {
                     name: `${message.author.username}#${message.author.discriminator}`,
@@ -83,8 +80,8 @@ module.exports = {
             // Delete the command message itself
             message.delete();
 
-            // Perform bulk deletion
-            message.channel.bulkDelete(count).then((messages) => {
+            // Perform bulk deletion; pass in true to prevent error about older messages
+            message.channel.bulkDelete(count, true).then((messages) => {
                 bulkEmbed = {
                     color: 0xFF5500,
                     title: "Bulk Deleted Messages",
@@ -244,9 +241,9 @@ module.exports = {
                     Keep force set to false otherwise it will overwrite the table instead of making a new row!
                 !!!!
                 */
-                Kick.sync({ force: false }).then(() => {
+                Models.kick.sync({ force: false }).then(() => {
                     // Add the kick record to the database
-                    Kick.create({
+                    Models.kick.create({
                         user_id: user.id,
                         reason: reason,
                         moderator_id: message.author.id,
@@ -424,9 +421,9 @@ module.exports = {
                         Keep force set to false otherwise it will overwrite the table instead of making a new row!
                     !!!!
                     */
-                    Ban.sync({ force: false }).then(() => {
+                    Models.ban.sync({ force: false }).then(() => {
                         // Add the ban record to the database
-                        Ban.create({
+                        Models.ban.create({
                             user_id: user.id,
                             guild_id: message.guild.id,
                             reason: reason,
@@ -530,7 +527,7 @@ module.exports = {
                     message.guild.fetchBan(user).then(() => {
                         
                         // Search the db for the ban
-                        Ban.findOne({where: {user_id: userId, completed: 0}, raw:true}).then((data) => {
+                        Models.ban.findOne({where: {user_id: userId, completed: 0}, raw:true}).then((data) => {
 
                             // Make sure data was retrieved
                             if(data) {
@@ -544,10 +541,10 @@ module.exports = {
                                     Keep force set to false otherwise it will overwrite the table instead of making a new row!
                                 !!!!
                                 */
-                                Unban.sync({ force: false }).then(() => {
+                                Models.ban.sync({ force: false }).then(() => {
 
                                     // Add the unban record to the database
-                                    Unban.create({
+                                    Models.ban.create({
                                         user_id: userId,
                                         reason: reason,
                                         type: "Manual",
@@ -598,7 +595,7 @@ module.exports = {
                                         message.guild.members.unban(userId).then(() => {
 
                                             // Update the completed field for the ban
-                                            Ban.update({completed: 1}, {where: {user_id: userId}});
+                                            Models.ban.update({completed: 1}, {where: {user_id: userId}});
 
                                             // Send the embed to the action log channel
                                             actionLog.send({embed: unbanEmbed});
@@ -670,16 +667,16 @@ module.exports = {
             // Check if a reason was given
             if(args[1] && user.user !== undefined) {
             // Create a new table if one doesn't exist
-            Warning.sync({ force: false }).then(() => { 
+            Models.ban.sync({ force: false }).then(() => { 
                 // See if the warning id exists already
-                Warning.findOne({where: {warning_id: warnId}, raw:true}).then((warning => {
+                Models.ban.findOne({where: {warning_id: warnId}, raw:true}).then((warning => {
                     // If the warning id matches the newly generated one, generate a new one
                     if(warning) {
                         warnId = shortid.generate();
                     };
                 })).then(() => { 
                     // Create a new warning
-                    Warning.create({
+                    Models.ban.create({
                         warning_id: warnId, // add the warning Id
                         user_id: user.user.id, // add the user's id
                         type: "Note", // assign the type of warning
