@@ -33,10 +33,6 @@ module.exports = {
             })
             
         } else {
-
-            // If message is a purge command name or alias then ignore it
-            if(message.startsWith(`${prefix}purge`) || message.startsWith(`${prefix}clear`) || message.startsWith(`${prefix}clean`) || message.startsWith(`${prefix}delete`)) return;
-
             // Create the delete embed
             const delEmbed = {
                 color: 0x33ccff,
