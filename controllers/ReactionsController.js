@@ -29,13 +29,13 @@ module.exports = {
                         },
                         fields: [
                             {
-                                name: `**Resources**`,
-                                value: `• Server Rules & Info - <#361832841677373452>\n • Channel Navigation - <#326648883037995009>\n• Introduce Yourself - <#330952061053304832>\n• Need Help? - <#363750021436276746>\n• [Discord How-To](https://support.discordapp.com/hc/en-us)\n• [Ask Nixie](https://forum.geekbeacon.org/c/ask-nixie)\n• [Suggestions](https://forum.geekbeacon.org/c/feedback)\n`,
+                                name: `**Steps**`,
+                                value: `1. Click The Emoji\n2. Click on 👋•introduce-yourself to the left and let us know you've arrived!`,
                                 inline: false,
                             },
                             {
                                 name: `**Access Full Server!**`,
-                                value: `**To view all the channels, you need to verify you are a human by simply clicking on the emoji below this message ( ✅ )**`,
+                                value: `**To view all the channels, you need to verify you are a human by simply clicking on the emoji below this message, then look to your LEFT for the list to then appear!**`,
                                 inline: false,
                             }
                         ],
