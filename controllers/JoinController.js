@@ -11,8 +11,8 @@ module.exports = {
         const member = m; //assign the member var to the passed in member parameter
         const client = c;
 
-        // Set timer to 30 mins before user is kicked
-        const timer = setTimeout(kickUser, 1800000);
+        // Set timer to 1 hour before user is kicked
+        const timer = setTimeout(kickUser, 3600000);
         
         // Check the user's roles each second
         const interval = setInterval(assignRoles, 1000);
