@@ -10,7 +10,7 @@ module.exports = {
         // Create vars
         const message = m, args = a;
         const adminRole = message.member.roles.cache.some(role => role.name.includes(admin_role));
-        const verifyChannel = message.guild.channels.cache.find((c => c.name.includes("verify"))); //verify channel
+        const verifyChannel = message.guild.channels.cache.find((c => c.name === "✅•verify")); //verify channel
 
         // Fetch the message from the verify channel
         verifyChannel.messages.fetch({limit:1}).then((messages) => {
