@@ -1,5 +1,5 @@
 const Discord = require("discord.js");
-const {server_id, user_role} = require('../config');
+const {server_id, user_role, admin_role} = require('../config');
 const thumb = new Discord.MessageAttachment('./assets/verify-thumbnail.gif');
 
 // Create a new module export
@@ -9,6 +9,7 @@ module.exports = {
     verifyCreator: function(m, a) {
         // Create vars
         const message = m, args = a;
+        const adminRole = message.member.roles.cache.some(role => role.name.includes(admin_role));
         const verifyChannel = message.guild.channels.cache.find((c => c.name.includes("verify"))); //verify channel
 
         // Fetch the message from the verify channel
@@ -18,7 +19,7 @@ module.exports = {
                 return message.channel.send(`There is already a verify message!`);
             } else {
                 // Make sure the arg is "create" and author is server owner
-                if(args.length === 1 && args[0] === "create" && message.guild.ownerID === message.author.id) {
+                if(args.length === 1 && args[0] === "create" && (message.guild.ownerID === message.author.id || adminRole)) {
                     // Create the embed
                     const verifyEmbed = {
                         color: 0x886ce4,
@@ -29,17 +30,16 @@ module.exports = {
                         },
                         fields: [
                             {
-                                name: `**Resources**`,
-                                value: `• Server Rules & Info - <#361832841677373452>\n • Channel Navigation - <#326648883037995009>\n• Introduce Yourself - <#330952061053304832>\n• Need Help? - <#363750021436276746>\n• [Discord How-To](https://support.discordapp.com/hc/en-us)\n• [Ask Nixie](https://forum.geekbeacon.org/c/ask-nixie)\n• [Suggestions](https://forum.geekbeacon.org/c/feedback)\n`,
+                                name: `**Steps To Verify You're Not A Bot**`,
+                                value: `1. Click the checkmark emoji below this message\n2. Watch the LEFT for the sever list to appear!\n3. Click on a channel to the LEFT to start chatting!`,
                                 inline: false,
                             },
                             {
-                                name: `**Access Full Server!**`,
-                                value: `**To view all the channels, you need to verify you are a human by simply clicking on the emoji below this message ( ✅ )**`,
+                                name: `**If You Need Help**`,
+                                value: `• <#706323208416002109>\n• [GeekBeacon Forums Support](https://forum.geekbeacon.org/t/discord-verification-help/735)`,
                                 inline: false,
                             }
-                        ],
-                        timestamp: `Last updated: ${new Date()}`,
+                        ]
                     }
                     // Send the embed along with the file for the thumbnail
                     verifyChannel.send({ files: [thumb], embed: verifyEmbed})
