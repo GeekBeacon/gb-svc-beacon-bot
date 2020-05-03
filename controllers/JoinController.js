@@ -9,116 +9,66 @@ module.exports = {
     // Create a function to be called
     joinHandler: function(m, c) {
         const member = m; //assign the member var to the passed in member parameter
-        const client = c;
 
-        // Set timer to 1 hour before user is kicked
-        const timer = setTimeout(kickUser, 3600000);
-        
-        // Check the user's roles each second
-        const interval = setInterval(assignRoles, 1000);
+        const sequelize = new Sequelize(`mysql://${db_user}:${db_pass}@${db_host}:${db_port}/${db_name}`, {logging: false}); //create the sequelize connection
+        const roles = []; //create the roles array
+        const joinedDate = moment(member.joinedAt).format(`MMM DD, YYYY`); //joined date only
+        const joinedTime = moment(member.joinedAt).format(`HH:mm:ss`); //joined time only
+        const joinLog = member.guild.channels.cache.find((c => c.name.includes(join_log_channel))); //join log channel
 
-
-        function kickUser() {
-            const guild = client.guilds.cache.find((g => g.id === server_id));
-            const actionLog = guild.channels.cache.find((c => c.name.includes(action_log_channel))); //mod log channel
-            // Create the kicked embed
-            const kickEmbed = {
-                color: 0xFFA500,
-                title: `User Was Kicked!`,
-                author: {
-                    name: `${member.user.username}#${member.user.discriminator}`,
-                    icon_url: member.user.displayAvatarURL({dynamic:true}),
+        // Create the embed to display a new member join
+        const joinEmbed = {
+            color: 0x886CE4, //purple
+            title: `New Member`,
+            description: `<@${member.user.id}> has just joined the server!\n*${member.guild.name} now has ${member.guild.memberCount} members*`,
+            fields: [
+                {
+                    name: `User`,
+                    value: `${member.user.tag}`,
+                    inline: true,
                 },
-                description: `<@${member.user.id}> was kicked from the server`,
-                fields: [
-                    {
-                        name: `User Kicked`,
-                        value: `${member.user.tag}`,
-                        inline: true,
-                    },
-                    {
-                        name: `Reason`,
-                        value: `Verification Timeout`,
-                        inline: true,
-                    }
-                ],
-                timestamp: new Date(),
-                footer: {
-                    text: `User ID: ${member.user.id}`
-                }
-            };
-            member.kick("Verification Timeout").then(() => {
-                // Send the embed to the action log channel
-                actionLog.send({embed: kickEmbed});
-            })
-        }
-
-        function assignRoles() {
-
-            if(member.roles.cache.find(r => r.name === "Users")) {
-                clearTimeout(timer);
-                clearInterval(interval);
-
-                const sequelize = new Sequelize(`mysql://${db_user}:${db_pass}@${db_host}:${db_port}/${db_name}`, {logging: false}); //create the sequelize connection
-                const roles = []; //create the roles array
-                const joinedDate = moment(member.joinedAt).format(`MMM DD, YYYY`); //joined date only
-                const joinedTime = moment(member.joinedAt).format(`HH:mm:ss`); //joined time only
-                const joinLog = member.guild.channels.cache.find((c => c.name.includes(join_log_channel))); //join log channel
-
-                // Create the embed to display a new member join
-                const joinEmbed = {
-                    color: 0x886CE4, //purple
-                    title: `New Member`,
-                    description: `<@${member.user.id}> has just joined the server!\n*${member.guild.name} now has ${member.guild.memberCount} members*`,
-                    fields: [
-                        {
-                            name: `User`,
-                            value: `${member.user.tag}`,
-                            inline: true,
-                        },
-                        {
-                            name: `Date`,
-                            value: `${joinedDate}`,
-                            inline: true,
-                        },
-                        {
-                            name: `Time`,
-                            value: `${joinedTime}`,
-                            inline: true,
-                        },
-                    ],
-                    timestamp: new Date(),
-                    footer: {
-                        text: `User ID: ${member.user.id}`,
-                    }
-                }
-
-                // Send the embed to the action log channel
-                joinLog.send({embed: joinEmbed});
-                
-
-                // Query the database for all of the autoroles as a select
-                sequelize.query("SELECT `role` FROM `autoroles`", {type:sequelize.QueryTypes.SELECT}).then(data => {
-
-                    // See if there are any autoroles in the db
-                    if (data) {
-                        // Find the role within the server and add it to the array
-                        data.forEach(item => {
-                            roles.push(member.guild.roles.cache.find(role => role.name === item.role));
-                        });
-
-                    // If no autoroles, just ignore assigning them
-                    } else {
-                        return;
-                    }
-                
-                }).then(() => {
-                    // Assign each role within the roles array to the user
-                    roles.forEach(role => {
-                        member.roles.add(role);
-                    });
-                });
+                {
+                    name: `Date`,
+                    value: `${joinedDate}`,
+                    inline: true,
+                },
+                {
+                    name: `Time`,
+                    value: `${joinedTime}`,
+                    inline: true,
+                },
+            ],
+            timestamp: new Date(),
+            footer: {
+                text: `User ID: ${member.user.id}`,
             }
         }
+
+        // Send the embed to the action log channel
+        joinLog.send({embed: joinEmbed});
+        
+
+        // Query the database for all of the autoroles as a select
+        sequelize.query("SELECT `role` FROM `autoroles`", {type:sequelize.QueryTypes.SELECT}).then(data => {
+
+            // See if there are any autoroles in the db
+            if (data) {
+                // Find the role within the server and add it to the array
+                data.forEach(item => {
+                    roles.push(member.guild.roles.cache.find(role => role.name === item.role));
+                });
+
+            // If no autoroles, just ignore assigning them
+            } else {
+                return;
+            }
+        
+        }).then(() => {
+            // Assign each role within the roles array to the user
+            roles.forEach(role => {
+                member.roles.add(role);
+            });
+        });
+        
     }
 }
