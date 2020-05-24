@@ -10,8 +10,7 @@ const AllowedUrl = sequelize.define('allowedurl', {
     // Create required unique url string column
     url: {
         type: Sequelize.STRING,
-        allowNull: false,
-        unique: true,
+        allowNull: false
     },
     // Create required added_by column
     added_by: {
