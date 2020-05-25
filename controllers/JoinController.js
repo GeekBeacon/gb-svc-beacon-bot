@@ -56,7 +56,8 @@ module.exports = {
             if (data) {
                 // Find the role within the server and add it to the array
                 data.forEach(item => {
-                    roles.push(member.guild.roles.cache.find(role => role.name === item.role));
+                    let role = member.guild.roles.cache.find(role => role.name === item.role)
+                    roles.push(role);
                 });
 
             // If no autoroles, just ignore assigning them
