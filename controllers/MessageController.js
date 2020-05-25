@@ -98,15 +98,15 @@ module.exports = {
                     return;
                 }
 
-                // Check if the url is blacklisted
-                if(message.content.toLowerCase().match(bannedUrlArr.map(domain => `\\b${domain}\\b`).join("|"))) {
+                // If not blacklisted then ignore
+                if(!message.content.toLowerCase().match(bannedUrlArr.map(domain => `\\b${domain}\\b`).join("|"))) {
+                    return;
+                    
+                // If blacklisted url then handle it
+                } else {
                     const regexMatch = message.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/);
                     // If not then call the handleUrl function from the ModerationController file
                     ModerationController.handleUrl(message, regexMatch, deleteSet);
-
-                // If not blacklisted url then ignore
-                } else {
-                    return;
                 };
             // If not a trigger word/phrase, a blacklisted domain, or a bot message then ignore
             } else {
