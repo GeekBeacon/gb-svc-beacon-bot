@@ -91,7 +91,7 @@ client.once('ready', () => {
         } catch(e) {
             console.error("Error: ", e);
         }
-    }, 3000)
+    }, 60000)
 
 });
 
