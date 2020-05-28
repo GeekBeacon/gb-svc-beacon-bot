@@ -1,7 +1,8 @@
 // Import required files
 const {db_name, db_host, db_port, db_user, db_pass, join_log_channel, user_role} = require("../config");
 const Sequelize = require('sequelize');
-const moment = require("moment-timezone")
+const moment = require("moment-timezone");
+const Models = require("../models/AllModels");
 
 // Create a new module export
 module.exports = {
@@ -9,13 +10,12 @@ module.exports = {
     // Create a function to be called
     joinHandler: function(m, c) {
         const member = m; //assign the member var to the passed in member parameter
-
         const sequelize = new Sequelize(`mysql://${db_user}:${db_pass}@${db_host}:${db_port}/${db_name}`, {logging: false}); //create the sequelize connection
         const roles = []; //create the roles array
         const joinedDate = moment(member.joinedAt).format(`MMM DD, YYYY`); //joined date only
         const joinedTime = moment(member.joinedAt).format(`HH:mm:ss`); //joined time only
         const joinLog = member.guild.channels.cache.find((c => c.name.includes(join_log_channel))); //join log channel
-        const users = member.guild.roles.cache.find(r => r.id === user_role); //users role
+        let mutes;
 
         // Create the embed to display a new member join
         const joinEmbed = {
@@ -47,16 +47,29 @@ module.exports = {
 
         // Send the embed to the action log channel
         joinLog.send({embed: joinEmbed});
-        
 
         // Query the database for all of the autoroles as a select
-        sequelize.query("SELECT `role` FROM `autoroles`", {type:sequelize.QueryTypes.SELECT}).then(data => {
+        sequelize.query("SELECT `role` FROM `autoroles`", {type:sequelize.QueryTypes.SELECT}).then(async (data) => {
+
+            // Find any muted roles the user might have
+            mutes = await Models.mute.findAll({where: {completed: false}, raw:true});
+
+            // Check if any mutes were found
+            if(mutes.length) {
+                // Loop through each muted role found
+                mutes.forEach(mute => {
+                    // Find the muted role within the server and add it to the array
+                    const muteRole = member.guild.roles.cache.find(role => role.name.toLowerCase().includes(mute.type));
+                    // Add the muted role to the roles array to be assigned
+                    roles.push(muteRole);
+                });
+            }
 
             // See if there are any autoroles in the db
             if (data) {
                 // Find the role within the server and add it to the array
                 data.forEach(item => {
-                    let role = member.guild.roles.cache.find(role => role.name === item.role)
+                    const role = member.guild.roles.cache.find(role => role.name === item.role)
                     roles.push(role);
                 });
 

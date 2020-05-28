@@ -1,5 +1,5 @@
 const moment = require("moment");
-const {prefix, admin_role, super_role, mod_role, mod_trainee_role, action_log_channel, super_log_channel, user_role} = require('../config');
+const {prefix, admin_role, super_role, mod_role, mod_trainee_role, action_log_channel, super_log_channel, user_role, url_role_whitelist} = require('../config');
 const Models = require("../models/AllModels");
 const shortid = require('shortid');
 const Discord = require('discord.js');
@@ -118,11 +118,12 @@ module.exports = {
         };
 
     },
-    editHandler: function(o, n, c) {
-        const oldMsg = o, newMsg = n, client = c; // create vars for parameter values
+    editHandler: function(o, n, c, bu, deleteSet) {
+        const oldMsg = o, newMsg = n, client = c, bannedUrls = bu; // create vars for parameter values
         const superLog = newMsg.guild.channels.cache.find((c => c.name.includes(super_log_channel))); //super log channel
         // Create author var
         const author = client.users.cache.get(newMsg.author.id);
+        let bannedUrlArr = [];
         // Exclude pokecord channel
         if(newMsg.channel.name.includes("pokecord")) return;
 
@@ -174,6 +175,30 @@ module.exports = {
         }
         // Send the edit embed to the super log channel
         superLog.send({embed: editEmbed});
+
+        // Loop through the bannedUrl list
+        bannedUrls.list.forEach((domain) => {
+            // Add each domain to the bannedUrlArr var
+            bannedUrlArr.push(domain);
+        });
+
+        if (newMsg.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/)) {
+            // If user has an excluded role then ignore
+            if(newMsg.member.roles.cache.some(r => url_role_whitelist.includes(r.id))) {
+                return;
+            }
+
+            // If not blacklisted then ignore
+            if(!newMsg.content.toLowerCase().match(bannedUrlArr.map(domain => `\\b${domain}\\b`).join("|"))) {
+                return;
+                
+            // If blacklisted url then handle it
+            } else {
+                const regexMatch = newMsg.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/);
+                // If not then call the handleUrl function from the ModerationController file
+                this.handleUrl(newMsg, regexMatch, deleteSet);
+            };
+        }
     },
     kickHandler: function(a, m) {
         const args = a;

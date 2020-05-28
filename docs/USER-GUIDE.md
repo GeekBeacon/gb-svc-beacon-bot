@@ -101,7 +101,12 @@ Moderation commands are used to enable moderators and super moderators (Master C
 * Ban User
 * Unban User
 * Warn Member
-* Whitelist
+* Mute Member
+   * Server
+   * Text
+   * Voice
+   * Reactions
+* Blacklist
    * List
    * Add
    * Remove
@@ -126,7 +131,7 @@ whitelist* | \<list \| add \| remove\> \[comma seperated url list\] | Lists, add
 
 \*type - Accepted types: _server_, _voice_, _text_, and _reactions_
 
-\*whitelist - **IMPORTANT!** When adding domains to the whitelist, make sure not to use subdomains, these are automatically checked for!
+\*blacklist - **IMPORTANT!** When adding domains to the blacklist, make sure not to use subdomains, these are automatically checked for!
 
 ___
 

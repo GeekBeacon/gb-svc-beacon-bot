@@ -155,7 +155,7 @@ module.exports = {
                 if (jrole) {
                     JoinableRole.destroy({
                         where: {
-                            role: joinableRole
+                            role: jrole.get("role")
                         }
                     // Let the user know it was removed
                     }).then(() => {
