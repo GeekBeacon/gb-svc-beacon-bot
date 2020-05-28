@@ -350,6 +350,7 @@ module.exports = {
 
                         // Attempt to find the member
                         try {
+                            // If able to find a user by the id, assign to member var
                             member = await guild.members.fetch(mute.user_id);
                         } catch(e) {
                             // If unable to find member then ignore
