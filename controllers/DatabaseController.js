@@ -346,7 +346,17 @@ module.exports = {
                     if(moment(umDate).isSameOrBefore(moment(currentTime))) {
                         // Find the server the user was muted in
                         const guild = client.guilds.cache.get(mute.guild_id);
-                        const member = await guild.members.fetch(mute.user_id);
+                        let member;
+
+                        // Attempt to find the member
+                        try {
+                            // If able to find a user by the id, assign to member var
+                            member = await guild.members.fetch(mute.user_id);
+                        } catch(e) {
+                            // If unable to find member then ignore
+                            return;
+                        }
+
                         const mutedRole = member.roles.cache.find(r => r.name.includes("Muted")); //muted role
                         logChannel = guild.channels.cache.find((c => c.name.includes(action_log_channel))); //action log channel
                         // Unmute the user

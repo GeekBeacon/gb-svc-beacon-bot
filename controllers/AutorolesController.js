@@ -102,7 +102,7 @@ module.exports = {
                 if (arole) {
                     AutoRole.destroy({
                         where: {
-                            role: autorole
+                            role: arole.get("role")
                         }
                     // Let the user know it was removed
                     }).then(() => {
