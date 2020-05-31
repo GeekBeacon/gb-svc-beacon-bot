@@ -54,29 +54,29 @@ module.exports = {
             // Find any muted roles the user might have	
             mutes = await Models.mute.findAll({where: {user_id: member.user.id,completed: false}, raw:true});
 
-            // Check if any mutes were found	
-            if(mutes.length > 0) {	
-                // Loop through each muted role found	
-                mutes.forEach(mute => {	
-                    // Find the muted role within the server and add it to the array	
-                    const muteRole = member.guild.roles.cache.find(role => role.name.toLowerCase().includes(mute.type));	
-                    // Add the muted role to the roles array to be assigned	
-                    roles.push(muteRole);
-                });
-            // If no mutes, just ignore assigning any
-            } else {
-                return;
-            }
+            // Check if there are any autoroles or mutes
+            if(mutes.length || data.length) {
+            
+                // Check if any mutes were found	
+                if(mutes.length > 0) {	
+                    // Loop through each muted role found	
+                    mutes.forEach(mute => {	
+                        // Find the muted role within the server and add it to the array	
+                        const muteRole = member.guild.roles.cache.find(role => role.name.toLowerCase().includes(mute.type));	
+                        // Add the muted role to the roles array to be assigned	
+                        roles.push(muteRole);
+                    });
+                }
 
-            // See if there are any autoroles in the db
-            if (data) {
-                // Find the role within the server and add it to the array
-                data.forEach(item => {
-                    const role = member.guild.roles.cache.find(role => role.name === item.role)
-                    roles.push(role);
-                });
-
-            // If no autoroles, just ignore assigning them
+                // See if there are any autoroles in the db
+                if (data) {
+                    // Find the role within the server and add it to the array
+                    data.forEach(item => {
+                        const role = member.guild.roles.cache.find(role => role.name === item.role)
+                        roles.push(role);
+                    });
+                }
+            // If no autoroles or mutes then ignore
             } else {
                 return;
             }
@@ -84,7 +84,7 @@ module.exports = {
         }).then(async () => {
 
             // Edit the member and add all autoroles to that user
-            member.edit({roles: roles}, "Added Autoroles");
+            member.edit({roles: roles}, "Added Autoroles and/or Mutes");
         });
     }
 }
