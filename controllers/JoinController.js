@@ -49,7 +49,24 @@ module.exports = {
         joinLog.send({embed: joinEmbed});
 
         // Query the database for all of the autoroles as a select
-        sequelize.query("SELECT `role` FROM `autoroles`", {type:sequelize.QueryTypes.SELECT}).then((data) => {
+        sequelize.query("SELECT `role` FROM `autoroles`", {type:sequelize.QueryTypes.SELECT}).then(async (data) => {
+
+            // Find any muted roles the user might have	
+            mutes = await Models.mute.findAll({where: {user_id: member.user.id,completed: false}, raw:true});
+
+            // Check if any mutes were found	
+            if(mutes.length > 0) {	
+                // Loop through each muted role found	
+                mutes.forEach(mute => {	
+                    // Find the muted role within the server and add it to the array	
+                    const muteRole = member.guild.roles.cache.find(role => role.name.toLowerCase().includes(mute.type));	
+                    // Add the muted role to the roles array to be assigned	
+                    roles.push(muteRole);
+                });
+            // If no mutes, just ignore assigning any
+            } else {
+                return;
+            }
 
             // See if there are any autoroles in the db
             if (data) {
