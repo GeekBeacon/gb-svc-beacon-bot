@@ -8,17 +8,33 @@ module.exports = {
     admin: false,
     usage: "[api | websocket]",
     execute(message, args) {
+        let timestamp; //var for the message timestamp
+
+        // If an edited message set timestamp to editedTimestamp
+        if(message.editedTimestamp) {
+            timestamp = message.editedTimestamp;
+
+        // If not an edited message set timestamp to createdTimestamp
+        } else {
+            timestamp = message.createdTimestamp;
+        }
+
+        // If user asked for the api ping
         if (args[0] === "api") {
             message.channel.send("Pinging...").then(sent => {
-                sent.edit(`Pong! ${sent.createdTimestamp - message.createdTimestamp}ms`);
+                sent.edit(`Pong! ${sent.createdTimestamp - timestamp}ms`);
             });
+
+        // If user asked for the websocket ping
         } else if(args[0] === "websocket") {
             message.channel.send("Pinging...").then(sent => {
                 sent.edit(`Pong! ${Math.round( ( message.client.ws.ping + Number.EPSILON ) * 100 ) / 100}ms`);
             });
+
+        // If user didn't give an argument default to api ping
         } else {
             message.channel.send("Pinging...").then(sent => {
-                sent.edit(`Pong! ${sent.createdTimestamp - message.createdTimestamp}ms`);
+                sent.edit(`Pong! ${sent.createdTimestamp - timestamp}ms`);
             });
         }
     },

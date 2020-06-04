@@ -34,7 +34,6 @@ Here is a quick list of features/modules, click on any one to jump to its' infor
 * [Joinable Roles](#joinable-roles)
 * [Moderation](#moderation)
 * [Triggers (blacklisted words/phrases)](#triggers)
-* [Fun](#fun)
 * [Informative](#Informative)
 * [Miscellaneous](#Miscellaneous)
 
@@ -158,17 +157,6 @@ removetrigger | \<trigger\> | Removes a trigger word/phrase from the trigger lis
 disabletrigger | \<trigger\> | Disables a trigger in the trigger list | Super | !disabletrigger bad word
 enabletrigger | \<trigger\> | Enables a trigger in the trigger list | Super | !enabletrigger bad word
 listtriggers | N/A | Displays all the triggers in the list | Mod | !listtriggers
-
-___
-
-## Fun
-These commands are simply for fun, they have no specific purpose except to give users a little bit of interactivity with the bot! Currently there aren't many commands in this category, but that is planned to change!
-
-#### **Command(s) Usage**
-
-| Command     | Argument(s) | Description | Role | Example |
-| --- | :---: | --- | :---: | --- |
-numberfact | [number] [type] | Provides a random trivia/fact about a number, date, or year given. If no arguments are given, it will give a random number fact | Users | !numberfact 2000 year
 
 ___
 
