@@ -109,6 +109,7 @@ Moderation commands are used to enable moderators and super moderators (Master C
    * List
    * Add
    * Remove
+* Slowmode
 
 #### **Command(s) Usage**
 
@@ -157,6 +158,11 @@ removetrigger | \<trigger\> | Removes a trigger word/phrase from the trigger lis
 disabletrigger | \<trigger\> | Disables a trigger in the trigger list | Super | !disabletrigger bad word
 enabletrigger | \<trigger\> | Enables a trigger in the trigger list | Super | !enabletrigger bad word
 listtriggers | N/A | Displays all the triggers in the list | Mod | !listtriggers
+slow | \<enable/disable\> \<channel\> \<interval\>* | Enables or disables slowmode for a specific channel | Mod | !slow enable #channel 15
+
+\* The channel must be a channel object (use # before the channel name)
+
+\* The minimum interval is 1 second while the maximum is 21600 seconds
 
 ___
 

@@ -1564,5 +1564,84 @@ module.exports = {
                 message.channel.send(`${message.member.displayName} please refrain from posting blacklisted urls!`)
             });
         });
+    },
+    slowmode: function(message, args) {
+        const actionLog = message.guild.channels.cache.find((c => c.name.includes(action_log_channel))); //mod log channel
+        const channel = message.mentions.channels.first(); //channel
+
+        // If user asked to enable slowmode
+        if(args[0].toLowerCase() === "enable") {
+            // Make sure the 3rd argument is a number and between 1 and 21600 seconds
+            if(!isNaN(args[2]) && args[2] <= 21600 && args[2] >= 1) {
+                // Set the channel to slowmode
+                channel.edit({rateLimitPerUser: args[2]}).then(() => {
+                    // Create the embed
+                    const slowmodeEmbed = {
+                        color: 0xFF0000,
+                        title: `Slowmode Enabled`,
+                        author: {
+                            name: `${message.author.tag}`,
+                            icon_url: `${message.author.displayAvatarURL({dynamic: true})}`
+                        },
+                        description: `${message.member.displayName} has enabled slowmode for ${channel}`,
+                        fields: [
+                            {
+                                name: `Channel`,
+                                value: `${channel}`,
+                                inline: true,
+                            },
+                            {
+                                name: `Slowmode Interval`,
+                                value: `${args[2]}`,
+                                inline: true,
+                            },
+                            {
+                                name: `Enabled By`,
+                                value: `${message.author}`,
+                                inline: true,
+                            }
+                        ],
+                        timestamp: new Date(),
+                    };
+
+                    actionLog.send({embed: slowmodeEmbed});
+                    return message.channel.send(`Successfully set slowmode for ${channel} to ${args[2]} seconds!`);
+                });
+            // If not a number let user know   
+            } else {
+                return message.reply(`uh oh! Looks like you gave me an invalid slowmode interval, please give me the interval you wish to set in seconds between the value of **1** and **21600**!\nExample: \`${prefix}slow enable #${channel.name} 5\``);
+            }
+        // If user asked to disable slowmode
+        } else if (args[0].toLowerCase() === "disable") {
+            // Set the channel to slowmode
+            channel.edit({rateLimitPerUser: 0}).then(() => {
+                // Create the embed
+                const slowmodeEmbed = {
+                    color: 0xFFA500,
+                    title: `Slowmode Disabled`,
+                    author: {
+                        name: `${message.author.tag}`,
+                        icon_url: `${message.author.displayAvatarURL({dynamic: true})}`
+                    },
+                    description: `${message.member.displayName} has disabled slowmode for ${channel}`,
+                    fields: [
+                        {
+                            name: `Channel`,
+                            value: `${channel}`,
+                            inline: true,
+                        },
+                        {
+                            name: `Disabled By`,
+                            value: `${message.author}`,
+                            inline: true,
+                        }
+                    ],
+                    timestamp: new Date(),
+                };
+
+                actionLog.send({embed: slowmodeEmbed});
+                return message.channel.send(`Successfully disabled slowmode for ${channel}!`);
+            });
+        };
     }
 }
