@@ -1613,6 +1613,12 @@ module.exports = {
             }
         // If user asked to disable slowmode
         } else if (args[0].toLowerCase() === "disable") {
+
+            // If the user tries to disable slowmode for a channel that isn't in slowmode let them know
+            if(channel.rateLimitPerUser === 0) {
+                return essage.reply(`uh oh! Looks like that channel isn't in slowmode!`)
+            }
+
             // Set the channel to slowmode
             channel.edit({rateLimitPerUser: 0}).then(() => {
                 // Create the embed
