@@ -1616,7 +1616,7 @@ module.exports = {
 
             // If the user tries to disable slowmode for a channel that isn't in slowmode let them know
             if(channel.rateLimitPerUser === 0) {
-                return essage.reply(`uh oh! Looks like that channel isn't in slowmode!`)
+                return message.reply(`uh oh! Looks like that channel isn't in slowmode!`)
             }
 
             // Set the channel to slowmode
