@@ -28,7 +28,7 @@ module.exports = {
             }
 
         // If the user forgot to give the slowmode interval or gave an invalid channel
-        } else if (args.length === 2 || !args[1].startsWith("<#")) {
+        } else if ((args.length === 2 && args[0].toLowerCase() !== "disable") || !args[1].startsWith("<#")) {
             // If the channel given was invalid
             if(!args[1].startsWith("<#")) {
                 return message.reply(`uh oh! It seems you provided me with an invalid channel!`);
@@ -39,7 +39,7 @@ module.exports = {
             }
         
         // If the user gave too many args
-        } else if (args.length !== 3) {
+        } else if (args.length !== 3 && args[0].toLowerCase() !== "disable") {
             return message.reply(`uh oh! Looks like you didn't use this command properly, please use \`${prefix}help slow\` for more assistance!`);
 
         // If the user provided the proper amount of args
