@@ -16,7 +16,8 @@ module.exports = {
         let adminCmds = [],superCmds = [],modCmds = [],userCmds = [];
         let adminCmdsStr,superCmdsStr,modCmdsStr;
         const {commands} = message.client;
-        modTraineeRole = message.member.roles.cache.some(role => role.id === mod_trainee_role);
+        const elderRole = message.member.roles.cache.some(role => role.name === "Elder Squirrel");
+        const modTraineeRole = message.member.roles.cache.some(role => role.id === mod_trainee_role);
         const modRole = message.member.roles.cache.some(role => role.id === mod_role);
         const superRole = message.member.roles.cache.some(role => role.id === super_role);
         const adminRole = message.member.roles.cache.some(role => role.id === admin_role);
@@ -43,8 +44,17 @@ module.exports = {
                 }
             });
 
-            // Get the index for the verify command
-            let verifyIndex = adminCmds.indexOf("verify");
+            // Alphabatize the arrays
+            adminCmds.sort();
+            superCmds.sort();
+            modCmds.sort();
+            userCmds.sort();
+
+            // If not Elder Squirrel or mod+ role then strikethrough role
+            if(!elderRole && !superRole && !adminRole && message.author.id !== ownerRole) {
+                // Get the index for the verify command
+                userCmds[userCmds.indexOf("role")] = "~~role~~";
+            }
 
             // If owner don't strikethrough any commands
             if(message.author.id === ownerRole) {
@@ -56,7 +66,6 @@ module.exports = {
             } else if (adminRole) {
                 modCmdsStr = `${modCmds.join("\n")}`;
                 superCmdsStr = `${superCmds.join("\n")}`;
-                adminCmds[verifyIndex] = `~~verify~~` // strikethrough verify
                 adminCmdsStr = `${adminCmds.join("\n")}`;
 
             // If super strikethrough admin commands
@@ -70,7 +79,6 @@ module.exports = {
                 modCmdsStr = `${modCmds.join("\n")}`;
                 superCmdsStr = `~~${superCmds.join("\n")}~~`;
                 adminCmdsStr = `~~${adminCmds.join("\n")}~~`;
-
             // If user strikethrough mod + super + admin commands
             } else {
                 modCmdsStr = `~~${modCmds.join("\n")}~~`;
@@ -175,7 +183,15 @@ module.exports = {
             }
         // If the command doesn't require special permission send the embed
         } else {
-            message.channel.send({embed:cmdEmbed});
+
+            // If not Elder Squirrel or mod+ role then deny
+            if(command.name === "role" && (!elderRole && !superRole && !adminRole && message.author.id !== ownerRole)) {
+                return message.reply(`uh oh! Looks like you tried to get information about a command you don't have permission to use!`);
+
+            // If user has permission then let them access the info
+            } else {
+                message.channel.send({embed:cmdEmbed});
+            }
         }
     }
 }

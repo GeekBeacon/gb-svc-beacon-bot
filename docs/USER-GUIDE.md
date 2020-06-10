@@ -110,6 +110,7 @@ Moderation commands are used to enable moderators and super moderators (Master C
    * Add
    * Remove
 * Slowmode
+* Add/Remove Role
 
 #### **Command(s) Usage**
 
@@ -123,7 +124,9 @@ purge | \<count\>* | Bulk deletes messages in the channel this command was used 
 warnings | \<recent \| specific \| user\> \<count \| warn id \| user id \| mention\> | Get the warning(s) for a user or recent warning(s) | Mod | !warnings specific 1hsj3ls
 mute | \<mention \| user id\>, \<type\>*, \<reason\>, \<time\>* | Removes the user's ability to send messages, add reactions, or speak in voice | Mod | !mute @User, server, excessive profanity, 1d
 unmute | \<mention \| user id\> | Removes the user's muted status | Mod | !unmute @User
-whitelist* | \<list \| add \| remove\> \[comma seperated url list\] | Lists, adds, or removes url(s) from the whitelisted domains | Mod | !whitelist add site1<span>.</span>com,site2<span>.</span>com,site3<span>.</span>com
+blacklist* | \<list \| add \| remove\> \[comma seperated url list\] | Lists, adds, or removes url(s) from the blacklisted domains | Mod | !blacklist add site1<span>.</span>com,site2<span>.</span>com,site3<span>.</span>com
+slow | \<enable \| disable\> \<channel\>* \<interval\>* | Enables or disables slowmode for a specific channel | Mod | !slow enable #channel 15
+role | \<add \| remove\> \<user\> \<role\> | Adds or removes a user from a role | Super* | !role add @User Users
 
 \*count - The maximum count for a single purge is 100
 
@@ -133,6 +136,11 @@ whitelist* | \<list \| add \| remove\> \[comma seperated url list\] | Lists, add
 
 \*blacklist - **IMPORTANT!** When adding domains to the blacklist, make sure not to use subdomains, these are automatically checked for!
 
+\*Channel - The channel must be a channel object (use # before the channel name)
+
+\*Interval - The minimum interval is 1 second while the maximum is 21600 seconds
+
+\*Super - It isn't set to super only, because this allows for Elder Squirrels to add users to the Squirrel Army role. Aside from this, only super+ roles can edit users with this command
 ___
 
 ## Triggers
@@ -158,11 +166,6 @@ removetrigger | \<trigger\> | Removes a trigger word/phrase from the trigger lis
 disabletrigger | \<trigger\> | Disables a trigger in the trigger list | Super | !disabletrigger bad word
 enabletrigger | \<trigger\> | Enables a trigger in the trigger list | Super | !enabletrigger bad word
 listtriggers | N/A | Displays all the triggers in the list | Mod | !listtriggers
-slow | \<enable/disable\> \<channel\> \<interval\>* | Enables or disables slowmode for a specific channel | Mod | !slow enable #channel 15
-
-\* The channel must be a channel object (use # before the channel name)
-
-\* The minimum interval is 1 second while the maximum is 21600 seconds
 
 ___
 
