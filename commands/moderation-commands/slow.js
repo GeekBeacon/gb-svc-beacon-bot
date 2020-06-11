@@ -16,7 +16,7 @@ module.exports = {
             // If no arguments let users know arguments are required
             return message.reply(`uh oh! you must tell me the channel, message interval, and length in order for me to enable slowmode!\nExample: \`${prefix}slow enable #${message.channel.name} 5\``);
 
-        // If the user forgot to give the channel or gave an invalid 
+        // If the user forgot to give the channel or gave an invalid subcommand
         } else if(args.length === 1 || !(args[0].toLowerCase() === "enable" || args[0].toLowerCase() == "disable")) {
             // If the user didn't say to enable or disable let them know
             if(!(args[0].toLowerCase() === "enable" || args[0].toLowerCase() == "disable")) {
@@ -44,7 +44,7 @@ module.exports = {
 
         // If the user provided the proper amount of args
         } else {
-            // Call the query handler from the database controller with required args
+            // Call the slowmode function from the moderation controller with required args
             ModerationController.slowmode(message, args, client);
         }
     },

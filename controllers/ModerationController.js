@@ -1649,5 +1649,267 @@ module.exports = {
                 return message.channel.send(`Successfully disabled slowmode for ${channel}!`);
             });
         };
+    },
+    roleHandler: function(message, args, client) {
+        const isSuper = message.member.roles.cache.some(role => role.id === super_role);
+        const isAdmin = message.member.roles.cache.some(role => role.id === admin_role);
+        const isElder = message.member.roles.cache.some(role => role.name.toLowerCase().includes("elder squirrel"));
+        const squirrelRole = message.guild.roles.cache.find(role => role.name.toLowerCase().includes("squirrel army"));
+        const actionLog = message.guild.channels.cache.find((c => c.name.includes(action_log_channel))); //mod log channel
+        let isOwner;
+        let user;
+        let role;
+        let argsCopy = [...args];
+
+        // Check if user is the server owner
+        if(message.author.id === message.member.guild.owner) isOwner = true;
+
+        // If the user arg given is a mention assign it
+        if(args[1].startsWith("<@")) {
+            user = message.mentions.members.first();
+        // If the user arg given was a number try to get the user
+        } else {
+            // If invalid id let the user know
+            if(message.guild.members.cache.get(args[1]) === undefined) {
+                return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
+
+            // If user found, assign it to the user var
+            } else {
+                user = message.guild.members.cache.get(args[1]);
+            }
+        }
+
+        // If the user gave an id for the role attempt to find the role
+        if(!isNaN(args[2])) {
+            // Find the role by id
+            role = message.guild.roles.cache.get(args[2]);
+
+            // If the role wasn't found let the user know
+            if(role === undefined) return message.reply(`uh oh! Looks like I wasn't able to find a role with the id \`${args[2]}\`, please try again!`);
+
+        // If a number wasn't given try to find the role based on name
+        } else {
+            argsCopy.shift(); //remove the subcommand
+            argsCopy.shift(); //remove the user
+            const roleStr = argsCopy.join(" "); //join the args
+            // Find the role by id
+            role = message.guild.roles.cache.find(role => role.name.toLowerCase().includes(roleStr.toLowerCase()));
+
+            // If the role wasn't found let the user know
+            if(role === undefined) return message.reply(`uh oh! Looks like I wasn't able to find a role with the name \`${roleStr}\`, please try again!`);
+        }
+
+
+        // Check if the user is in any allowed roles
+        if(isSuper || isAdmin || isOwner || isElder) {
+            // If user is only an Elder Squirrel limit their ability to only add the Squirrel Army role
+            if(isElder && (!isSuper && !isAdmin && !isOwner)) {
+                // If the user tried to add anything except the squirrel role, deny it
+                if(!role.name.toLowerCase().includes("squirrel army")) {
+                    return message.reply(`uh oh! Looks like you tried to add a role that isn't allowed.\nAs an Elder Squirrel you can only assign the ${squirrelRole.name} role!`);
+                } else {
+                    // If author isn't able to edit the user, deny editing the user
+                    if(message.member.roles.highest.position <= user.roles.highest.position) {
+                        return message.reply(`uh oh! You don't have permission to edit this user!`);
+                    // If author is able to edit the user, proceed
+                    } else {
+                        // If add subcommand was used
+                        if(args[0].toLowerCase() === "add") {
+                            // Check if the user already has the role
+                            if(user.roles.cache.some(r => r === role)) {
+                                // If user already has the role then let author know
+                                return message.reply(`uh oh! This user is already in that role!`)
+                            }
+
+                            // Add the role to the user
+                            user.roles.add(role).then(() => {
+                                // Create embed
+                                const addEmbed = {
+                                    color: 0x886CE4,
+                                    title: `Role Added To User`,
+                                    author: {
+                                        name: `${message.member.displayName}`,
+                                        icon_url: `${message.author.displayAvatarURL()}`
+                                    },
+                                    description: `${message.member.displayName} has given ${user.displayName} a new role.`,
+                                    fields: [
+                                        {
+                                            name: `User Edited`,
+                                            value: `${user}`,
+                                            inline: true,
+                                        },
+                                        {
+                                            name: `Role Given`,
+                                            value: `${role}`,
+                                            inline: true,
+                                        },
+                                        {
+                                            name: `Given By`,
+                                            value: `${message.author}`,
+                                            inline: true,
+                                        }
+                                    ],
+                                    timestamp: new Date(),
+                                };
+
+                                // Send log
+                                actionLog.send({embed: addEmbed}).then(() => {
+                                    // Send feedback
+                                    message.channel.send(`${user.displayName} was successfully added to the ${role.name} role!`);
+                                });
+                            });
+
+                        // If remove subcommand was used
+                        } else if(args[0].toLowerCase() === "remove") {
+                            // Check if the user already has the role
+                            if(!user.roles.cache.some(r => r === role)) {
+                                // If user already has the role then let author know
+                                return message.reply(`uh oh! This user isn't in that role!`)
+                            }
+
+                            // Remove the role from the user
+                            user.roles.remove(role).then(() => {
+                                // Create embed
+                                const removeEmbed = {
+                                    color: 0x886CE4,
+                                    title: `Role Removed From User`,
+                                    author: {
+                                        name: `${message.member.displayName}`,
+                                        icon_url: `${message.author.displayAvatarURL()}`
+                                    },
+                                    description: `${message.member.displayName} has removed a role from ${user.displayName}.`,
+                                    fields: [
+                                        {
+                                            name: `User Edited`,
+                                            value: `${user}`,
+                                            inline: true,
+                                        },
+                                        {
+                                            name: `Role Removed`,
+                                            value: `${role}`,
+                                            inline: true,
+                                        },
+                                        {
+                                            name: `Removed By`,
+                                            value: `${message.author}`,
+                                            inline: true,
+                                        }
+                                    ],
+                                    timestamp: new Date(),
+                                };
+
+                                // Send log
+                                actionLog.send({embed: removeEmbed}).then(() => {
+                                    // Send feedback
+                                    message.channel.send(`${user.displayName} was successfully removed from the ${role.name} role!`);
+                                });
+                            });
+                        }
+                    }
+                }
+            // If user isn't just an Elder Squirrel let them add any role below their own
+            } else {
+                // If author isn't able to edit the user, deny editing the user
+                if(message.member.roles.highest.position <= user.roles.highest.position) {
+                    return message.reply(`uh oh! You don't have permission to edit this user!`);
+                // If author is able to edit the user, proceed
+                } else {
+                    // If add subcommand was used
+                    if(args[0].toLowerCase() === "add") {
+                        // Check if the user already has the role
+                        if(user.roles.cache.some(r => r === role)) {
+                            // If user already has the role then let author know
+                            return message.reply(`uh oh! This user is already in that role!`)
+                        }
+
+                        // Add the role to the user
+                        user.roles.add(role).then(() => {
+                            // Create embed
+                            const addEmbed = {
+                                color: 0x886CE4,
+                                title: `Role Added To User`,
+                                author: {
+                                    name: `${message.member.displayName}`,
+                                    icon_url: `${message.author.displayAvatarURL()}`
+                                },
+                                description: `${message.member.displayName} has given ${user.displayName} a new role.`,
+                                fields: [
+                                    {
+                                        name: `User Edited`,
+                                        value: `${user}`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `Role Given`,
+                                        value: `${role}`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `Given By`,
+                                        value: `${message.author}`,
+                                        inline: true,
+                                    }
+                                ],
+                                timestamp: new Date(),
+                            };
+
+                            // Send log
+                            actionLog.send({embed: addEmbed}).then(() => {
+                                // Send feedback
+                                message.channel.send(`${user.displayName} was successfully added to the ${role.name} role!`);
+                            });
+                        });
+
+                    // If remove subcommand was used
+                    } else if(args[0].toLowerCase() === "remove") {
+                        // Check if the user already has the role
+                        if(!user.roles.cache.some(r => r === role)) {
+                            // If user already has the role then let author know
+                            return message.reply(`uh oh! This user isn't in that role!`)
+                        }
+
+                        // Remove the role from the user
+                        user.roles.remove(role).then(() => {
+                            // Create embed
+                            const removeEmbed = {
+                                color: 0x886CE4,
+                                title: `Role Removed From User`,
+                                author: {
+                                    name: `${message.member.displayName}`,
+                                    icon_url: `${message.author.displayAvatarURL()}`
+                                },
+                                description: `${message.member.displayName} has removed a role from ${user.displayName}.`,
+                                fields: [
+                                    {
+                                        name: `User Edited`,
+                                        value: `${user}`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `Role Removed`,
+                                        value: `${role}`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `Removed By`,
+                                        value: `${message.author}`,
+                                        inline: true,
+                                    }
+                                ],
+                                timestamp: new Date(),
+                            };
+
+                            // Send log
+                            actionLog.send({embed: removeEmbed}).then(() => {
+                                // Send feedback
+                                message.channel.send(`${user.displayName} was successfully removed from the ${role.name} role!`);
+                            });
+                        });
+                    }
+                }
+            }
+        } else {
+            return message.reply("uh oh! Looks like you tried to use a command that is only for specific users!");
+        }
     }
 }
