@@ -193,6 +193,10 @@ help | [command] | Shows the list of all commands with the ones the user who tri
 testdb | N/A | Used to test if the bot is connected to the database | Admin | !testdb
 usage | N/A | Provides a link to this guide | Users | !usage
 github | N/A | Provides a link to the bot's repo | Users | !github
+timezone | \<datetime\>*, \<timezone\>, \<timezone\>* | Converts from one timezone to another | Users | !timezone 25/10/2000 15:30, America/Chicago, US/Pacific
+
+\*Datetime - Must be in `MM/DD/YYYY HH:mm:SS` format
+\*Timezone - Must be a supported timezone, list of supported timezones can be found [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
 ___
 
 ## Final Notes
