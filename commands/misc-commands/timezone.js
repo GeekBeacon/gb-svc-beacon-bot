@@ -1,7 +1,6 @@
 // Import required files
 const {prefix} = require('../../config');
 const moment = require("moment-timezone");
-const fs = require("fs")
 
 module.exports = {
     name: 'timezone',
@@ -37,119 +36,108 @@ module.exports = {
                 const timeRegex = /^(0?[1-9]|[12][0-9]|3[01])[\/\-](0?[1-9]|1[012])[\/\-]\d{4}( ((?:[01]\d)|(?:2[0-3])):([0-5]\d)(?:\:([0-5]\d))?)$/; //regex for the datetime
                 // If the time is the proper format
                 if(dateTime.match(timeRegex)) {
-                    // Read the timezones csv file
 
-                    fs.readFile("assets/timezones.csv", 'utf8', function (err, data) {
-                        // If an error occured tell user to contact admin
-                        if(err) {
-                            return message.reply(`uh oh! It seems I am missing a file. Please contact an Admin about this!`);
-                        // If no error occured, split the data into an array and store in timezones var
+                    // Make sure the "from" timezone given is a supported timezone
+                    if(moment.tz.names().includes(from)) {
+                        // Make sure the "to" timezone given is a supported timezone
+                        if(moment.tz.names().includes(to)) {
+                            // From vars
+                            const currentDateFrom = moment.tz(dateTime, "DD/MM/YYYY HH:mm:SS", from); //create moment obj with "from" timezone
+                            const tzAbbrFrom = currentDateFrom.format("z"); //get tz abbr
+                            const tzOffsetFrom = currentDateFrom.format("Z"); //get tz offset
+                            const currentFullDateFrom = currentDateFrom.format("MMM Do, YYYY"); //get full date
+                            const currentFullTimeFrom = currentDateFrom.format("HH:mm:SS (h:mm:SS a)"); //get full time
+                            // To vars
+                            const currentDateTo = currentDateFrom.tz(to); //convert to "to" timezone
+                            const tzAbbrTo = currentDateTo.format("z"); //get tz abbr
+                            const tzOffsetTo = currentDateTo.format("Z"); //get tz offset
+                            const currentFullDateTo = currentDateTo.format("MMM Do, YYYY"); //get full date
+                            const currentFullTimeTo = currentDateTo.format("HH:mm:SS (h:mm:SS a)"); //get full time
+
+                            const convertEmbed = {
+                                color: 0x33ccff,
+                                title: `Timezone Conversion`,
+                                fields: [
+                                    {
+                                        name: `\u200b`,
+                                        value: `__Convert From__`, //empty to mimic a header
+                                        inline: true
+                                    },
+                                    // Empty field to add spacing
+                                    {
+                                        name: `\u200b`,
+                                        value: `\u200b`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: `\u200b`,
+                                        value: `__Convert To__`, //empty to mimic a header
+                                        inline: true
+                                    },
+                                    {
+                                        name: `Timezone`,
+                                        value: `${from} (${tzAbbrFrom})`,
+                                        inline: true
+                                    },
+                                    // Empty field to add spacing
+                                    {
+                                        name: `\u200b`,
+                                        value: `\u200b`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: `Timezone`,
+                                        value: `${to} (${tzAbbrTo})`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: `UTC Offset`,
+                                        value: `UTC ${tzOffsetFrom}`,
+                                        inline: true
+                                    },
+                                    // Empty field to add spacing
+                                    {
+                                        name: `\u200b`,
+                                        value: `\u200b`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: `UTC Offset`,
+                                        value: `UTC ${tzOffsetTo}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: `Full Date & Time`,
+                                        value: `${currentFullDateFrom}\n${currentFullTimeFrom}`,
+                                        inline: true
+                                    },
+                                    // Empty field to add spacing
+                                    {
+                                        name: `\u200b`,
+                                        value: `\u200b`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: `Full Date & Time`,
+                                        value: `${currentFullDateTo}\n${currentFullTimeTo}`,
+                                        inline: true
+                                    },
+                                ],
+                                timestamp: new Date()
+                            };
+
+                            // Send the embed
+                            message.channel.send({embed:convertEmbed});
+
+                        // If the "to" timezone was invalid let user know
                         } else {
-                            timezones = data.split(/\r?\n/);
+                            return message.reply(`uh oh! Looks like you gave an invalid timezone to convert to! Please refer to the following resource if you aren't sure of your timezone! https://en.wikipedia.org/wiki/List_of_tz_database_time_zones`);
                         }
 
-                        // Make sure the "from" timezone given is a supported timezone
-                        if(timezones.some(tz => tz === from)) {
-                            // Make sure the "to" timezone given is a supported timezone
-                            if(timezones.includes(to)) {
-                                // From vars
-                                const currentDateFrom = moment.tz(dateTime, "DD/MM/YYYY HH:mm:SS", from); //create moment obj with "from" timezone
-                                const tzAbbrFrom = currentDateFrom.format("z"); //get tz abbr
-                                const tzOffsetFrom = currentDateFrom.format("Z"); //get tz offset
-                                const currentFullDateFrom = currentDateFrom.format("MMM Do, YYYY"); //get full date
-                                const currentFullTimeFrom = currentDateFrom.format("HH:mm:SS (h:mm:SS a)"); //get full time
-                                // To vars
-                                const currentDateTo = currentDateFrom.tz(to); //convert to "to" timezone
-                                const tzAbbrTo = currentDateTo.format("z"); //get tz abbr
-                                const tzOffsetTo = currentDateTo.format("Z"); //get tz offset
-                                const currentFullDateTo = currentDateTo.format("MMM Do, YYYY"); //get full date
-                                const currentFullTimeTo = currentDateTo.format("HH:mm:SS (h:mm:SS a)"); //get full time
-
-                                const convertEmbed = {
-                                    color: 0x33ccff,
-                                    title: `Timezone Conversion`,
-                                    fields: [
-                                        {
-                                            name: `\u200b`,
-                                            value: `__Convert From__`, //empty to mimic a header
-                                            inline: true
-                                        },
-                                        // Empty field to add spacing
-                                        {
-                                            name: `\u200b`,
-                                            value: `\u200b`,
-                                            inline: true
-                                        },
-                                        {
-                                            name: `\u200b`,
-                                            value: `__Convert To__`, //empty to mimic a header
-                                            inline: true
-                                        },
-                                        {
-                                            name: `Timezone`,
-                                            value: `${from} (${tzAbbrFrom})`,
-                                            inline: true
-                                        },
-                                        // Empty field to add spacing
-                                        {
-                                            name: `\u200b`,
-                                            value: `\u200b`,
-                                            inline: true
-                                        },
-                                        {
-                                            name: `Timezone`,
-                                            value: `${to} (${tzAbbrTo})`,
-                                            inline: true
-                                        },
-                                        {
-                                            name: `UTC Offset`,
-                                            value: `UTC ${tzOffsetFrom}`,
-                                            inline: true
-                                        },
-                                        // Empty field to add spacing
-                                        {
-                                            name: `\u200b`,
-                                            value: `\u200b`,
-                                            inline: true
-                                        },
-                                        {
-                                            name: `UTC Offset`,
-                                            value: `UTC ${tzOffsetTo}`,
-                                            inline: true
-                                        },
-                                        {
-                                            name: `Full Date & Time`,
-                                            value: `${currentFullDateFrom}\n${currentFullTimeFrom}`,
-                                            inline: true
-                                        },
-                                        // Empty field to add spacing
-                                        {
-                                            name: `\u200b`,
-                                            value: `\u200b`,
-                                            inline: true
-                                        },
-                                        {
-                                            name: `Full Date & Time`,
-                                            value: `${currentFullDateTo}\n${currentFullTimeTo}`,
-                                            inline: true
-                                        },
-                                    ],
-                                    timestamp: new Date()
-                                };
-
-                                // Send the embed
-                                message.channel.send({embed:convertEmbed});
-
-                            // If the "to" timezone was invalid let user know
-                            } else {
-                                return message.reply(`uh oh! Looks like you gave an invalid timezone to convert to! Please refer to the following resource if you aren't sure of your timezone! https://en.wikipedia.org/wiki/List_of_tz_database_time_zones`);
-                            }
-
-                        // If the "from" timezone was invalid let user know
-                        } else {
-                            return message.reply(`uh oh! Looks like you gave an invalid timezone to convert from! Please refer to the following resource if you aren't sure of your timezone! https://en.wikipedia.org/wiki/List_of_tz_database_time_zones`);
-                        }
-                    })
+                    // If the "from" timezone was invalid let user know
+                    } else {
+                        return message.reply(`uh oh! Looks like you gave an invalid timezone to convert from! Please refer to the following resource if you aren't sure of your timezone! https://en.wikipedia.org/wiki/List_of_tz_database_time_zones`);
+                    }
 
                 // If the user didn't give the proper time format
                 } else {
