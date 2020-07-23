@@ -3,6 +3,7 @@ const {prefix, admin_role, super_role, mod_role, mod_trainee_role, action_log_ch
 const Models = require("../models/AllModels");
 const shortid = require('shortid');
 const Discord = require('discord.js');
+const AllModels = require("../models/AllModels");
 
 module.exports = {
     deleteHandler: function(m, tl, deleteSet) {
@@ -388,7 +389,7 @@ module.exports = {
 
                 // Try to get the user
                 try {
-                    user = await client.users.fetch(args[0]);
+                    user = await client.users.fetch(newArgs[0]);
                 } catch(e) {
                     // If unable to get the user, let the mod know
                     return message.reply(`uh oh! I wasn't able to find that user!`);
@@ -1649,6 +1650,131 @@ module.exports = {
                 return message.channel.send(`Successfully disabled slowmode for ${channel}!`);
             });
         };
+    },
+    listBans: function(message, args, client) {
+        // Get the action log channel
+        const actionLog = message.guild.channels.cache.find((c => c.name.includes(action_log_channel))); 
+
+        // If no args were given, process to list 10 most recent bans
+        if(!args.length) {
+            // Create embed with basic fields
+            const bansEmbed = new Discord.MessageEmbed()
+                .setColor(`#33ccff`)
+                .setTitle(`10 Latest Bans`)
+                .setDescription(`This is basic information on the last 10 bans, for more detailed information pass in the ban id as an argument with this command.\n**Example:** \`${prefix}bans 1\``)
+                .setTimestamp()
+
+            // Get 10 bans ordering them by createdAt date
+            Models.ban.findAll({limit:10, order:[["createdAt", "DESC"]], raw:true}).then(async (data) => {
+                // Make sure there is data
+                if(data) {
+                    // Loop through the data
+                    for(i=0; i < data.length; i++) {
+                        // Assign the current ban to a var
+                        const ban = data[i];
+                        // Find the user
+                        const user = await client.users.fetch(ban.user_id);
+                        let banned;
+
+                        // Assign the value of banned or not based on the boolean
+                        if(ban.completed === 1) {
+                            banned = `Yes`;
+                        } else {
+                            banned = `No`;
+                        };
+
+                        // Add the data for the banned user to the embed
+                        bansEmbed.addField(`\u200B`,`**ID:** ${ban.id}\n**User:** ${user.tag}\n**Still Banned:** ${banned}`,false);
+                    }
+                }
+            }).then(() => {
+                // Send the embed to the mod log
+                actionLog.send({embed: bansEmbed});
+                // Let the user know the information was sent to the action log channel
+                message.reply(`I've sent the data to the ${actionLog} channel`);
+            })
+        // If an argument was given
+        } else {
+            // Make sure the id is a valid number
+            if(isNaN(args)) {
+                // If an invalid number let the user know
+                return message.channel.send(`Uh oh! It seems you gave me an invalid id to check for!`)
+            } else {
+                // Search the database for the requested ban id
+                Models.ban.findOne({where:{id: args[0]}, raw: true}).then(async (ban) => {
+                    // Make sure there is data for the ban
+                    if(ban) {
+                        // Find the user and mod
+                        const user = await client.users.fetch(ban.user_id);
+                        const mod = await client.users.fetch(ban.moderator_id);
+                        let completed;
+
+                        // Assign the value for completed based on the boolean
+                        if(ban.completed === 1) {
+                            completed = "Yes";
+                        } else {
+                            completed = "No";
+                        }
+
+                        // Create the embed
+                        const banEmbed = {
+                            color: 0x33ccff,
+                            title: `Ban #${args[0]}`,
+                            author: {
+                                name: user.tag,
+                                icon_url: user.displayAvatarURL({dynamic: true}),
+                            },
+                            fields: [
+                                {
+                                    name: `ID`,
+                                    value: args[0],
+                                    inline: true
+                                },
+                                {
+                                    name: `User`,
+                                    value: user,
+                                    inline: true
+                                },
+                                {
+                                    name: `Completed`,
+                                    value: completed,
+                                    inline: true
+                                },
+                                {
+                                    name: `Moderator`,
+                                    value: mod,
+                                    inline: true
+                                },
+                                {
+                                    name: `Date Banned`,
+                                    value: moment(ban.createdAt).format(`MMM DD, YYYY HH:mm:ss`),
+                                    inline: true
+                                },
+                                {
+                                    name: `Unban Date`,
+                                    value: moment(ban.unban_date).format(`MMM DD, YYYY HH:mm:ss`),
+                                    inline: true
+                                },
+                                {
+                                    name: `Reason`,
+                                    value: ban.reason,
+                                    inline: false
+                                }
+                            ],
+                            timestamp: new Date()
+                        }
+
+                        // Send the embed to the action log channel
+                        actionLog.send({embed: banEmbed});
+                        // Let the user know the information was sent to the action log channel
+                        message.reply(`I've sent the data to the ${actionLog} channel`);
+                    }
+                }).catch((e) => {
+                    console.log(e)
+                    message.channel.send(`Uh oh! It seems the id you provided isn't in the database!`);
+                })
+            }
+        }
     },
     roleHandler: function(message, args, client) {
         const isSuper = message.member.roles.cache.some(role => role.id === super_role);
