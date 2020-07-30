@@ -2,10 +2,10 @@ module.exports = {
   title: 'GeekBeacon',
   tagline: 'Geek Beacon Discord Bot',
   url: 'https://osalt.github.io',
-  baseUrl: '/beacon-bot/',
+  baseUrl: '/gb-svc-beacon-bot/',
   favicon: 'img/favicon.ico',
   organizationName: 'osalt', // Usually your GitHub org/user name.
-  projectName: 'beacon-bot', // Usually your repo name.
+  projectName: 'gb-svc-beacon-bot', // Usually your repo name.
   themeConfig: {
     navbar: {
       title: 'Beacon Bot',
@@ -28,7 +28,7 @@ module.exports = {
         },
         {
 
-          href: 'https://github.com/OSAlt/beacon-bot',
+          href: 'https://github.com/OSAlt/gb-svc-beacon-bot',
           label: 'GitHub',
           position: 'right',
         },
