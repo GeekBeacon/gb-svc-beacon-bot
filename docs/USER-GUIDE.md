@@ -129,6 +129,7 @@ blacklist* | \<list \| add \| remove\> \[comma seperated url list\] | Lists, add
 slow | \<enable \| disable\> \<channel\>* \<interval\>* | Enables or disables slowmode for a specific channel | Mod | !slow enable #channel 15
 role | \<add \| remove\> \<user\> \<role\> | Adds or removes a user from a role | Super* | !role add @User Users
 bans | \[ban id\] | Displays the 10 most recent bans or information on a specific ban if the id is passed in | Mod | !bans 2
+nick | \<id \| mention\>, \<nickname\> | Changes a user's nickname | Mod | !nick @Kankuro, NotKankuro
 
 \*count - The maximum count for a single purge is 100
 

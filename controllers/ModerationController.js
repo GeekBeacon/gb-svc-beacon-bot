@@ -1678,9 +1678,9 @@ module.exports = {
 
                         // Assign the value of banned or not based on the boolean
                         if(ban.completed === 1) {
-                            banned = `Yes`;
-                        } else {
                             banned = `No`;
+                        } else {
+                            banned = `Yes`;
                         };
 
                         // Add the data for the banned user to the embed
@@ -2037,5 +2037,91 @@ module.exports = {
         } else {
             return message.reply("uh oh! Looks like you tried to use a command that is only for specific users!");
         }
+    },
+    nicknameHandler: async function(message, args, client) {
+        const actionLog = message.guild.channels.cache.find((c => c.name.includes(action_log_channel))); //mod log channel
+        let newArgs = args.join(" "); //join the args together
+        newArgs = newArgs.split(","); //split by comma
+        newArgs[1] = newArgs[1].trim(); //remove spaces from new nickname
+        let user; //user var
+        let oldNick; //old nickname var
+
+        // Check if a user id was provided
+        if(!isNaN(newArgs[0])) {
+            // Attempt to fetch the user
+            try {
+                user = await message.guild.members.fetch(newArgs[0]);
+            // If unable to fetch the user let the moderator know
+            } catch(e) {
+                return message.reply(`uh oh! It seems you provided me with an invalid user id or that user isn't part of this server!`)
+            }
+        // If a user mention was provided
+        } else if(newArgs[0].startsWith("<@")) {
+            user = message.mentions.users.first(); //get the mentioned user
+
+            // Attempt to fetch the user
+            try {
+                user = await message.guild.members.fetch(user);
+            // If unable to fetch the user let the moderator know
+            } catch(e) {
+                return message.reply(`uh oh! It seems something went wrong, please try again or contact an Administrator!`)
+            }
+        // If a mention or id wasn't provided let the moderator know
+        } else {
+            return message.reply("uh oh! It seems you didn't provide me with a user mention or id!")
+        }
+        // Get the current nickname of the user
+        oldNick = user.nickname;
+
+        // Change the user's nickname to the 2nd arg provided
+        user.setNickname(newArgs[1]).then(() => {
+            // Let the mod know the user's nickname was changed
+            message.reply(`done! ${user.user.username}'s nickname is now \`${newArgs[1]}\`!`);
+
+            // Create the embed
+            const nickEmbed = {
+                color: 0x886ce4, //purple
+                title: `Nickname Changed`,
+                author: {
+                    name: `${user.user.tag}`,
+                    icon_url: user.user.displayAvatarURL({dynamic:true})
+                },
+                description: `${user.user.username} has had their nickname changed.`,
+                fields: [
+                    {
+                        name: `User Edited`,
+                        value: `${user}`,
+                        inline: true
+                    },
+                    {
+                        name: `Edited By`,
+                        value: `${message.author}`,
+                        inline: true
+                    },
+                    {
+                        name: `\u200b`,
+                        value: `\u200b`,
+                        inline: true
+                    },
+                    {
+                        name: `Previous Nickname`,
+                        value: `${oldNick || "None"}`,
+                        inline: true
+                    },
+                    {
+                        name: `New Nickname`,
+                        value: `${newArgs[1]}`,
+                        inline: true
+                    }
+                ],
+                timestamp: new Date(),
+            };
+            // Send the embed to the action log channel
+            actionLog.send({embed: nickEmbed});
+
+        // If unable to change the user's nickname let the moderator know
+        }).catch(e => {
+            message.reply(`uh oh! It seems I'm not able to change that user's nickname, most likely due to permissions!`)
+        })
     }
 }
