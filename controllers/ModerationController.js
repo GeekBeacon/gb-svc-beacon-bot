@@ -3,7 +3,6 @@ const {prefix, admin_role, super_role, mod_role, mod_trainee_role, action_log_ch
 const Models = require("../models/AllModels");
 const shortid = require('shortid');
 const Discord = require('discord.js');
-const AllModels = require("../models/AllModels");
 
 module.exports = {
     deleteHandler: function(m, tl, deleteSet) {
@@ -2123,5 +2122,127 @@ module.exports = {
         }).catch(e => {
             message.reply(`uh oh! It seems I'm not able to change that user's nickname, most likely due to permissions!`)
         })
+    },
+    tempVoiceHandler: function(message, args, client) {
+        const actionLog = message.guild.channels.cache.find((c => c.name.includes(action_log_channel))); //mod log channel
+        let argsStr = args.join(" "); //join the args together
+        const newArgs = argsStr.split(",").map(i => i.trim()); //create a new array by splitting on the comma then remove any whitespace
+        const name = newArgs[0].split(' ').map(w => w[0].toUpperCase() + w.substr(1).toLowerCase()).join(' '); //caps the first letter of each word in the name
+
+        // If the user gave too many arguments let them know
+        if(newArgs.length > 2) {
+            return message.reply(`uh oh! Looks like you gave too many arguments, please make sure to only give the required channel name and an optional member limit for the channel!\nExample: \`${prefix}tempvoice New Channel, 10\``);
+
+        // If the user only gave one argument assign it as the channel name
+        } else if(newArgs.length === 1) {
+            // Create the temporary voice channel in the same category the server's afk channel is in
+            message.guild.channels.create(`${name} (Created By: ${message.member.displayName})`, {type: 'voice', parent: message.guild.afkChannel.parent}).then((channel) => {
+                // Move the newly created channel above the afk channel
+                channel.setPosition(message.guild.afkChannel.position - 1, {relative: true}).then(() => {
+                    /* 
+                    * Sync the model to the table
+                    * Creates a new table if table doesn't exist, otherwise just inserts a new row
+                    * id, active, createdAt, and updatedAt are set by default; DO NOT ADD
+                    !!!!
+                        Keep force set to false otherwise it will overwrite the table instead of making a new row!
+                    !!!!
+                    */
+                    Models.tempchannel.sync({ force: false }).then(() => {
+                        // Add the temp channel to the database
+                        Models.tempchannel.create({
+                            channel_id: channel.id,
+                            user_id: message.author.id,
+                            name: name,
+                        })
+                        // Let the user know it was added
+                        .then(() => {
+
+                            // Create the kicked embed
+                            const tempChannelEmbed = {
+                                color: 0x33CCFF,
+                                title: `Temporary Channel Created!`,
+                                author: {
+                                    name: `${message.author.username}#${message.author.discriminator}`,
+                                    icon_url: message.author.displayAvatarURL({dynamic:true}),
+                                },
+                                description: `${message.author} created a new temporary voice channel!`,
+                                fields: [
+                                    {
+                                        name: `Channel Name`,
+                                        value: `${name}`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `User Limit`,
+                                        value: "Unlimited",
+                                        inline: true,
+                                    },
+                                ],
+                                timestamp: new Date(),
+                            };
+
+                            // Send the embed to the action log channel
+                            actionLog.send({embed: tempChannelEmbed});
+                        });
+                    });
+                });
+            });
+
+        // If the user gave two arguments then assign the first as the channel name and the second as the channel limit
+        } else if (newArgs.length === 2) {
+            // Create the temporary voice channel in the same category the server's afk channel is in with the user limit given
+            message.guild.channels.create(`${name} (Created By: ${message.member.displayName})`, {type: 'voice', userLimit: newArgs[1], parent: message.guild.afkChannel.parent}).then(channel => {
+                // Move the newly created channel above the afk channel
+                channel.setPosition(message.guild.afkChannel.position -1, {relative: true}).then(() => {
+                    /* 
+                    * Sync the model to the table
+                    * Creates a new table if table doesn't exist, otherwise just inserts a new row
+                    * id, active, createdAt, and updatedAt are set by default; DO NOT ADD
+                    !!!!
+                        Keep force set to false otherwise it will overwrite the table instead of making a new row!
+                    !!!!
+                    */
+                    Models.tempchannel.sync({ force: false }).then(() => {
+                        // Add the temp channel to the database
+                        Models.tempchannel.create({
+                            channel_id: channel.id,
+                            user_id: message.author.id,
+                            name: name,
+                            user_limit: newArgs[1],
+                        })
+                        // Let the user know it was added
+                        .then(() => {
+
+                            // Create the tempchannel embed
+                            const tempChannelEmbed = {
+                                color: 0x33CCFF,
+                                title: `Temporary Channel Created!`,
+                                author: {
+                                    name: `${message.author.username}#${message.author.discriminator}`,
+                                    icon_url: message.author.displayAvatarURL({dynamic:true}),
+                                },
+                                description: `${message.author} created a new temporary voice channel!`,
+                                fields: [
+                                    {
+                                        name: `Channel Name`,
+                                        value: `${name}`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `User Limit`,
+                                        value: `${newArgs[1]}`,
+                                        inline: true,
+                                    },
+                                ],
+                                timestamp: new Date(),
+                            };
+
+                            // Send the embed to the action log channel
+                            actionLog.send({embed: tempChannelEmbed});
+                        });
+                    });
+                });
+            });
+        };
     }
 }

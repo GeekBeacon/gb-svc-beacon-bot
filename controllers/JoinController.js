@@ -11,8 +11,9 @@ module.exports = {
     joinHandler: function(m, c) {
         const member = m; //assign the member var to the passed in member parameter
         const sequelize = new Sequelize(`mysql://${db_user}:${db_pass}@${db_host}:${db_port}/${db_name}`, {logging: false}); //create the sequelize connection
+        const registerDate = moment(member.user.createdAt).format("MMM DD, YYYY"); // register date
+        const registerTime = moment(member.user.createdAt).format("h:mm A"); // register time
         const roles = []; //create the roles array
-        const joinedDate = moment(member.joinedAt).format(`MMM DD, YYYY`); //joined date only
         const joinLog = member.guild.channels.cache.find((c => c.name.includes(join_log_channel))); //join log channel
         let mutes;
 
@@ -28,8 +29,8 @@ module.exports = {
                     inline: true,
                 },
                 {
-                    name: `Date`,
-                    value: `${joinedDate}`,
+                    name: `Registered`,
+                    value: `${registerDate}\n${registerTime}`,
                     inline: true,
                 },
             ],

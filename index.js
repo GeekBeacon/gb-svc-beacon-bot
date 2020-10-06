@@ -9,6 +9,7 @@ const leaveController = require("./controllers/LeaveController");
 const databaseController = require("./controllers/DatabaseController");
 const moderationController = require("./controllers/ModerationController");
 const channelController = require("./controllers/ChannelController");
+const voiceController = require("./controllers/VoiceController");
 
 // Instantiate a new Discord client and collection
 const client = new Discord.Client({disableEveryone: false, partials: ["MESSAGE", "REACTION"]});
@@ -58,13 +59,14 @@ Object.entries(config).forEach(([key, value]) => {
             unassignedVars.push(`${key}`);
         }
     }
-})
+});
+
 // Check if there are any config vars without values
 if(unassignedVars.length) {
     // If so then output them to the console and stop the process
     console.error(`Stopping process due to the following config variables missing values: ${unassignedVars.join(", ")}`)
     process.exit();
-}
+};
 
 // Handle unhandled promise rejection warnings
 process.on('unhandledRejection', error => console.error('Uncaught Promise Rejection', error));
@@ -208,7 +210,13 @@ client.on("channelCreate", channel => {
     } catch (e) {
         console.error(e);
     };
-})
+});
+
+// Listen for voice state updates
+client.on("voiceStateUpdate", (oldState, newState) => {
+    // Call the channel left handler from the voice controller
+    voiceController.voiceUpdateHandler(oldState, newState);
+});
 
 // Log the client in
 client.login(config.token);
