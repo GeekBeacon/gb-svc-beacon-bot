@@ -112,6 +112,7 @@ Moderation commands are used to enable moderators and super moderators (Master C
    * Remove
 * Slowmode
 * Add/Remove Role
+* Create temporary voice channels
 
 #### **Command(s) Usage**
 
@@ -130,6 +131,7 @@ slow | \<enable \| disable\> \<channel\>* \<interval\>* | Enables or disables sl
 role | \<add \| remove\> \<user\> \<role\> | Adds or removes a user from a role | Super* | !role add @User Users
 bans | \[ban id\] | Displays the 10 most recent bans or information on a specific ban if the id is passed in | Mod | !bans 2
 nick | \<id \| mention\>, \<nickname\> | Changes a user's nickname | Mod | !nick @Kankuro, NotKankuro
+tempvoice | \<channel name\>, \[user limit\] | Creates a temporary channel that self-deletes when emptied | Mod | !tempvoice temp channel, 3
 
 \*count - The maximum count for a single purge is 100
 
