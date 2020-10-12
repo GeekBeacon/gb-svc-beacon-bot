@@ -8,7 +8,7 @@ const Models = require("../models/AllModels");
 module.exports = {
 
     // Create a function to be called
-    joinHandler: function(m, c) {
+    joinHandler: async function(m, c) {
         const member = m; //assign the member var to the passed in member parameter
         const sequelize = new Sequelize(`mysql://${db_user}:${db_pass}@${db_host}:${db_port}/${db_name}`, {logging: false}); //create the sequelize connection
         const registerDate = moment(member.user.createdAt).format("MMM DD, YYYY"); // register date
@@ -16,6 +16,13 @@ module.exports = {
         const roles = []; //create the roles array
         const joinLog = member.guild.channels.cache.find((c => c.name.includes(join_log_channel))); //join log channel
         let mutes;
+        let warnings = 0;
+
+        await Models.warning.findAll({where:{user_id: member.user.id}, raw: true}).then((warns) => {
+            if(warns) {
+                warnings = warns.length;
+            }
+        })
 
         // Create the embed to display a new member join
         const joinEmbed = {
@@ -29,9 +36,14 @@ module.exports = {
                     inline: true,
                 },
                 {
-                    name: `Registered`,
-                    value: `${registerDate}\n${registerTime}`,
+                    name: `Warnings`,
+                    value: `${warnings}`,
                     inline: true,
+                },
+                {
+                    name: `Registered`,
+                    value: `${registerDate} - ${registerTime}`,
+                    inline: false,
                 },
             ],
             timestamp: new Date(),
@@ -41,7 +53,7 @@ module.exports = {
         }
 
         // Send the embed to the action log channel
-        joinLog.send({embed: joinEmbed});
+        await joinLog.send({embed: joinEmbed});
 
         // Query the database for all of the autoroles as a select
         sequelize.query("SELECT `role` FROM `autoroles`", {type:sequelize.QueryTypes.SELECT}).then(async (data) => {

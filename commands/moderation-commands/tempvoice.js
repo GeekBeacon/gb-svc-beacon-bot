@@ -3,7 +3,7 @@ const ModerationController = require("../../controllers/ModerationController");
 
 module.exports = {
     name: 'tempvoice',
-    description: `Creates a temporary voice channel that will be activated once a member joins and then deleted once all members leave.`,
+    description: `Creates a temporary voice channel that will be activated once a member joins and then deleted once all members leave. Optionally you can set a user limit ranging from 1 to 99.`,
     aliases: ['createtempvoice', 'ctv'],
     usage: "<name>, [user limit]",
     mod: true,

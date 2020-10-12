@@ -209,6 +209,7 @@ module.exports = {
     kickHandler: function(a, m) {
         const args = a;
         const message = m;
+        let warnId = shortid.generate(); //generate a short id for the warning
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(action_log_channel))); //mod log channel
         let user; // user var
         // Get the mod+ roles
@@ -314,12 +315,43 @@ module.exports = {
                             timestamp: new Date(),
                         };
 
-                        // Kick the user from the server
-                        user.kick().then(() => {
-                            // Send the embed to the action log channel
-                            actionLog.send({embed: kickEmbed});
+                        /* 
+                        * Sync the model to the table
+                        * Creates a new table if table doesn't exist, otherwise just inserts a new row
+                        * id, createdAt, and updatedAt are set by default; DO NOT ADD
+                        !!!!
+                            Keep force set to false otherwise it will overwrite the table instead of making a new row!
+                        !!!!
+                        */
+                        Models.warning.sync({ force: false }).then(() => { 
+                            // See if the warning id exists already
+                            Models.warning.findOne({where: {warning_id: warnId}, raw:true}).then((warning => {
+                                // If the warning id matches the newly generated one, generate a new one
+                                if(warning) {
+                                    warnId = shortid.generate();
+                                };
+                            })).then(() => { 
+                                // Create a new warning
+                                Models.warning.create({
+                                    warning_id: warnId, // add the warning Id
+                                    user_id: user.id, // add the user's id
+                                    type: "Kicked", // assign the type of warning
+                                    reason: reason, // add the reason for the warning
+                                    username: user.user.username, // add the username
+                                    mod_id: message.author.id
+                                }).then(() => {
+
+                                    // Kick the user from the server
+                                    user.kick(reason).then(() => {
+                                        // Send the embed to the action log channel
+                                        actionLog.send({embed: kickEmbed});
+                                        // Let mod know the user has been kicked
+                                        message.channel.send(`${user.user.username} was successfully kicked from the server!`)
+                                    });
+                                });
+                            });
                         });
-                    });
+                    })
                 });
             } else {
                 // Check if a user mention was used
@@ -337,6 +369,7 @@ module.exports = {
     },
     banHandler: async function(a, m, c) {
         const args = a, message = m, client = c;
+        let warnId = shortid.generate(); //generate a short id for the warning
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(action_log_channel))); //mod log channel
         let user, bans;
         // Get the mod+ roles
@@ -503,11 +536,40 @@ module.exports = {
                                 timestamp: new Date(),
                             };
 
-                            // Ban the user from the server
-                            message.guild.members.ban(user.id, {reason: reason}).then(() => {
-                                // Send the embed to the action log channel
-                                actionLog.send({embed: banEmbed});
-                                message.channel.send(`${user.username} was successfully banned for ${banLength}!`)
+                            /* 
+                            * Sync the model to the table
+                            * Creates a new table if table doesn't exist, otherwise just inserts a new row
+                            * id, createdAt, and updatedAt are set by default; DO NOT ADD
+                            !!!!
+                                Keep force set to false otherwise it will overwrite the table instead of making a new row!
+                            !!!!
+                            */
+                            Models.warning.sync({ force: false }).then(() => { 
+                                // See if the warning id exists already
+                                Models.warning.findOne({where: {warning_id: warnId}, raw:true}).then((warning => {
+                                    // If the warning id matches the newly generated one, generate a new one
+                                    if(warning) {
+                                        warnId = shortid.generate();
+                                    };
+                                })).then(() => { 
+                                    // Create a new warning
+                                    Models.warning.create({
+                                        warning_id: warnId, // add the warning Id
+                                        user_id: user.id, // add the user's id
+                                        type: "Banned", // assign the type of warning
+                                        reason: reason, // add the reason for the warning
+                                        username: user.username, // add the username
+                                        mod_id: message.author.id
+                                    }).then(() => {
+
+                                        // Ban the user from the server
+                                        message.guild.members.ban(user.id, {reason: reason}).then(() => {
+                                            // Send the embed to the action log channel
+                                            actionLog.send({embed: banEmbed});
+                                            message.channel.send(`${user.username} was successfully banned for ${banLength}!`)
+                                        });
+                                    });
+                                });
                             });
                         });
                     });
@@ -2136,9 +2198,10 @@ module.exports = {
         // If the user only gave one argument assign it as the channel name
         } else if(newArgs.length === 1) {
             // Create the temporary voice channel in the same category the server's afk channel is in
-            message.guild.channels.create(`${name} (Created By: ${message.member.displayName})`, {type: 'voice', parent: message.guild.afkChannel.parent}).then((channel) => {
+            message.guild.channels.create(`⏱️ ${name}`, {type: 'voice', parent: message.guild.afkChannel.parent}).then((channel) => {
                 // Move the newly created channel above the afk channel
                 channel.setPosition(message.guild.afkChannel.position - 1, {relative: true}).then(() => {
+                    
                     /* 
                     * Sync the model to the table
                     * Creates a new table if table doesn't exist, otherwise just inserts a new row
@@ -2190,8 +2253,13 @@ module.exports = {
 
         // If the user gave two arguments then assign the first as the channel name and the second as the channel limit
         } else if (newArgs.length === 2) {
+            // If the user limit given was less than 1 or greater than 99 let user know it is invalid
+            if(newArgs[1] < 1 || newArgs[1] > 99) {
+                return message.reply(`uh oh! Looks like you tried to give me an invalid user limit, please provide me with a limit that is between 1 and 99 or leave blank if no limit is needed!`);
+            };
+
             // Create the temporary voice channel in the same category the server's afk channel is in with the user limit given
-            message.guild.channels.create(`${name} (Created By: ${message.member.displayName})`, {type: 'voice', userLimit: newArgs[1], parent: message.guild.afkChannel.parent}).then(channel => {
+            message.guild.channels.create(`⏱️ ${name}`, {type: 'voice', userLimit: newArgs[1], parent: message.guild.afkChannel.parent}).then(channel => {
                 // Move the newly created channel above the afk channel
                 channel.setPosition(message.guild.afkChannel.position -1, {relative: true}).then(() => {
                     /* 

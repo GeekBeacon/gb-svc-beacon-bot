@@ -4,7 +4,7 @@ const moment = require("moment-timezone");
 
 module.exports = {
     name: 'timezone',
-    description: `Convert from one timezone to another.\n\n**Notes:**\n• The only accepted datetime format is \`DD/MM/YYYY HH/mm/SS\` (seconds are optional)\n• You must use the full timezone, abbreviations aren't supported!\n \u200b`,
+    description: `Convert from one timezone to another.\n\n**Notes:**\n• The only accepted datetime format is \`DD/MM/YYYY HH:mm:SS\` (seconds are optional)\n• You must use the full timezone, abbreviations aren't supported!\n \u200b`,
     aliases: ['tzconvert', 'converttime', 'timeconvert', 'tzc'],
     cooldown: 5,
     mod: false,

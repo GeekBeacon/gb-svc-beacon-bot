@@ -8,12 +8,6 @@ module.exports = {
     voiceUpdateHandler: function(oldState, newState) {
         const actionLog = oldState.guild.channels.cache.find((c => c.name.includes(action_log_channel))); //mod log channel
 
-        // if(oldState) {
-        //     actionLog = oldState.guild.channels.cache.find((c => c.name.includes(action_log_channel))); //mod log channel
-        // } else {
-        //     actionLog = newState.guild.channels.cache.find((c => c.name.includes(action_log_channel))); //mod log channel
-        // }
-
         // If a member joins a voice channel
         if(!oldState.channel && newState.channel) {
             // If the channel is in the 
