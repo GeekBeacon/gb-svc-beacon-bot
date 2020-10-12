@@ -131,7 +131,7 @@ slow | \<enable \| disable\> \<channel\>* \<interval\>* | Enables or disables sl
 role | \<add \| remove\> \<user\> \<role\> | Adds or removes a user from a role | Super* | !role add @User Users
 bans | \[ban id\] | Displays the 10 most recent bans or information on a specific ban if the id is passed in | Mod | !bans 2
 nick | \<id \| mention\>, \<nickname\> | Changes a user's nickname | Mod | !nick @Kankuro, NotKankuro
-tempvoice | \<channel name\>, \[user limit\] | Creates a temporary channel that self-deletes when emptied | Mod | !tempvoice temp channel, 3
+tempvoice | \<channel name\>, \[user limit\]* | Creates a temporary channel that self-deletes when emptied | Mod | !tempvoice temp channel, 3
 
 \*count - The maximum count for a single purge is 100
 
@@ -146,6 +146,8 @@ tempvoice | \<channel name\>, \[user limit\] | Creates a temporary channel that 
 \*Interval - The minimum interval is 1 second while the maximum is 21600 seconds
 
 \*Super - It isn't set to super only, because this allows for Elder Squirrels to add users to the Squirrel Army role. Aside from this, only super+ roles can edit users with this command
+
+\*user limit - The minimum limit is 1 and the maximum is 99. If you wish to have unlimited just opt-out the user limit argument
 ___
 
 ## Triggers
