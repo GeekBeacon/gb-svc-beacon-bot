@@ -2201,6 +2201,7 @@ module.exports = {
             message.guild.channels.create(`⏱️ ${name}`, {type: 'voice', parent: message.guild.afkChannel.parent}).then((channel) => {
                 // Move the newly created channel above the afk channel
                 channel.setPosition(message.guild.afkChannel.position - 1, {relative: true}).then(() => {
+                    
                     /* 
                     * Sync the model to the table
                     * Creates a new table if table doesn't exist, otherwise just inserts a new row
