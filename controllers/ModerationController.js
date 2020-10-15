@@ -11,7 +11,7 @@ module.exports = {
         let triggerArr = [];
 
         // Exclude master control and trick-or-treat channels
-        if(message.channel.name.includes("master-control") || message.channel.name.includes("trick-or-treat")) return;
+        if(message.channel.name.includes("master-control") || message.channel.name.includes("trick")) return;
 
         // If deleted due to an unapproved url then ignore
         if(deleteSet.has(message.id)) {
