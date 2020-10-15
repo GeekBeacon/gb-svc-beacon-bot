@@ -10,8 +10,8 @@ module.exports = {
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(action_log_channel))); //mod log channel
         let triggerArr = [];
 
-        // Exclude master control and pokecord channels
-        if(message.channel.name.includes("master-control") || message.channel.name.includes("pokecord")) return;
+        // Exclude master control and trick-or-treat channels
+        if(message.channel.name.includes("master-control") || message.channel.name.includes("trick-or-treat")) return;
 
         // If deleted due to an unapproved url then ignore
         if(deleteSet.has(message.id)) {
