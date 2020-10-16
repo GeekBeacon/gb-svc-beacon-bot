@@ -1,5 +1,7 @@
-const {prefix} = require('../../config');
+const {prefix, admin_role, super_role, mod_role, mod_trainee_role, action_log_channel} = require('../../config');
 const moment = require("moment");
+const Discord = require("discord.js");
+const Models = require("../../models/AllModels");
 
 module.exports = {
     name: 'userinfo',
@@ -10,8 +12,16 @@ module.exports = {
     super: false,
     admin: false,
     usage: "<mention | id>",
-    execute(message, args) {
-        let user;
+    async execute(message, args) {
+        const actionLog = message.guild.channels.cache.find((c => c.name.includes(action_log_channel))); //mod log channel
+        let user; // user var
+        // Get the mod+ roles
+        const modTraineeRole = message.guild.roles.cache.find(role => role.id === mod_trainee_role);
+        const modRole = message.guild.roles.cache.find(role => role.id === mod_role);
+        const superRole = message.guild.roles.cache.find(role => role.id === super_role);
+        const adminRole = message.guild.roles.cache.find(role => role.id === admin_role);
+        let warnings = 0; //warnings var
+
         // Make sure user provived an argument
         if(!args.length) {
             return message.reply("you gotta tell me what user you want information on!");
@@ -34,6 +44,7 @@ module.exports = {
                 return message.reply(`it seems you didn't provide either a user mention or id, please try again!`)
             }
 
+            // If the user exists
             if(user) {
                 const joinDate = moment(user.joinedAt).format("MMM DD, YYYY"); // joined date
                 const joinTime = moment(user.joinedAt).format("h:mm A"); // joined time
@@ -55,6 +66,7 @@ module.exports = {
                         break;
                 };
 
+                // If user is boosting the server
                 if(user.premiumSince) {
                     boostString = `${boostDate}\n${boostTime}`;
                 }
@@ -71,61 +83,73 @@ module.exports = {
                     permissions = permissions.split(' ').map(s => s.slice(0, 1).toUpperCase() + s.slice(1).toLowerCase()).join(' ');
                 }
 
-                //Create the embed
-                const userEmbed = {
-                    color: `${user.displayHexColor}`,
-                    description: `Information for ${user}`,
-                    author: {
-                        name: `${user.user.username}#${user.user.discriminator}`,
-                        icon_url: user.user.displayAvatarURL({dynamic:true}), //use dynamic true to display as gif if user has a gif avatar
-                    },
-                    thumbnail: {
-                        url: user.user.displayAvatarURL({dynamic:true}), //use dynamic true to display as gif if user has a gif avatar
-                    },
-                    fields: [
+                // Find all warnings from the user, if any
+                await Models.warning.findAll({where:{user_id: user.user.id}, raw: true}).then((warns) => {
+                    // If there are warnings then assign the amount to the warnings var
+                    if(warns) {
+                        warnings = warns.length;
+                    }
+                });
+
+                // Create the embed
+                let userEmbed = new Discord.MessageEmbed()
+                    .setColor(user.displayHexColor)
+                    .setDescription(`Information for ${user}`)
+                    .setAuthor(`${user.user.username}#${user.user.discriminator}`, user.user.displayAvatarURL({dynamic:true}))
+                    .setThumbnail(user.user.displayAvatarURL({dynamic:true}))
+                    .addFields(
                         {
                             name: `Joined`,
                             value: `${joinDate}\n${joinTime}`,
-                            inline: true,
+                            inline: true
                         },
                         {
                             name: `Registered`,
                             value: `${registerDate}\n${registerTime}`,
-                            inline: true,
+                            inline: true
                         },
                         {
                             name: `Server Booster`,
                             value: `${boostString}`,
-                            inline: true,
+                            inline: true
                         },
                         {
                             name: `Nickname`,
                             value: `${user.nickname || "None"}`,
-                            inline: true,
+                            inline: true
                         },
                         {
                             name: `Beep Boop`,
                             value: `${bot}`,
-                            inline: true,
+                            inline: true
                         },
-                        {
-                            name: `Roles`,
-                            value: `${user.roles.cache.map(role => role).join(", ")}`,
-                            inline: false,
-                        },
-                        {
-                            name: `Permissions`,
-                            value: `${permissions}`,
-                            inline: false,
-                        },
-                    ],
-                    timestamp: new Date(),
-                    footer: {
-                        text: `User ID: ${user.user.id}`,
-                    },
-                };
-                // Send embed
-                message.channel.send({embed: userEmbed});
+
+
+                    )
+                    .setTimestamp()
+                    .setFooter(`User ID: ${user.user.id}`);
+
+                    // If the user is a mod or higher role
+                    if(message.member.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
+                        userEmbed
+                        .addField(`Warnings`, `${warnings}`, true)
+                        .addField(`Roles`, `${user.roles.cache.map(role => role).join(", ")}`, false)
+                        .addField(`Permissions`, `${permissions}`, false);
+
+                        // Send embed to the mod log channel
+                        actionLog.send({embed: userEmbed});
+                        // Let the user know the info was sent
+                        message.channel.send(`I've sent a message containing the data you requested to ${actionLog}.`)
+
+                    // If the user isn't a mod or higher
+                    } else {
+                        userEmbed
+                        .addField(`Roles`, `${user.roles.cache.map(role => role).join(", ")}`, false)
+                        .addField(`Permissions`, `${permissions}`, false);
+
+                        // Send embed
+                        message.channel.send({embed: userEmbed});
+                    }
             }
         }
     },
