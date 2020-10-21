@@ -7,10 +7,11 @@ module.exports = {
     description: 'Unban a user from the server',
     aliases: ['removeban', 'liftban'],
     usage: "<user id>, <reason>",
+    cooldown: 5,
+    enabled: true,
     mod: true,
     super: false,
     admin: false,
-    cooldown: 5,
     execute(message, args, client) {
         if (!args.length) {
             // If no arguments let users know arguments are required

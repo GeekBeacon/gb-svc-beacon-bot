@@ -1,15 +1,21 @@
 const {prefix} = require('../../config');
+let desc = "Get a link to the usage guide for the bot";
 
 module.exports = {
     name: 'usage',
-    description: 'Get a link to the usage guide for the bot',
+    description: desc,
     aliases: ['docs'],
     cooldown: 5,
+    enabled: true,
     mod: false,
     super: false,
     admin: false,
     usage: " ",
     execute(message, args) {
+
+        if(args.length) {
+            desc = args[0];
+        }
 
         // Create the embed
         const linkEmbed = {

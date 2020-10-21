@@ -7,10 +7,11 @@ module.exports = {
     description: 'Creates a warning for a user; **DOES NOT** send the user anything.',
     aliases: ["addnote", "addwarn", "warning", "addwarning", "+warn", "+warning", "+note"],
     usage: "<@user | user id>, <reason>",
+    cooldown: 5,
+    enabled: true,
     mod: true,
     super: false,
     admin: false,
-    cooldown: 5,
     execute(message, args, client) {
         if (!args.length) {
             // If no arguments let users know arguments are required

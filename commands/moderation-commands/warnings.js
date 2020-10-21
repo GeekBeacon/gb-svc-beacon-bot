@@ -8,10 +8,11 @@ module.exports = {
     description: 'Gets informations on a specific warning using the warning id, warnings from a specific user by user mention or user id, or the 10 most recent warnings with "recent".',
     aliases: ["warns", "infractions"],
     usage: "<user | specific | recent> [mention | user id | warning id | recent count]",
+    cooldown: 5,
+    enabled: true,
     mod: true, // Minimum level required is Mod
     super: false,
     admin: false,
-    cooldown: 5,
     execute(message, args, client) {
         // Check if any arguments were given, it not let user know
         if (!args.length) {

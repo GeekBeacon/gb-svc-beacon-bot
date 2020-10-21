@@ -8,10 +8,11 @@ module.exports = {
     description: 'Join a role!',
     aliases: ["join", "joinrank"],
     usage: "<role name>",
+    cooldown: 5,
+    enabled: true,
     mod: false,
     super: false,
     admin: false,
-    cooldown: 5,
     execute(message, args, client) {
 
         // Check for arguments...

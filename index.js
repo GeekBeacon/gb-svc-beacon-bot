@@ -10,6 +10,7 @@ const databaseController = require("./controllers/DatabaseController");
 const moderationController = require("./controllers/ModerationController");
 const channelController = require("./controllers/ChannelController");
 const voiceController = require("./controllers/VoiceController");
+const AllModels = require("./models/AllModels");
 
 // Instantiate a new Discord client and collection
 const client = new Discord.Client({disableEveryone: false, partials: ["MESSAGE", "REACTION"]});
@@ -45,6 +46,7 @@ const bannedUrls = new BannedDomainList();
 
 // Create a new Set for deleted messages
 let deleteSet = new Set();
+let dbCmds; //var for the database commands data
 
 console.log(JSON.stringify(require("./config"), null, 4)) //shows the running config
 
@@ -71,9 +73,12 @@ if(unassignedVars.length) {
 // Handle unhandled promise rejection warnings
 process.on('unhandledRejection', error => console.error('Uncaught Promise Rejection', error));
 
-
 // Trigger once when the bot comes online
-client.once('ready', () => {
+client.once('ready', async () => {
+
+    // Query the database for all the commands
+    dbCmds = await AllModels.command.findAll({raw:true});
+
     console.log('Bot Online!');
     
     // Set the status of the bot
@@ -101,7 +106,7 @@ client.once('ready', () => {
 client.on('message', async message => {
     // Call the function from /controllers/MessageController to handle the message
     try {
-        messageController.messageHandler(message, client, triggerList, bannedUrls, deleteSet);
+        messageController.messageHandler(message, client, triggerList, bannedUrls, deleteSet, dbCmds);
     } catch (e) {
         console.error(e);
     };

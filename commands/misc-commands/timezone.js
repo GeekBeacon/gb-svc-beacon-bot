@@ -7,6 +7,7 @@ module.exports = {
     description: `Convert from one timezone to another.\n\n**Notes:**\n• The only accepted datetime format is \`DD/MM/YYYY HH:mm:SS\` (seconds are optional)\n• You must use the full timezone, abbreviations aren't supported!\n \u200b`,
     aliases: ['tzconvert', 'converttime', 'timeconvert', 'tzc'],
     cooldown: 5,
+    enabled: true,
     mod: false,
     super: false,
     admin: false,

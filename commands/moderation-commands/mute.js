@@ -7,10 +7,11 @@ module.exports = {
     description: `Disables a user's ability to perform certain actions based on the type of mute.`,
     aliases: ['silence'],
     usage: "<@user | user id> , <type> , <reason> , <length>",
+    cooldown: 5,
+    enabled: true,
     mod: true,
     super: false,
     admin: false,
-    cooldown: 5,
     execute(message, args, client) {
         if (!args.length) {
             // If no arguments let users know arguments are required

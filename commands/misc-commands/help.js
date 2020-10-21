@@ -7,10 +7,11 @@ module.exports = {
     description: "List all of the commands or info about a specific command!",
     aliases: ["commands"],
     usage: "[command name]",
+    cooldown: 5,
+    enabled: true,
     mod: false,
     super: false,
     admin: false,
-    cooldown: 5,
     execute(message, args) {
         const help = {};
         let adminCmds = [],superCmds = [],modCmds = [],userCmds = [];

@@ -8,10 +8,11 @@ module.exports = {
     description: "Add, remove, or list blacklisted domains",
     aliases: ["banneddomains"],
     usage: "<add | remove | list> [domain(s)]",
+    cooldown: 5,
+    enabled: true,
     mod: true,
     super: false,
     admin: false,
-    cooldown: 1,
     execute(message, args, client, triggerList, bannedUrls) {
         // Check if any arguments were given, it not let user know
         if (!args.length) {

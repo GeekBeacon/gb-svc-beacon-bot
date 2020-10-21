@@ -7,10 +7,11 @@ module.exports = {
     description: 'Purges a specific amount of messages.\n*Limited To 100 at a time*',
     aliases: ['delete', 'clear', 'clean'],
     usage: "<count>",
+    cooldown: 3,
+    enabled: true,
     mod: true,
     super: false,
     admin: false,
-    cooldown: 3,
     execute(message, args, client) {
         if (!args.length) {
             // If no arguments let users know arguments are required

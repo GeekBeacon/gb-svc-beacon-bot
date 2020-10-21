@@ -11,9 +11,9 @@ const cooldowns = new Discord.Collection();
 module.exports = {
 
     // Create a function to be called
-    messageHandler: function(m, c, tl, bu, deleteSet) {
+    messageHandler: async function(m, c, tl, bu, ds, dbc) {
         // Create vars
-        const message = m, client = c, triggerList = tl, bannedUrls = bu;
+        const message = m, client = c, triggerList = tl, bannedUrls = bu, deleteSet = ds, dbCmds = dbc;
         let inModRole, inSuperRole, inAdminRole, isOwner;
         let triggerArr = [];
         let bannedUrlArr = [];
@@ -51,18 +51,6 @@ module.exports = {
         } else {
             return;
         }
-
-        // Create the path for the commands directory
-        const absolutePath = join(__dirname, "../", "commands");
-
-        // Read command files
-        const commandFiles = readdirRecursive(absolutePath).filter(file => file.endsWith(".js"));
-
-        // Loop through commands and assign them to the client
-        for (const file of commandFiles) {
-            const cmd = require(file);
-            client.commands.set(cmd.name, cmd);
-        };
 
         // If the message doesn't start with the prefix...
         if (!message.content.startsWith(prefix)) {
@@ -114,6 +102,19 @@ module.exports = {
             };
         };
 
+        // Create the path for the commands directory
+        const absolutePath = join(__dirname, "../", "commands");
+
+        // Read command files
+        const commandFiles = readdirRecursive(absolutePath).filter(file => file.endsWith(".js"));
+
+        // Loop through commands and assign them to the client
+        for (const file of commandFiles) {
+            const cmd = require(file);
+            const extraInfo = dbCmds.find(command => command.name === cmd.name);
+            client.commands.set(cmd.name, {...cmd, ...extraInfo});
+        };
+
         // Store the arguments and command name in a variable
         const args = message.content.slice(prefix.length).split(/ +/);
         const commandName = args.shift().toLowerCase();
@@ -125,6 +126,12 @@ module.exports = {
         if (!command) {
             return;
         };
+
+        // Check if the command is enabled
+        if(!command.enabled) {
+            // If not enabled, let the user know
+            return message.reply("sorry, this command has been disabled!");
+        }
 
         // Check if the channel is a text channel and the command is for guild only
         if (command.guildOnly && message.channel.type !== "text") {

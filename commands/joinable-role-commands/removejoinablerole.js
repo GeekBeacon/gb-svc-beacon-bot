@@ -7,10 +7,11 @@ module.exports = {
     description: "Removes a role from the joinable roles list",
     aliases: ["rjr", "removejoinablerank", "-joinablerole", "-joinablerank", "removejoinable", "-joinable"],
     usage: "<role>",
+    cooldown: 5,
+    enabled: true,
     mod: false,
     super: true, // Minimum level required is Super
     admin: false,
-    cooldown: 5,
     execute(message, args, client) {
         // Check if any arguments were given, it not let user know
         if (!args.length) {

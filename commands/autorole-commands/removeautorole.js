@@ -7,6 +7,7 @@ module.exports = {
     description: "Removes a role from the auto role list",
     aliases: ["rar", "removeautorank", "-autorole", "-autorank"],
     usage: "<role>",
+    enabled: true,
     mod: false,
     super: true, // Minimum level required is Super
     admin: false,

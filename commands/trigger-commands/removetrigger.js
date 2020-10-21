@@ -7,10 +7,11 @@ module.exports = {
     description: "Removes a word or phrase from the trigger list",
     aliases: ["-trigger", "deletetrigger", "deltrigger"],
     usage: "<word or phrase>",
+    cooldown: 5,
+    enabled: true,
     mod: false,
     super: false,
     admin: true,
-    cooldown: 5,
     execute(message, args, client, triggerList) {
         // Check if any arguments were given, it not let user know
         if (!args.length) {
