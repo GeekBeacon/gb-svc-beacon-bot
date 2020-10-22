@@ -1,9 +1,8 @@
 const {prefix} = require('../../config');
-let desc = "Get a link to the usage guide for the bot";
 
 module.exports = {
     name: 'usage',
-    description: desc,
+    description: "Get a link to the usage guide for the bot",
     aliases: ['docs'],
     cooldown: 5,
     enabled: true,
