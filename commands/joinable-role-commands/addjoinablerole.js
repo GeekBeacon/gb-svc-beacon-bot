@@ -7,6 +7,7 @@ module.exports = {
     description: "Adds a role to the joinable roles list",
     aliases: ["ajr", "addjoinablerank", "+joinablerole", "+joinablerank", "addjoinable", "+joinable"],
     usage: "<role>",
+    enabled: true,
     mod: false,
     super: true, // Minimum level required is Super
     admin: false,

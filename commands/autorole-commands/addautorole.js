@@ -7,6 +7,7 @@ module.exports = {
     description: "Adds a role to the auto role list",
     aliases: ["aar", "addautorank", "+autorole", "+autorank"],
     usage: "<role>",
+    enabled: true,
     mod: false,
     super: true, // Minimum level required is Super
     admin: false,

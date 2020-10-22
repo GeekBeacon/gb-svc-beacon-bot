@@ -1,6 +1,4 @@
 // Import required files
-const { readdirSync, statSync } = require("fs");
-const { join } = require("path");
 const Discord = require("discord.js");
 const {prefix, admin_role, super_role, mod_role, mod_trainee_role, excluded_trigger_channels, url_role_whitelist} = require('../config');
 const TriggersController = require("./TriggersController");
@@ -11,9 +9,9 @@ const cooldowns = new Discord.Collection();
 module.exports = {
 
     // Create a function to be called
-    messageHandler: function(m, c, tl, bu, deleteSet) {
+    messageHandler: async function(m, c, tl, bu, ds, dbc) {
         // Create vars
-        const message = m, client = c, triggerList = tl, bannedUrls = bu;
+        const message = m, client = c, triggerList = tl, bannedUrls = bu, deleteSet = ds, dbCmds = dbc;
         let inModRole, inSuperRole, inAdminRole, isOwner;
         let triggerArr = [];
         let bannedUrlArr = [];
@@ -32,8 +30,6 @@ module.exports = {
             // Add each domain to the bannedUrlArr var
             bannedUrlArr.push(domain);
         });
-        
-        client.commands = new Discord.Collection(); // Create a new collection for commands
 
         // Make sure the author isn't a bot and message is from a text channel before checking its' roles
         if(!message.author.bot && message.channel.type === "text") {
@@ -51,18 +47,6 @@ module.exports = {
         } else {
             return;
         }
-
-        // Create the path for the commands directory
-        const absolutePath = join(__dirname, "../", "commands");
-
-        // Read command files
-        const commandFiles = readdirRecursive(absolutePath).filter(file => file.endsWith(".js"));
-
-        // Loop through commands and assign them to the client
-        for (const file of commandFiles) {
-            const cmd = require(file);
-            client.commands.set(cmd.name, cmd);
-        };
 
         // If the message doesn't start with the prefix...
         if (!message.content.startsWith(prefix)) {
@@ -126,6 +110,12 @@ module.exports = {
             return;
         };
 
+        // Check if the command is enabled
+        if(!command.enabled) {
+            // If not enabled, let the user know
+            return message.reply("sorry, this command has been disabled!");
+        }
+
         // Check if the channel is a text channel and the command is for guild only
         if (command.guildOnly && message.channel.type !== "text") {
             return message.reply("I can't execute that command inside DMs!");
@@ -183,34 +173,5 @@ module.exports = {
             console.error(error);
             message.reply('There was an error trying to execute that command, please try again!')
         };
-
-        // Function to read the given directory recursively
-        function readdirRecursive(directory) {
-            const cmds = []; //cmds arr
-          
-            // Nested function to read the files within the directory given
-            (function read(dir) {
-                // Gather the contents of the directory
-                const files = readdirSync(dir);
-          
-                // Loop through the files
-                for (const file of files) {
-
-                    // Join the directory and file to create the path
-                    const path = join(dir, file);
-
-                    // If the path is a directory then look inside of it
-                    if (statSync(path).isDirectory()) {
-                        // Read the contents of the path
-                        read(path);
-                    } else {
-                        // Add the file to the commands arr
-                        cmds.push(path);
-                    }
-                }
-            })(directory);
-            // Return the cmds found
-            return cmds;
-        }
     }
 }

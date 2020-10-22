@@ -3,6 +3,7 @@ module.exports = {
     description: 'Get response from bot with response time!\n*Default is Websocket ping*',
     aliases: ['rtime', 'responsetime'],
     cooldown: 5,
+    enabled: true,
     mod: false,
     super: false,
     admin: false,

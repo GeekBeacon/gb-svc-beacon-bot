@@ -1,6 +1,7 @@
 const AutoRole = require("./AutoRole");
 const Ban = require("./Ban");
 const BannedUrl = require("./BannedUrl");
+const Command = require("./Command");
 const JoinableRole = require("./JoinableRole");
 const Kick = require("./Kick");
 const Mute = require("./Mute");
@@ -14,6 +15,7 @@ module.exports = {
     autorole : AutoRole,
     ban : Ban,
     bannedurl : BannedUrl,
+    command: Command,
     joineableRole : JoinableRole,
     kick : Kick,
     mute : Mute,

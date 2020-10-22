@@ -7,6 +7,7 @@ module.exports = {
     description: "Lists all of the autoroles",
     aliases: ["lar", "listautoranks", "autoroles", "autoranks"],
     usage: "[role]",
+    enabled: true,
     mod: true,  // Minimum level required is Mod
     super: false,
     admin: false,

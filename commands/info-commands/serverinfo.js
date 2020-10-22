@@ -6,6 +6,7 @@ module.exports = {
     description: 'Get information about the server.',
     aliases: ['serverstats'],
     cooldown: 5,
+    enabled: true,
     mod: false,
     super: false,
     admin: false,

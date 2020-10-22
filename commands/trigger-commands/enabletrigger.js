@@ -7,10 +7,11 @@ module.exports = {
     description: "Enables a specific trigger word/phrase",
     aliases: ["etrigger", "entrigger"],
     usage: "<trigger>",
+    cooldown: 5,
+    enabled: true,
     mod: false,
     super: true, // Minimum level required is Super (manage roles permission)
     admin: false,
-    cooldown: 5,
     execute(message, args, client, triggerList) {
         // Check if any arguments were given, it not let user know
         if (!args.length) {

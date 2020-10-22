@@ -7,10 +7,11 @@ module.exports = {
     description: 'Enable/disable slowmode for a specific channel.\n*Minimum Interval: 1*\n*Maximum Interval: 21,600*',
     aliases: ["slowmode"],
     usage: `<enable/disable> <channel> [seconds]`,
+    cooldown: 5,
+    enabled: true,
     mod: true,
     super: false,
     admin: false,
-    cooldown: 5,
     execute(message, args, client) {
         if (!args.length) {
             // If no arguments let users know arguments are required

@@ -2312,5 +2312,84 @@ module.exports = {
                 });
             });
         };
+    },
+    configHandler: async function(args, message, client) {
+        // Find the command in the local collection of the commands
+        const command = client.commands.get(args[0]) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(args[0]));
+
+        // If the command exists proceed to update it
+        if(command) {
+            // If the user requested to disable the command
+            if (args[1] === "disable") {
+
+                // Make sure the user isn't trying to disable the config command
+                if(command.name === "config") {
+                    return message.reply(`well aren't you a silly one, you can't disable the ${args[0]} command! 😝`);
+                }
+
+                // If the command isn't already disabled
+                if(command.enabled !== false) {
+                    const enabled = false; //var for enabled
+
+                    // Update the command in the local collection 
+                    client.commands.set(args[0], {...command, enabled});
+
+                    // Update the value in the database or insert it if it doesn't exist
+                    Models.command.upsert(
+                        {
+                            name: command.name,
+                            enabled: enabled,
+                            mod: command.mod,
+                            super: command.super,
+                            admin: command.admin
+                        }, {where: {name: args[0]}});
+
+                    // Let the user know the command has been disabled
+                    message.reply(`I have successfully disabled the ${args[0]} command!`)
+
+                // If the command is already disabled let the user know
+                } else {
+                    message.reply(`uh oh! It seems this command is already disabled!`)
+                }
+                
+            // If the user requested to enable the command
+            } else if(args[1] === "enable") {
+
+                // If the command isn't already enabled
+                if(command.enabled !== true) {
+                    const enabled = true; //var for enabled
+
+                    // Update the command in the local collection 
+                    client.commands.set(args[0], {...command, enabled});
+
+                    // Update the value in the database or insert it if it doesn't exist
+                    Models.command.upsert(
+                        {
+                            name: command.name,
+                            enabled: enabled,
+                            mod: command.mod,
+                            super: command.super,
+                            admin: command.admin
+                        }, {where: {name: args[0]}});
+
+                    // Let the user know the command has been disabled
+                    message.reply(`I have successfully enabled the ${args[0]} command!`)
+
+                // If the command is already enabled let the user know
+                } else {
+                    message.reply(`uh oh! It seems this command is already enabled!`)
+                }
+            // If the user tried to give a config option that doesn't exist
+            } else {
+                let newArgs = args; //copy the args to a new var
+                newArgs.shift(); //remove the first arg
+                newArgs = newArgs.join(" "); //join the args
+                return message.reply(`uh oh! \`${newArgs}\` is not a configuration option!`)
+            }
+
+        // If the command wasn't found, let the user know
+        } else {
+            return message.reply(`uh oh! Looks like you are trying to update a command that doesn't exist, please try again!\n If you need a list of commands use \`${prefix}help\``)
+        }
     }
 }

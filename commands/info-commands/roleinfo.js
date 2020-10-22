@@ -3,6 +3,7 @@ module.exports = {
     description: 'Get information about a specific role.',
     aliases: ['rolestats'],
     cooldown: 5,
+    enabled: true,
     mod: false,
     super: false,
     admin: false,

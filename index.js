@@ -3,6 +3,8 @@ require('dotenv').config()
 // Import required files
 const Discord = require("discord.js");
 const config = require("./config");
+const { readdirSync, statSync } = require("fs");
+const { join } = require("path");
 const messageController = require("./controllers/MessageController");
 const joinController = require("./controllers/JoinController");
 const leaveController = require("./controllers/LeaveController");
@@ -10,9 +12,11 @@ const databaseController = require("./controllers/DatabaseController");
 const moderationController = require("./controllers/ModerationController");
 const channelController = require("./controllers/ChannelController");
 const voiceController = require("./controllers/VoiceController");
+const AllModels = require("./models/AllModels");
 
 // Instantiate a new Discord client and collection
 const client = new Discord.Client({disableEveryone: false, partials: ["MESSAGE", "REACTION"]});
+client.commands = new Discord.Collection(); // Create a new collection for commands
 
 // Create a class for Triggers
 class TriggerList {
@@ -45,6 +49,7 @@ const bannedUrls = new BannedDomainList();
 
 // Create a new Set for deleted messages
 let deleteSet = new Set();
+let dbCmds; //var for the database commands data
 
 console.log(JSON.stringify(require("./config"), null, 4)) //shows the running config
 
@@ -71,9 +76,25 @@ if(unassignedVars.length) {
 // Handle unhandled promise rejection warnings
 process.on('unhandledRejection', error => console.error('Uncaught Promise Rejection', error));
 
-
 // Trigger once when the bot comes online
-client.once('ready', () => {
+client.once('ready', async () => {
+
+    // Query the database for all the commands
+    dbCmds = await AllModels.command.findAll({raw:true});
+
+    // Create the path for the commands directory
+    const absolutePath = join(__dirname, "./", "commands");
+
+    // Read command files
+    const commandFiles = readdirRecursive(absolutePath).filter(file => file.endsWith(".js"));
+
+    // Loop through commands and assign them to the client
+    for (const file of commandFiles) {
+        const cmd = require(file);
+        const extraInfo = dbCmds.find(command => command.name === cmd.name);
+        client.commands.set(cmd.name, {...cmd, ...extraInfo});
+    };
+
     console.log('Bot Online!');
     
     // Set the status of the bot
@@ -101,7 +122,7 @@ client.once('ready', () => {
 client.on('message', async message => {
     // Call the function from /controllers/MessageController to handle the message
     try {
-        messageController.messageHandler(message, client, triggerList, bannedUrls, deleteSet);
+        messageController.messageHandler(message, client, triggerList, bannedUrls, deleteSet, dbCmds);
     } catch (e) {
         console.error(e);
     };
@@ -217,6 +238,35 @@ client.on("voiceStateUpdate", (oldState, newState) => {
     // Call the channel left handler from the voice controller
     voiceController.voiceUpdateHandler(oldState, newState);
 });
+
+// Function to read the given directory recursively
+function readdirRecursive(directory) {
+    const cmds = []; //cmds arr
+  
+    // Nested function to read the files within the directory given
+    (function read(dir) {
+        // Gather the contents of the directory
+        const files = readdirSync(dir);
+  
+        // Loop through the files
+        for (const file of files) {
+
+            // Join the directory and file to create the path
+            const path = join(dir, file);
+
+            // If the path is a directory then look inside of it
+            if (statSync(path).isDirectory()) {
+                // Read the contents of the path
+                read(path);
+            } else {
+                // Add the file to the commands arr
+                cmds.push(path);
+            }
+        }
+    })(directory);
+    // Return the cmds found
+    return cmds;
+}
 
 // Log the client in
 client.login(config.token);

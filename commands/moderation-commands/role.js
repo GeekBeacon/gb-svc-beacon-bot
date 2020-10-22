@@ -7,10 +7,11 @@ module.exports = {
     description: 'Adds or removes a user from a role.',
     aliases: [],
     usage: `<add/remove> <user> <role>`,
+    cooldown: 5,
+    enabled: true,
     mod: false,
     super: false,
     admin: false,
-    cooldown: 5,
     execute(message, args, client) {
         if (!args.length) {
             // If no arguments let users know arguments are required

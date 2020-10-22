@@ -8,6 +8,7 @@ module.exports = {
     description: 'Get information about a member of the server.',
     aliases: ['whois'],
     cooldown: 5,
+    enabled: true,
     mod: false,
     super: false,
     admin: false,

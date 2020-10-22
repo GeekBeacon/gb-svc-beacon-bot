@@ -39,16 +39,6 @@ Here is a quick list of features/modules, click on any one to jump to its' infor
 
 ___
 
-#### **Command(s) Usage**
-
-| Command     | Argument(s) | Description | Role Required | Example |
-| --- | :---: | --- | :---: | --- |
-verify | \<create\> | Creates the initial verification post | Owner | !verify create
-
-**Notes:**
-* If any message exists in the channel, you must clear it to send a (new) verification message
-* If a user leaves the server they will be required to re-verify
-___
 
 ## Autoroles
 
@@ -113,8 +103,11 @@ Moderation commands are used to enable moderators and super moderators (Master C
 * Slowmode
 * Add/Remove Role
 * Create temporary voice channels
+* Command Configuration
+   * Disable Command
+   * Enable Command
 
-#### **Command(s) Usage**
+
 
 | Command     | Argument(s) | Description | Role | Example |
 | --- | :---: | --- | :---: | --- |
@@ -132,6 +125,7 @@ role | \<add \| remove\> \<user\> \<role\> | Adds or removes a user from a role 
 bans | \[ban id\] | Displays the 10 most recent bans or information on a specific ban if the id is passed in | Mod | !bans 2
 nick | \<id \| mention\>, \<nickname\> | Changes a user's nickname | Mod | !nick @Kankuro, NotKankuro
 tempvoice | \<channel name\>, \[user limit\]* | Creates a temporary channel that self-deletes when emptied | Mod | !tempvoice temp channel, 3
+config | \<command\> \<enable\|disable\> | Enables or disables a command | Admin | !config example disable
 
 \*count - The maximum count for a single purge is 100
 
