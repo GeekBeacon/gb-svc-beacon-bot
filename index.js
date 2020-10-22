@@ -3,6 +3,8 @@ require('dotenv').config()
 // Import required files
 const Discord = require("discord.js");
 const config = require("./config");
+const { readdirSync, statSync } = require("fs");
+const { join } = require("path");
 const messageController = require("./controllers/MessageController");
 const joinController = require("./controllers/JoinController");
 const leaveController = require("./controllers/LeaveController");
@@ -14,6 +16,7 @@ const AllModels = require("./models/AllModels");
 
 // Instantiate a new Discord client and collection
 const client = new Discord.Client({disableEveryone: false, partials: ["MESSAGE", "REACTION"]});
+client.commands = new Discord.Collection(); // Create a new collection for commands
 
 // Create a class for Triggers
 class TriggerList {
@@ -78,6 +81,19 @@ client.once('ready', async () => {
 
     // Query the database for all the commands
     dbCmds = await AllModels.command.findAll({raw:true});
+
+    // Create the path for the commands directory
+    const absolutePath = join(__dirname, "./", "commands");
+
+    // Read command files
+    const commandFiles = readdirRecursive(absolutePath).filter(file => file.endsWith(".js"));
+
+    // Loop through commands and assign them to the client
+    for (const file of commandFiles) {
+        const cmd = require(file);
+        const extraInfo = dbCmds.find(command => command.name === cmd.name);
+        client.commands.set(cmd.name, {...cmd, ...extraInfo});
+    };
 
     console.log('Bot Online!');
     
@@ -222,6 +238,35 @@ client.on("voiceStateUpdate", (oldState, newState) => {
     // Call the channel left handler from the voice controller
     voiceController.voiceUpdateHandler(oldState, newState);
 });
+
+// Function to read the given directory recursively
+function readdirRecursive(directory) {
+    const cmds = []; //cmds arr
+  
+    // Nested function to read the files within the directory given
+    (function read(dir) {
+        // Gather the contents of the directory
+        const files = readdirSync(dir);
+  
+        // Loop through the files
+        for (const file of files) {
+
+            // Join the directory and file to create the path
+            const path = join(dir, file);
+
+            // If the path is a directory then look inside of it
+            if (statSync(path).isDirectory()) {
+                // Read the contents of the path
+                read(path);
+            } else {
+                // Add the file to the commands arr
+                cmds.push(path);
+            }
+        }
+    })(directory);
+    // Return the cmds found
+    return cmds;
+}
 
 // Log the client in
 client.login(config.token);

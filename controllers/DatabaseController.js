@@ -146,6 +146,15 @@ module.exports = {
         } else if(command.name === "createmute") {
             // Call the mute handler function from the ModerationController file
             ModerationController.createMuteHandler(message);
+            
+        /*
+        ##############################
+        ####### config command #######
+        ##############################
+        */
+        } else if(command.name === "config") {
+            // Call the config handler function from the ModerationController file
+            ModerationController.configHandler(args, message, client);
 
         /*
         ####################################

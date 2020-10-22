@@ -33,8 +33,7 @@ All the documentation can be found under the [docs](docs/) folder.  Please feel 
 
 This is a new project and there are few known limitations and issues we're working through.
 
-1. The code is modulera but there is no way of loading/unloading features right now
-2. The bot only supports one server at a time.  Please be aware.
+1. The bot only supports one server at a time.  Please be aware.
 
 ## 
 
