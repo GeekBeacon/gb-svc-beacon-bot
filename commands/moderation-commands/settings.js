@@ -4,7 +4,7 @@ const DatabaseController = require("../../controllers/DatabaseController");
 module.exports = {
     name: 'settings',
     description: `Changes the settings the bot uses for multiple features and functions\n**WARNING** Do *NOT* use this command if you don't know what you are doing!`,
-    aliases: ["config", "settings", "configuration"],
+    aliases: [""],
     usage: "<setting name> <value(s)>",
     cooldown: 5,
     enabled: true,

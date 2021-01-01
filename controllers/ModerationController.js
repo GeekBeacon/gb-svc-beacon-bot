@@ -2407,16 +2407,72 @@ module.exports = {
     settingsHandler: async function(args, message, client) {
         const prefix = client.settings.get("prefix");
         const settingName = args[0].toLowerCase(); //make the setting name lowercase
-        Models.setting.findOne({where: {name: settingName}}).then((setting) => {
-            // If a setting was found
-            if(setting) {
-                
-                //stuff
+        const adminChannel = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("admin_channel_name")))); //get the admin channel 
 
-            // If no setting was found let the user know
-            } else {
-                return message.reply(`uh oh! Looks like I wasn't able to find that setting, please check your setting name and try again!\nYour input: \`${message.content}\``);
-            }
-        });
+        // Create the embed 
+        let viewEmbed = new Discord.MessageEmbed()
+            .setColor("ff5500") //orange color
+            .setTitle(`Information on the ${settingName} setting`) //set the title
+            .setTimestamp();
+
+        // If the user wants to view all settings and their values
+        if(args[1].toLowerCase() === "view" && args[1].toLowerCase() === "all") {
+
+        // If the user wants to view or edit a specific setting
+        } else if (args[1].toLowerCase() === "view" || args[1].toLowerCase() === "edit") {
+
+            // Find the setting in the db
+            Models.setting.findOne({where: {name: settingName}, raw: true}).then((setting) => {
+                // If a setting was found
+                if(setting) {
+
+                    // If the user is wanting to view a setting
+                    if(args[1].toLowerCase() === "view") {
+
+                        // Format the last updated time
+                        const lastUpdated = moment(setting.updatedAt).format(`MMM DD, YYYY HH:mm:ss`);
+
+                        // Set the fields for the setting
+                        viewEmbed.addFields(
+                            {
+                                name: "Name",
+                                value: setting.name,
+                                inline: false,
+                            },
+                            {
+                                name: "Value",
+                                value: `\`${setting.value}\``,
+                                inline: false,
+                            },
+                            {
+                                name: "Last Update",
+                                value: lastUpdated,
+                                inline: false,
+                            }
+                        );
+
+                    // If the user is wanting to edit a setting
+                    } else if (args[1].toLowerCase() === "edit") {
+                        //stuff
+                    }
+
+                    // Send the embed to the admin channel
+                    adminChannel.send({embed:viewEmbed});
+
+                    // If the channel isn't the admin channel, let the user know it was sent
+                    if(adminChannel.name !== message.channel.name) {
+                        message.channel.send(`I have sent the data you requested to ${adminChannel}!`);
+                    };
+    
+                // If no setting was found let the user know
+                } else {
+                    return message.reply(`uh oh! Looks like I wasn't able to find that setting, please check your setting name and try again!\nYour input: \`${message.content}\``);
+                }
+            });
+
+        // If user didn't use the command properly
+        } else {
+            message.reply(`uh oh! It seems you entered an unaccepted argument, please use \`${prefix}help settings\` for help using this command!`);
+        }
     }
 }

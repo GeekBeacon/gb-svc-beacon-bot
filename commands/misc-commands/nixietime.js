@@ -6,7 +6,7 @@ module.exports = {
     name: 'nixietime',
     description: 'Get information on or convert a time from normal human time to NixieTime',
     aliases: ['nt', 'nixtime'],
-    cooldown: 1,
+    cooldown: 5,
     enabled: true,
     mod: false,
     super: false,
@@ -38,6 +38,9 @@ module.exports = {
                 } else if([`h`, `hour`, `hours`].includes(durArg)) {
 
                     randomNum = Math.floor(Math.random() * (23 - 1) + 1); //hours
+                } else if([`d`, `day`, `days`].includes(durArg)) {
+                    
+                    randomNum = Math.floor(Math.random() * (6 - 1) + 1); //days
                 } else if([`w`, `week`, `weeks`].includes(durArg)) {
 
                     randomNum = Math.floor(Math.random() * (3 - 1) + 1); //weeks
