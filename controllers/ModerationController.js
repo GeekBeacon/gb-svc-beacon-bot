@@ -2,6 +2,7 @@ const moment = require("moment");
 const Models = require("../models/AllModels");
 const shortid = require('shortid');
 const Discord = require('discord.js');
+const pagination = require(`discord.js-pagination`);
 
 module.exports = {
     deleteHandler: function(m, c, tl, deleteSet) {
@@ -2416,7 +2417,78 @@ module.exports = {
             .setTimestamp();
 
         // If the user wants to view all settings and their values
-        if(args[1].toLowerCase() === "view" && args[1].toLowerCase() === "all") {
+        if(args[0].toLowerCase() === "view" && args[1].toLowerCase() === "all") {
+
+            // Find the settings from the db
+            Models.setting.findAll({raw:true}).then(async (settings) => {
+                // Make sure the settings were found
+                if(settings) {
+
+                    let embeds = []; //embeds array
+                    
+                    // Create a function to make a new embed
+                    const createSettingsEmbed = () => new Discord.MessageEmbed()
+                        .setTitle(`Settings`) //set the title
+                        .setDescription(`These are all of the settings in the database. To make changes to them use \`${prefix}settings setting_name edit\` where \`setting_name\` is the name of the setting you wish to change`) //set the description
+                        .setColor(`#00FF00`) //green color
+                        .setTimestamp();
+
+                    // Create a new message embed
+                    let settingsEmbed = createSettingsEmbed();
+
+                    let fieldCounter = 0; //field counter
+
+                    settings.forEach((setting) => {
+                        // Format the last updated time
+                        const lastUpdated = moment(setting.updatedAt).format(`MMM DD, YYYY HH:mm:ss`);
+
+                        // Add the setting info fields
+                        settingsEmbed.addFields(
+                            {
+                                name: `Name`, 
+                                value: `${setting.name}`, 
+                                inline: true,
+                            },
+                            {
+                                name: `Value`,
+                                value: `${setting.value}`,
+                                inline: true,
+                            },
+                            {
+                                name: `Last Update`,
+                                value: `${lastUpdated}`,
+                                inline: true,
+                            }
+                        );
+
+                        fieldCounter = fieldCounter + 3; //increment the counter by 3 for the above 3 fields added
+
+                        // If there are more than 24 fields already in the embed then make a new one
+                        if(fieldCounter >= 24) {
+
+                            embeds.push(settingsEmbed); //push the message embed to the embeds array
+
+                            settingsEmbed = createSettingsEmbed(); //create a new embed
+
+                            fieldCounter = 0; //reset the field counter
+                        }
+                    });
+
+                    // Push the final embed
+                    if(fieldCounter !== 0) {
+                        embeds.push(settingsEmbed);
+                    }
+
+                    const emojis = [`⬅️`, `➡️`]; //set the emojis to use
+
+                    // Send the embed(s) with the embeds and emojis
+                    await pagination({
+                        author: message.author, //set the author
+                        channel: adminChannel //send to the admin channel
+                    }, embeds, emojis);
+                }
+
+            });
 
         // If the user wants to view or edit a specific setting
         } else if (args[1].toLowerCase() === "view" || args[1].toLowerCase() === "edit") {
