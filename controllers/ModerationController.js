@@ -2467,9 +2467,7 @@ module.exports = {
                         if(fieldCounter >= 24) {
 
                             embeds.push(settingsEmbed); //push the message embed to the embeds array
-
                             settingsEmbed = createSettingsEmbed(); //create a new embed
-
                             fieldCounter = 0; //reset the field counter
                         }
                     });
