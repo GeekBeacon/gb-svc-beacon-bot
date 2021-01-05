@@ -4,7 +4,7 @@ const DatabaseController = require("../../controllers/DatabaseController");
 module.exports = {
     name: 'configure',
     description: 'Configure commands',
-    aliases: ["config", "settings", "configuration"],
+    aliases: ["config", "configuration"],
     usage: "<command name> <enable/disable>",
     cooldown: 5,
     enabled: true,

@@ -15,6 +15,9 @@ module.exports = {
     async execute(message, args, client) {
         const prefix = client.settings.get("prefix");
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
+        const modChannel = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_channel_name")))); //mod channel
+        const superChannel = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("super_channel_name")))); //super channel
+        const adminChannel = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("admin_channel_name")))); //admin channel
         let user; // user var
         // Get the mod+ roles
         const modTraineeRole = message.guild.roles.cache.find(role => role.id === client.settings.get("trainee_role_id"));
@@ -130,17 +133,29 @@ module.exports = {
                     .setTimestamp()
                     .setFooter(`User ID: ${user.user.id}`);
 
-                    // If the user is a mod or higher role
-                    if(message.member.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
+                    // If the user is a mod or higher role and the requested user doesn't have any warnings
+                    if(message.member.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name)) && warnings > 0) {
                         userEmbed
                         .addField(`Warnings`, `${warnings}`, true)
                         .addField(`Roles`, `${user.roles.cache.map(role => role).join(", ")}`, false)
                         .addField(`Permissions`, `${permissions}`, false);
 
-                        // Send embed to the mod log channel
-                        actionLog.send({embed: userEmbed});
-                        // Let the user know the info was sent
-                        message.channel.send(`I've sent a message containing the data you requested to ${actionLog}.`)
+                        // If the command was used in a public channel
+                        if(message.channel !== modChannel && message.channel !== superChannel && message.channel !== adminChannel) {
+                            // Send embed to the mod log channel
+                            actionLog.send({embed: userEmbed});
+
+                            // If the user didn't use the command in the action log channel
+                            if(message.channel !== actionLog) {
+                                // Let the user know the info was sent
+                                message.channel.send(`I've sent a message containing the data you requested to ${actionLog}.`);
+                            }
+
+                        // If the command was used in a mod+ channel
+                        } else {
+                            // Send the message
+                            message.channel.send({embed: userEmbed})
+                        }
 
                     // If the user isn't a mod or higher
                     } else {
