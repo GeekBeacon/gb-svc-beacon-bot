@@ -2489,7 +2489,7 @@ module.exports = {
             });
 
         // If the user wants to view or edit a specific setting
-        } else if (args[1].toLowerCase() === "view" || args[1].toLowerCase() === "edit") {
+        } else if (args[1].toLowerCase() === "view") {
 
             // Find the setting in the db
             Models.setting.findOne({where: {name: settingName}, raw: true}).then((setting) => {
@@ -2521,18 +2521,15 @@ module.exports = {
                             }
                         );
 
-                    // If the user is wanting to edit a setting
-                    } else if (args[1].toLowerCase() === "edit") {
-                        //stuff
+                        // Send the embed to the admin channel
+                        adminChannel.send({embed:viewEmbed});
+
+                        // If the channel isn't the admin channel, let the user know it was sent
+                        if(adminChannel.name !== message.channel.name) {
+                            message.channel.send(`I have sent the data you requested to ${adminChannel}!`);
+                        };
+
                     }
-
-                    // Send the embed to the admin channel
-                    adminChannel.send({embed:viewEmbed});
-
-                    // If the channel isn't the admin channel, let the user know it was sent
-                    if(adminChannel.name !== message.channel.name) {
-                        message.channel.send(`I have sent the data you requested to ${adminChannel}!`);
-                    };
     
                 // If no setting was found let the user know
                 } else {
