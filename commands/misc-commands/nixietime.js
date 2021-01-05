@@ -70,7 +70,7 @@ module.exports = {
                 finalTime = finalTime.replace(/[,]+/g, " ");
 
                 // Send the message
-                message.channel.send(`If Nixie said it will be about *${args}*, then it will really be about **${finalTime}**!`);
+                message.channel.send(`If Nixie said it will be about *${newArgs}*, then it will really be about **${finalTime}**!`);
 
             // If user didn't provide an accepted time duration let them know
             } else {
