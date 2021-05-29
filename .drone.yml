@@ -1,0 +1,47 @@
+kind: pipeline
+name: default
+
+steps:
+  - name: docker
+    image: plugins/docker
+    pull: if-not-exists
+    settings:
+      repo: geekbeacon/beacon-bot
+      squash: true
+      auto_tag: true
+      dockerfile: compose/Dockerfile-bot
+      username:
+        from_secret: DOCKER_USER
+      password:
+        from_secret: DOCKER_PASS
+
+trigger:
+  branch:
+    - master
+    - feature/droneci
+  event:
+    - tag
+  ref:
+    - refs/heads/feature/**
+---
+kind: pipeline
+name: validation
+
+steps:
+  - name: docker
+    image: plugins/docker
+    settings:
+      repo: geekbeacon/beacon-bot
+      auto_tag: true
+      dockerfile: compose/Dockerfile-bot
+      squash: true
+      dry_run: true
+      username:
+        from_secret: DOCKER_USER
+      password:
+        from_secret: DOCKER_PASS
+
+trigger:
+  event:
+    - push
+    - pull_request
