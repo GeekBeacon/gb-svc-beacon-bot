@@ -18,11 +18,9 @@ steps:
 trigger:
   branch:
     - master
-    - feature/droneci
   event:
     - tag
-  ref:
-    - refs/heads/feature/**
+    - push
 ---
 kind: pipeline
 name: validation
