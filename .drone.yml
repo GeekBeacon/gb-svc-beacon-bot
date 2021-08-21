@@ -18,11 +18,9 @@ steps:
 trigger:
   branch:
     - master
-    - feature/droneci
   event:
     - tag
-  ref:
-    - refs/heads/feature/**
+    - push
 ---
 kind: pipeline
 name: validation
@@ -32,7 +30,7 @@ steps:
     image: plugins/docker
     settings:
       repo: geekbeacon/beacon-bot
-      auto_tag: true
+      auto_tag: false
       dockerfile: compose/Dockerfile-bot
       squash: true
       dry_run: true
@@ -43,5 +41,4 @@ steps:
 
 trigger:
   event:
-    - push
     - pull_request
