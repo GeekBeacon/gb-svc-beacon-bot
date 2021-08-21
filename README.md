@@ -37,7 +37,7 @@ This is a new project and there are few known limitations and issues we're worki
 
 1. The bot only supports one server at a time.  Please be aware.
 
-## 
+##  Booh
 
 ## Installation Guides
 
