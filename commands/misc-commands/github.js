@@ -9,6 +9,6 @@ module.exports = {
     super: false,
     admin: false,
     execute(message) {
-        message.channel.send(`Hello ${message.member.displayName}!\n\nMy name is beacon-bot and I live here: https://github.com/OSAlt/gb-svc-beacon-bot\nShow me some love by creating a pull request to make me smarter!`); 
+        message.channel.send(`Hello ${message.member.displayName}!\n\nMy name is beacon-bot and I live here: https://github.com/GeekBeacon/gb-svc-beacon-bot\nShow me some love by creating a pull request to make me smarter!`); 
     }
 }

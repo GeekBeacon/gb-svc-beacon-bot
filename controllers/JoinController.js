@@ -12,7 +12,6 @@ module.exports = {
         const registerTime = moment(member.user.createdAt).format("h:mm A"); // register time
         const roles = []; //create the roles array
         const joinLog = member.guild.channels.cache.find((c => c.name.includes(client.settings.get("join_log_channel_name")))); //join log channel
-        let mutes;
         let warnings = 0;
 
         await Models.warning.findAll({where:{user_id: member.user.id}, raw: true}).then((warns) => {
@@ -50,45 +49,54 @@ module.exports = {
         }
 
         // Send the embed to the action log channel
-        await joinLog.send({embed: joinEmbed});
+        await joinLog.send({embeds: [joinEmbed]});
 
-        // Query the db for all the autoroles
-        Models.autorole.findAll({raw: true}).then(async (data) => {
+    },
+    screeningHandler: async function(o,n) {
+        const oldMember = o, newMember = n; //assign the member var to the passed in member parameter
+        const roles = []; //create the roles array
+        let mutes;
 
-            // Find any muted roles the user might have	
-            mutes = await Models.mute.findAll({where: {user_id: member.user.id,completed: false}, raw:true});
+        if(newMember.pending !== oldMember.pending) {
 
-            // Check if there are any autoroles or mutes
-            if(mutes.length || data.length) {
+            // Query the db for all the autoroles
+            Models.autorole.findAll({raw: true}).then(async (data) => {
+
+                // Find any muted roles the user might have	
+                mutes = await Models.mute.findAll({where: {user_id: newMember.user.id,completed: false}, raw:true});
+
+                // Check if there are any autoroles or mutes
+                if(mutes.length || data.length) {
+                
+                    // Check if any mutes were found	
+                    if(mutes.length > 0) {	
+                        // Loop through each muted role found	
+                        mutes.forEach(mute => {	
+                            // Find the muted role within the server and add it to the array	
+                            const muteRole = newMember.guild.roles.cache.find(role => role.name.toLowerCase().includes(mute.type));	
+                            // Add the muted role to the roles array to be assigned	
+                            roles.push(muteRole);
+                        });
+                    }
+
+                    // See if there are any autoroles in the db
+                    if (data) {
+                        // Find the role within the server and add it to the array
+                        data.forEach(item => {
+                            const role = newMember.guild.roles.cache.find(role => role.name === item.role)
+                            roles.push(role);
+                        });
+                    }
+                // If no autoroles or mutes then ignore
+                } else {
+                    return;
+                }
             
-                // Check if any mutes were found	
-                if(mutes.length > 0) {	
-                    // Loop through each muted role found	
-                    mutes.forEach(mute => {	
-                        // Find the muted role within the server and add it to the array	
-                        const muteRole = member.guild.roles.cache.find(role => role.name.toLowerCase().includes(mute.type));	
-                        // Add the muted role to the roles array to be assigned	
-                        roles.push(muteRole);
-                    });
-                }
+            }).then(async () => {
 
-                // See if there are any autoroles in the db
-                if (data) {
-                    // Find the role within the server and add it to the array
-                    data.forEach(item => {
-                        const role = member.guild.roles.cache.find(role => role.name === item.role)
-                        roles.push(role);
-                    });
-                }
-            // If no autoroles or mutes then ignore
-            } else {
-                return;
-            }
-        
-        }).then(async () => {
-
-            // Edit the member and add all autoroles to that user
-            member.edit({roles: roles}, "Added Autoroles and/or Mutes");
-        });
+                // Edit the member and add all autoroles to that user
+                newMember.edit({roles: roles}, "Added Autoroles and/or Mutes");
+            });
+        }
     }
 }

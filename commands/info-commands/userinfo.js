@@ -24,11 +24,13 @@ module.exports = {
         const modRole = message.guild.roles.cache.find(role => role.id === client.settings.get("mod_role_id"));
         const superRole = message.guild.roles.cache.find(role => role.id === client.settings.get("super_role_id"));
         const adminRole = message.guild.roles.cache.find(role => role.id === client.settings.get("admin_role_id"));
-        let warnings = 0; //warnings var
+        let warnings, mutes, kicks, bans, points, level = 0; // numeric vars
 
         // Make sure user provived an argument
         if(!args.length) {
-            return message.reply("you gotta tell me what user you want information on!");
+            user = message.guild.members.cache.get(message.author.id); //get the author's guild member object
+            // If no argument was provided give the author's info by calling the userData function
+            userData(user);
         } else {
             // If the user provided a user mention
             if(args[0].startsWith("<@")) {
@@ -37,7 +39,7 @@ module.exports = {
             } else if(!isNaN(args[0])) {
                 // If invalid id let the user know
                 if(message.guild.members.cache.get(args[0]) === undefined) {
-                    return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`${prefix}whois @Username\``);
+                    return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`${prefix}whois @Username\``);
 
                 // If user found, assign it to the user var
                 } else {
@@ -45,128 +47,166 @@ module.exports = {
                 }
             // If user didn't provide a user id or mention
             } else {
-                return message.reply(`it seems you didn't provide either a user mention or id, please try again!`)
+                return message.reply(`It seems you didn't provide either a user mention or id, please try again!`)
             }
 
             // If the user exists
             if(user) {
-                const joinDate = moment(user.joinedAt).format("MMM DD, YYYY"); // joined date
-                const joinTime = moment(user.joinedAt).format("h:mm A"); // joined time
-                const registerDate = moment(user.user.createdAt).format("MMM DD, YYYY"); // register date
-                const registerTime = moment(user.user.createdAt).format("h:mm A"); // register time
-                const boostDate = moment(user.premiumSince).format("MMM DD, YYYY"); // boost date
-                const boostTime = moment(user.premiumSince).format("h:mm A"); // boost time
-                let boostString = "Not Boosting";
-                let bot;
-                let permissions;
+                // Call the userData function
+                userData(user);
+            }
+        }
 
-                // set bot var based on user.bot boolean
-                switch(user.user.bot) {
-                    case false:
-                        bot = "I ain't no beep boop";
-                        break;
-                    case true:
-                        bot = "🤖 beep boop";
-                        break;
-                };
+        async function userData(u) {
+            const joinDate = moment(u.joinedAt).format("MMM DD, YYYY"); // joined date
+            const joinTime = moment(u.joinedAt).format("h:mm A"); // joined time
+            const registerDate = moment(u.user.createdAt).format("MMM DD, YYYY"); // register date
+            const registerTime = moment(u.user.createdAt).format("h:mm A"); // register time
+            const boostDate = moment(u.premiumSince).format("MMM DD, YYYY"); // boost date
+            const boostTime = moment(u.premiumSince).format("h:mm A"); // boost time
+            let boostString = "No";
+            let bot;
 
-                // If user is boosting the server
-                if(user.premiumSince) {
-                    boostString = `${boostDate}\n${boostTime}`;
+            // set bot var based on user.bot boolean
+            switch(u.user.bot) {
+                case false:
+                    bot = "I ain't no beep boop";
+                    break;
+                case true:
+                    bot = "🤖 beep boop";
+                    break;
+            };
+
+            // If user is boosting the server
+            if(u.premiumSince) {
+                boostString = `${boostDate}\n${boostTime}`;
+            }
+
+            // Find all warnings from the user, if any
+            await Models.warning.findAll({where:{user_id: u.user.id}, raw: true}).then((info) => {
+                // If there are warnings then assign the amount to the warnings var
+                if(info) {
+                    warnings = info.length;
                 }
+            });
 
-                // If user is admin just set permissions to "All"
-                if(user.hasPermission("ADMINISTRATOR")) {
-                    permissions = "All";
-
-                // If user isn't admin then show all permissions
-                } else {
-                    // Get all permissions, convert them to csv, then replace underscores with spaces
-                    permissions = user.permissions.toArray().join(", ").replace(/_/g," ");
-                    // Make the first letter of each word caps
-                    permissions = permissions.split(' ').map(s => s.slice(0, 1).toUpperCase() + s.slice(1).toLowerCase()).join(' ');
+            // Find all mutes from the user, if any
+            await Models.mute.findAll({where:{user_id: u.user.id}, raw: true}).then((info) => {
+                // If there are warnings then assign the amount to the warnings var
+                if(info) {
+                    mutes = info.length;
                 }
+            });
 
-                // Find all warnings from the user, if any
-                await Models.warning.findAll({where:{user_id: user.user.id}, raw: true}).then((warns) => {
-                    // If there are warnings then assign the amount to the warnings var
-                    if(warns) {
-                        warnings = warns.length;
+            // Find all kicks from the user, if any
+            await Models.kick.findAll({where:{user_id: u.user.id}, raw: true}).then((info) => {
+                // If there are kicks then assign the amount to the kicks var
+                if(info) {
+                    kicks = info.length;
+                }
+            });
+
+            // Find all bans from the user, if any
+            await Models.ban.findAll({where:{user_id: u.user.id}, raw: true}).then((info) => {
+                // If there are bans then assign the amount to the bans var
+                if(info) {
+                    bans = info.length;
+                }
+            });
+
+            // Find all points and level from the user, if any
+            await Models.user.findAll({where:{user_id: u.user.id}, raw: true}).then((info) => {
+                // If there are points then assign the amount to the bans var
+                if(info) {
+                    points = info.points;
+                    level = info.level;
+                }
+            });
+
+            // If points or level are undefined set to 0
+            if (points === undefined) points = 0;
+            if (level === undefined) level = 0;
+
+            // Create the embed
+            let userEmbed = new Discord.MessageEmbed()
+                .setColor(u.displayHexColor)
+                .setDescription(`Information for ${u}`)
+                .setAuthor(`${u.user.username}#${u.user.discriminator}`, u.user.displayAvatarURL({dynamic:true}))
+                .setThumbnail(u.user.displayAvatarURL({dynamic:true}))
+                .addFields(
+                    {
+                        name: `Nickname`,
+                        value: `${u.nickname || "None"}`,
+                        inline: false
+                    },
+                    {
+                        name: `Joined`,
+                        value: `${joinDate}\n${joinTime}`,
+                        inline: true
+                    },
+                    {
+                        name: `Registered`,
+                        value: `${registerDate}\n${registerTime}`,
+                        inline: true
+                    },
+                    {
+                        name: `Boosting`,
+                        value: `${boostString}`,
+                        inline: true
+                    },
+                    {
+                        name: `Beep Boop`,
+                        value: `${bot}`,
+                        inline: true
+                    },
+                    {
+                        name: `Level`,
+                        value: `${level}`,
+                        inline: true
+                    },
+                    {
+                        name: `Points`,
+                        value: `${points}`,
+                        inline: true
                     }
-                });
-
-                // Create the embed
-                let userEmbed = new Discord.MessageEmbed()
-                    .setColor(user.displayHexColor)
-                    .setDescription(`Information for ${user}`)
-                    .setAuthor(`${user.user.username}#${user.user.discriminator}`, user.user.displayAvatarURL({dynamic:true}))
-                    .setThumbnail(user.user.displayAvatarURL({dynamic:true}))
-                    .addFields(
-                        {
-                            name: `Joined`,
-                            value: `${joinDate}\n${joinTime}`,
-                            inline: true
-                        },
-                        {
-                            name: `Registered`,
-                            value: `${registerDate}\n${registerTime}`,
-                            inline: true
-                        },
-                        {
-                            name: `Server Booster`,
-                            value: `${boostString}`,
-                            inline: true
-                        },
-                        {
-                            name: `Nickname`,
-                            value: `${user.nickname || "None"}`,
-                            inline: true
-                        },
-                        {
-                            name: `Beep Boop`,
-                            value: `${bot}`,
-                            inline: true
-                        },
 
 
-                    )
-                    .setTimestamp()
-                    .setFooter(`User ID: ${user.user.id}`);
+                )
+                .setTimestamp()
+                .setFooter(`User ID: ${u.user.id}`);
 
-                    // If the user is a mod or higher role and the requested user doesn't have any warnings
-                    if(message.member.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name)) && warnings > 0) {
-                        userEmbed
-                        .addField(`Warnings`, `${warnings}`, true)
-                        .addField(`Roles`, `${user.roles.cache.map(role => role).join(", ")}`, false)
-                        .addField(`Permissions`, `${permissions}`, false);
+                // If the user is a mod or higher role and the requested user doesn't have any warnings
+                if(message.member.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name)) && warnings > 0) {
+                    userEmbed
+                    .addField(`Warnings`, `${warnings}`, true)
+                    .addField(`Mutes`, `${mutes}`, true)
+                    .addField(`\u200B`, `\u200B`, true) //add empty field for formatting
+                    .addField(`Kicks`, `${kicks}`, true)
+                    .addField(`Bans`, `${bans}`, true)
+                    .addField(`\u200B`, `\u200B`, true); //add empty field for formatting
 
-                        // If the command was used in a public channel
-                        if(message.channel !== modChannel && message.channel !== superChannel && message.channel !== adminChannel) {
-                            // Send embed to the mod log channel
-                            actionLog.send({embed: userEmbed});
+                    // If the command was used in a public channel
+                    if(message.channel !== modChannel && message.channel !== superChannel && message.channel !== adminChannel) {
+                        // Send embed to the mod log channel
+                        actionLog.send({embeds: [userEmbed]});
 
-                            // If the user didn't use the command in the action log channel
-                            if(message.channel !== actionLog) {
-                                // Let the user know the info was sent
-                                message.channel.send(`I've sent a message containing the data you requested to ${actionLog}.`);
-                            }
-
-                        // If the command was used in a mod+ channel
-                        } else {
-                            // Send the message
-                            message.channel.send({embed: userEmbed})
+                        // If the user didn't use the command in the action log channel
+                        if(message.channel !== actionLog) {
+                            // Let the user know the info was sent
+                            message.channel.send(`I've sent a message containing the data you requested to ${actionLog}.`);
                         }
 
-                    // If the user isn't a mod or higher
+                    // If the command was used in a mod+ channel
                     } else {
-                        userEmbed
-                        .addField(`Roles`, `${user.roles.cache.map(role => role).join(", ")}`, false)
-                        .addField(`Permissions`, `${permissions}`, false);
-
-                        // Send embed
-                        message.channel.send({embed: userEmbed});
+                        // Send the message
+                        message.channel.send({embeds: [userEmbed]})
                     }
-            }
+
+                // If the user isn't a mod or higher
+                } else {
+                    // Send embed
+                    message.channel.send({embeds: [userEmbed]});
+                }
         }
     },
 };

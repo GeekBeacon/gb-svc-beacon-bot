@@ -10,8 +10,8 @@ module.exports = {
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
         let triggerArr = [];
 
-        // Exclude master control and trick-or-treat channels
-        if(message.channel.name.includes("master-control") || message.channel.name.includes("trick")) return;
+        // Exclude master control channels
+        if(message.channel.name.includes("master-control")) return;
 
         // If deleted due to an unapproved url then ignore
         if(deleteSet.has(message.id)) {
@@ -60,7 +60,79 @@ module.exports = {
             }
 
             // Send the embed to the action log channel
-            actionLog.send({embed: delEmbed});
+            actionLog.send({embeds: [delEmbed]});
+
+            /* POINT REMOVAL */
+            const thxRegex = /\b(thanks*|thx*|ty*|thank\s*you*)\b/
+            // Check if the message was a reply
+            if(message.reference) {
+                // Make sure the post is from the same guild (not an automated message when following channels in other servers)
+                if(message.reference.guildId === message.guildId) {
+                    // Get the data about the reference
+                    message.fetchReference().then((reference) => {
+                        // Ensure the message isn't a system message about a message being pinned
+                        if(reference.pinned === false) {
+                            if(message.author.id !== reference.author.id) {
+                                // Check if the user said thanks within their reply
+                                if(message.content.toLowerCase().match(thxRegex)) {
+
+                                    // Call the addToDB function to update or create the user with 3 point value
+                                    removeFromDB(reference.author.id, 3);
+                                }
+                            }
+                        }
+                    })
+                }
+            } else {
+                // Call the addToDB function to update or create the user with 1 point value
+                removeFromDB(message.author.id, 1);
+            }
+
+            function removeFromDB(uid, pval) {
+                /* 
+                * Sync the model to the table
+                * Creates a new table if table doesn't exist, otherwise just inserts a new row
+                * id, createdAt, and updatedAt are set by default; DO NOT ADD
+                !!!!
+                    Keep force set to false otherwise it will overwrite the table instead of making a new row!
+                !!!!
+                */
+                Models.user.sync({force: false}).then(() => {
+                    // Check if the user is in the db already
+                    Models.user.findOne({where: {user_id: uid}, raw: true}).then((user) => {
+
+                        // If the user is in the db
+                        if(user) {
+
+                            // Remove points to the existing points value
+                            let pointsVal = user.points - pval;
+                            let level = 0;
+
+                            // Determine the user's level
+                            switch(pointsVal) {
+                                case pointsVal >= 1000:
+                                    level = 5;
+                                    break;
+                                case pointsVal >= 500:
+                                    level = 4;
+                                    break;
+                                case pointsVal >= 100:
+                                    level = 3;
+                                    break;
+                                case pointsVal >= 50:
+                                    level = 2;
+                                    break;
+                                default:
+                                    level = 1;
+                                    break;
+                            };
+
+                            // Update the user's points and level
+                            Models.user.update({points: pointsVal, level: level}, {where: {user_id: uid}});
+                        }
+                    })
+                })
+            }
         }
     },
     purgeHandler: function(a, m, c) {
@@ -71,13 +143,13 @@ module.exports = {
         // Check if the argument given was a number
         if(!args[0].match(regex)) {
             // Let the user know that they provided an incorrect argument type
-            return message.reply(`uh oh! You have provided an incorrect value for the amount of messages to delete!`);
+            return message.reply(`Uh oh! You have provided an incorrect value for the amount of messages to delete!`);
         } else {
             let count = parseInt(args[0]); //count var
 
             // Ensure message limit isn't exceeded
             if(count > 100) {
-                return message.reply(`you can only delete 100 messages at a time, please try again!`);
+                return message.reply(`You can only delete 100 messages at a time, please try again!`);
             }
 
             // Delete the command message itself
@@ -112,7 +184,7 @@ module.exports = {
                         timestamp: new Date(),
                     };
 
-                    superLog.send({embed: bulkEmbed});
+                    superLog.send({embeds: [bulkEmbed]});
                 });
             })
         };
@@ -172,7 +244,7 @@ module.exports = {
             );
         }
         // Send the edit embed to the super log channel
-        superLog.send({embed: editEmbed}).then(() => {
+        superLog.send({embeds: [editEmbed]}).then(() => {
             // Loop through the bannedUrl list
             bannedUrls.list.forEach((domain) => {
                 // Add each domain to the bannedUrlArr var
@@ -196,14 +268,8 @@ module.exports = {
                     // If not then call the handleUrl function from the ModerationController file
                     this.handleUrl(newMsg, regexMatch, deleteSet);
                 };
-            } else {
-                // Make sure this is the first time the message has been edited
-                if(newMsg.edits.length < 3) {
-                    // Trigger the message event with the new message
-                    client.emit("message", newMsg);
-                }
             }
-        })
+        });
     },
     kickHandler: function(a, m, c) {
         const args = a, message = m, client = c;
@@ -226,7 +292,7 @@ module.exports = {
         // Make sure the first arg was a user mention or a user id
         if(isNaN(args[0]) && !args[0].startsWith("<@")) {
             // Let user know they need to provide a user mention or a valid user id
-            message.reply(`uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
+            message.reply(`Uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
         } else {
 
             // Check if a user mention was given
@@ -236,7 +302,7 @@ module.exports = {
             } else {
                 // If invalid id let the user know
                 if(message.guild.members.cache.get(args[0]) === undefined) {
-                    return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
+                    return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
 
                 // If user found, assign it to the user var
                 } else {
@@ -249,10 +315,10 @@ module.exports = {
                 return message.channel.send(`You can't kick no beep boop!`);
             // If the user tries to kick themselves then deny kicking them
             } else if(user.user.id === message.author.id) {
-                return message.reply(`you can't kick yourself from the server, silly!`);
+                return message.reply(`You can't kick yourself from the server, silly!`);
             // If the user is a mod+ then deny kicking them
             } else if(user.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
-                return message.reply(`you got guts, trying to kick a ${user.roles.highest} member!`);
+                return message.reply(`You got guts, trying to kick a ${user.roles.highest} member!`);
             // If the user is the server owner then deny kicking them
             } else if (user.user.id === user.guild.ownerID) {
                 return message.reply(`I hope you didn't really think you could kick the server owner...`);
@@ -343,7 +409,7 @@ module.exports = {
                                     // Kick the user from the server
                                     user.kick(reason).then(() => {
                                         // Send the embed to the action log channel
-                                        actionLog.send({embed: kickEmbed});
+                                        actionLog.send({embeds: [kickEmbed]});
                                         // Let mod know the user has been kicked
                                         message.channel.send(`${user.user.username} was successfully kicked from the server!`)
                                     });
@@ -356,12 +422,12 @@ module.exports = {
                 // Check if a user mention was used
                 if(message.mentions.users.first()) {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for kicking, please be sure to provide a reason for this action!\nExample: \`${prefix}kick @${user.user.tag}, reason\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for kicking, please be sure to provide a reason for this action!\nExample: \`${prefix}kick @${user.user.tag}, reason\``);
 
                 // If no user mention was given then just output the id they provided
                 } else {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for kicking, please be sure to provide a reason for this action!\nExample: \`${prefix}kick ${user}, reason\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for kicking, please be sure to provide a reason for this action!\nExample: \`${prefix}kick ${user}, reason\``);
                 }
             }
         }
@@ -385,7 +451,7 @@ module.exports = {
         // Make sure the first arg was a user mention or a user id
         if(isNaN(newArgs[0]) && !newArgs[0].startsWith("<@")) {
             // Let user know they need to provide a user mention or a valid user id
-            message.reply(`uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
+            message.reply(`Uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
         } else {
 
             // Check if a user mention was given
@@ -396,7 +462,7 @@ module.exports = {
                     user = message.mentions.members.first(); // get user tag
                 } catch(e) {
                     // If unable to get the user, let the mod know
-                    return message.reply(`uh oh! That user isn't a member of this guild!`);
+                    return message.reply(`Uh oh! That user isn't a member of this guild!`);
                 }
 
                 // If user is a bot then deny banning it
@@ -404,10 +470,10 @@ module.exports = {
                     return message.channel.send(`You can't ban no beep boop!`);
                 // If the user tries to ban themselves then deny banning them
                 } else if(user.user.id === message.author.id) {
-                    return message.reply(`you can't ban yourself from the server, silly!`);
+                    return message.reply(`You can't ban yourself from the server, silly!`);
                 // If the user is a mod+ then deny banning them
                 } else if(user.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
-                    return message.reply(`you got guts, trying to ban a ${user.roles.highest} member!`);
+                    return message.reply(`You got guts, trying to ban a ${user.roles.highest} member!`);
                 // If the user is the server owner then deny banning them
                 } else if (user.user.id === user.guild.ownerID) {
                     return message.reply(`I hope you didn't really think you could ban the server owner...`);
@@ -424,22 +490,22 @@ module.exports = {
                     user = await client.users.fetch(newArgs[0]);
                 } catch(e) {
                     // If unable to get the user, let the mod know
-                    return message.reply(`uh oh! I wasn't able to find that user!`);
+                    return message.reply(`Uh oh! I wasn't able to find that user!`);
                 }
 
                 // Get bans from the server
-                bans = await message.guild.fetchBans();
+                bans = await message.guild.bans.fetch();
 
                 // Check if user is banned
                 if(bans.has(user.id)) {
                     // If user is banned then use the mod know
-                    return message.reply(`you silly! ${user} is already banned!`);
+                    return message.reply(`You silly! ${user} is already banned!`);
                 };
                 
 
                 // If user is undefined let the moderator know
                 if(user === undefined) {
-                    return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
+                    return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
                 }
             }
 
@@ -447,7 +513,7 @@ module.exports = {
             if(newArgs[1] && user !== undefined) {
                 // If a length wasn't given then let the user know it is required
                 if(!newArgs[2]) {
-                    return message.reply(`uh oh! It seems you forgot to give a length for ther ban, please be sure to provide a ban length for this action!\nExample: \`${prefix}ban ${user}, reason, length\``);
+                    return message.reply(`Uh oh! It seems you forgot to give a length for ther ban, please be sure to provide a ban length for this action!\nExample: \`${prefix}ban ${user}, reason, length\``);
 
                 // If both a reason and length were given ban the user and log the action in the database
                 } else {
@@ -465,12 +531,12 @@ module.exports = {
                         banValue = 999; // assign value
                         banUnit = "years"; // set unit
                         banLength = "an indefinite amount of time"; // set length for description
+                    // If the user input a duration shorter than 1 hour
+                    } else if (banUnit.toLowerCase().includes("min") || banUnit.toLowerCase().includes("sec") || banUnit === "s" || banUnit === "m") {
+                        return message.reply(`Please provide a ban time that is at least 1 hour long.`);
                     // Check if the user provided an accepted format
                     } else if(!banLength.match(banLengthRegex)) {
-                        return message.reply(`uh oh! It seems like you entered an invalue ban duration! Please use formats such as these for the ban duration: \`6 years\`, \`17d\`, \`permanent\`, \`3 wks\``)
-                    // Ensure the ban duration is at least 1 minute
-                    } else if (banUnit === "s" || banUnit === "sec" || banUnit === "secs" || banUnit === "seconds" || banUnit === "second") {
-                        return message.reply(`please give a duration that is at least 1 minute in length!`);
+                        return message.reply(`Uh oh! It seems like you entered an invalue ban duration! Please use formats such as these for the ban duration: \`6 years\`, \`17d\`, \`permanent\`, \`3 wks\``)
                     }
 
                     let unbanDate = now.add(banValue, banUnit); //create the unban date
@@ -478,7 +544,7 @@ module.exports = {
                     // Make sure the unban date is after the current time
                     if(moment(unbanDate).isAfter(now)) {
                         // If not after the current time, let the user know how to fix the problem
-                        return message.reply("uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
+                        return message.reply("Uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
                     }
 
                     unbanDate = unbanDate.format(`MMM DD, YYYY HH:mm:ss`); //format
@@ -565,7 +631,7 @@ module.exports = {
                                         // Ban the user from the server
                                         message.guild.members.ban(user.id, {reason: reason}).then(() => {
                                             // Send the embed to the action log channel
-                                            actionLog.send({embed: banEmbed});
+                                            actionLog.send({embeds: [banEmbed]});
                                             message.channel.send(`${user.username} was successfully banned for ${banLength}!`)
                                         });
                                     });
@@ -580,12 +646,12 @@ module.exports = {
                 // Check if a user mention was used
                 if(message.mentions.users.first()) {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for banning, please be sure to provide a reason for this action!\nExample: \`${prefix}ban @${user.tag}, reason, length\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for banning, please be sure to provide a reason for this action!\nExample: \`${prefix}ban @${user.tag}, reason, length\``);
 
                 // If no user mention was given then just output the id they provided
                 } else {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for banning, please be sure to provide a reason for this action!\nExample: \`${prefix}ban ${user}, reason, length\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for banning, please be sure to provide a reason for this action!\nExample: \`${prefix}ban ${user}, reason, length\``);
                 }
             }
         }
@@ -605,12 +671,12 @@ module.exports = {
         // Make sure the first arg was a user id
         if(isNaN(args[0])) {
             // Let user know they need to provide a valid user id
-            message.reply(`uh oh! Looks like you gave an invalid user id. Make sure that you are providing a valid user id!`);
+            message.reply(`Uh oh! Looks like you gave an invalid user id. Make sure that you are providing a valid user id!`);
         } else {
             let userId = args[0];
 
             // Attempt to fetch the user
-            client.users.fetch(userId.toString()).then((u) => {
+            client.users.fetch(userId).then((u) => {
                 user = u; //assign user
 
                 // If a reason was given then unban the user and log the action to the database
@@ -623,7 +689,7 @@ module.exports = {
                     reason = reason.trim(); // remove any excess whitespace
 
                     // Fetch the ban from the server
-                    message.guild.fetchBan(user).then(() => {
+                    message.guild.bans.fetch(user).then(() => {
                         
                         // Search the db for the ban
                         Models.ban.findOne({where: {user_id: userId, completed: 0}, raw:true}).then((data) => {
@@ -697,7 +763,7 @@ module.exports = {
                                             Models.ban.update({completed: 1}, {where: {user_id: userId}});
 
                                             // Send the embed to the action log channel
-                                            actionLog.send({embed: unbanEmbed});
+                                            actionLog.send({embeds: [unbanEmbed]});
 
                                             // Reply with a message
                                             message.channel.send(`${user.username} was successfully unbanned!`)
@@ -706,20 +772,20 @@ module.exports = {
                                 });
                             } else {
                                 // If no data was found in the db
-                                message.channel.send(`uh oh, it looks like there is no information on this ban in the database!`)
+                                message.channel.send(`Uh oh, it looks like there is no information on this ban in the database!`)
                             }
                         });
                     }).catch((e) => {
                         // If no ban was found for that user
-                        return message.reply(`you silly! ${user} isn't banned!`)
+                        return message.reply(`You silly! ${user} isn't banned!`)
                     });
                 } else {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for unbanning, please be sure to provide a reason for this action!\nExample: \`${prefix}unban ${userId}, reason\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for unbanning, please be sure to provide a reason for this action!\nExample: \`${prefix}unban ${userId}, reason\``);
                 };
             }).catch((e) => {
                 // Let the user know there was no user with the given id
-                return message.reply(`uh oh! Looks like there is no user with the id \`${userId}\``);
+                return message.reply(`Uh oh! Looks like there is no user with the id \`${userId}\``);
             });
         }
     },
@@ -742,12 +808,12 @@ module.exports = {
         // Make sure the first arg was a user mention or a user id
         if(isNaN(args[0]) && !args[0].startsWith("<@")) {
             // Let user know they need to provide a user mention or a valid user id
-            message.reply(`uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
+            message.reply(`Uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
         
         // Make sure the reason wasn't too long for the db column
         } else if(reason.length > 1024) {
             // If the reason is too long let the mod know
-            return message.reply(`uh oh! Looks like your message was too long, try shortening the reason or inserting a pastebin link instead!`);
+            return message.reply(`Uh oh! Looks like your message was too long, try shortening the reason or inserting a pastebin link instead!`);
         } else {
 
             // Check if a user mention was given
@@ -760,7 +826,7 @@ module.exports = {
 
                 // If user is undefined let the moderator know
                 if(user.user === undefined) {
-                    return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``)
+                    return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``)
                 }
             }
 
@@ -815,7 +881,7 @@ module.exports = {
                             }
                         };
 
-                        actionLog.send({embed: warnEmbed}); //send embed
+                        actionLog.send({embeds: [warnEmbed]}); //send embed
                         message.reply(`${user.user.username} was successfully warned!`);
                         
                     });
@@ -827,12 +893,12 @@ module.exports = {
                 // Check if a user mention was used
                 if(message.mentions.users.first()) {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for warning, please be sure to provide a reason for this action!\nExample: \`${prefix}warn @${user.tag}, reason\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for warning, please be sure to provide a reason for this action!\nExample: \`${prefix}warn @${user.tag}, reason\``);
 
                 // If no user mention was given then just output the id they provided
                 } else {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for warning, please be sure to provide a reason for this action!\nExample: \`${prefix}warn ${user}, reason\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for warning, please be sure to provide a reason for this action!\nExample: \`${prefix}warn ${user}, reason\``);
                 }
             }
         }
@@ -860,7 +926,7 @@ module.exports = {
         if(!isNaN(newArgs[0])) {
             // If invalid id let the user know
             if(message.guild.members.cache.get(newArgs[0]) === undefined) {
-                return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
+                return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
 
             // If user found, assign it to the user var
             } else {
@@ -871,11 +937,11 @@ module.exports = {
             user = message.mentions.members.first(); // get user tag
             if(!user) {
                 // Let the user know they provided an invalid user mention
-                return message.reply(`uh oh! Looks like you gave an invalid user mention. Make sure that you are mentioning a valid user!`);
+                return message.reply(`Uh oh! Looks like you gave an invalid user mention. Make sure that you are mentioning a valid user!`);
             }
         } else {
             // Let user know they need to provide a user mention or a valid user id
-            return message.reply(`uh oh! You must provide me with a user mention or id so I know who to mute!`);
+            return message.reply(`Uh oh! You must provide me with a user mention or id so I know who to mute!`);
         }
 
         // If user is a bot then deny banning it
@@ -883,10 +949,10 @@ module.exports = {
             return message.channel.send(`You can't mute no beep boop!`);
         // If the user tries to ban themselves then deny banning them
         } else if(user.user.id === message.author.id) {
-            return message.reply(`you can't mute yourself, silly!`);
+            return message.reply(`You can't mute yourself, silly!`);
         // If the user is a mod+ then deny banning them
         } else if(user.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
-            return message.reply(`you got guts, trying to mute a ${user.roles.highest} member!`);
+            return message.reply(`You got guts, trying to mute a ${user.roles.highest} member!`);
         // If the user is the server owner then deny banning them
         } else if (user.user.id === user.guild.ownerID) {
             return message.reply(`I hope you didn't really think you could mute the server owner...`);
@@ -904,7 +970,7 @@ module.exports = {
                 if(newArgs[2] && user !== undefined) {
                     // If a length wasn't given then let the user know it is required
                     if(!newArgs[3]) {
-                        return message.reply(`uh oh! It seems you forgot a required part of the mute command, please be sure to provide all options for this action!\nExample: \`${prefix}mute ${user}, type, reason, length\``);
+                        return message.reply(`Uh oh! It seems you forgot a required part of the mute command, please be sure to provide all options for this action!\nExample: \`${prefix}mute ${user}, type, reason, length\``);
                     }
 
                     const reason = newArgs[2]; //assign the mute reason
@@ -915,25 +981,28 @@ module.exports = {
                     const timezone = moment().tz(moment.tz.guess()).format(`z`); // server timezone
                     const muteLengthRegex = /(\d+\s*\D+$|^permanent$|^perma$|^perm$|^p{1}){1}/; //regex for mute time format
                     let mutedRole = message.guild.roles.cache.find(r => r.name.toLowerCase() === `muted - ${muteType}`); //muted role
+                    let unmuteDate;
 
                     // Check if the user input for a perma mute
-                    if(muteUnit.toLowerCase() === "p" || muteUnit.toLowerCase().includes("perm")) {
+                    if(muteUnit.toLowerCase().includes("perm")) {
                         muteValue = 999; // assign value
                         muteUnit = "years"; // set unit
                         muteLength = "an indefinite amount of time"; // set length for description
                     // Check if the user provided an accepted format
+                    } else if (muteUnit.toLowerCase().includes("min")) {
+                        muteUnit = "minutes";
                     } else if(!muteLength.match(muteLengthRegex)) {
-                        return message.reply(`uh oh! It seems like you entered an invalue mute duration! Please use formats such as these for the mute duration: \`6 years\`, \`17d\`, \`permanent\`, \`3 wks\``)
-                    } else if (muteUnit === "s" || muteUnit === "sec" || muteUnit === "secs" || muteUnit === "seconds" || muteUnit === "second") {
-                        return message.reply(`please give a duration that is at least 1 minute in length!`);
+                        return message.reply(`Uh oh! It seems like you entered an invalue mute duration! Please use formats such as these for the mute duration: \`6 years\`, \`17d\`, \`permanent\`, \`3 wks\``)
+                    } else if (muteUnit.toLowerCase() === "sec" || muteUnit.toLowerCase() === "secs" || muteUnit.toLowerCase() === "seconds" || muteUnit.toLowerCase() === "second") {
+                        return message.reply(`Please give a duration that is at least 1 minute in length!`);
                     }
 
-                    let unmuteDate = now.add(muteValue, muteUnit); //create the unmute date
+                    unmuteDate = now.add(muteValue, muteUnit); //create the unmute date
 
                     // Make sure the unban date is after the current time
                     if(moment(unmuteDate).isAfter(now)) {
                         // If not after the current time, let the user know how to fix the problem
-                        return message.reply("uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
+                        return message.reply("Uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
                     }
                     unmuteDate = unmuteDate.format(`MMM DD, YYYY HH:mm:ss`); //format
 
@@ -944,17 +1013,17 @@ module.exports = {
                     if(!mutedRole) {
                         // Check if user is a super or higher role
                         if(inSuperRole || inAdminRole || isOwner) {
-                            return message.reply(`uh oh! It seems there isn't a muted - ${muteType} role, please use \`${prefix}createmute\` to make the role!`);
+                            return message.reply(`Uh oh! It seems there isn't a muted - ${muteType} role, please use \`${prefix}createmute\` to make the role!`);
                         // If not a super or higher let them know to ask a super or higher
                         } else {
                             // If no muted role let user know to create it
-                            return message.reply(`uh oh! It seems there isn't a muted - ${muteType} role, please ask a ${superRole} or ${adminRole} to make the role with \`${prefix}createmute\`!`);
+                            return message.reply(`Uh oh! It seems there isn't a muted - ${muteType} role, please ask a ${superRole} or ${adminRole} to make the role with \`${prefix}createmute\`!`);
                         }
                     }
 
                     // If user is already muted let user know
                     if(inMutedRole) {
-                        return message.reply(`uh oh! Looks like ${user.displayName} is already muted!`)
+                        return message.reply(`Uh oh! Looks like ${user.displayName} is already muted!`)
                     }
 
                     /* 
@@ -1017,7 +1086,7 @@ module.exports = {
                                     ],
                                     timestamp: new Date(),
                                 };
-                                actionLog.send({embed: muteEmbed});
+                                actionLog.send({embeds: [muteEmbed]});
                                 message.channel.send(`${user.displayName} was successfully muted for ${muteLength}!`);
                             });
                         });
@@ -1027,28 +1096,28 @@ module.exports = {
                     // Check if a user mention was used
                     if(message.mentions.users.first()) {
                         // Let user know a reason is needed
-                        message.reply(`uh oh! It seems you forgot to give a reason for muting, please be sure to provide a reason for this action!\nExample: \`${prefix}mute @${user.user.tag}, type, reason, length\``);
+                        message.reply(`Uh oh! It seems you forgot to give a reason for muting, please be sure to provide a reason for this action!\nExample: \`${prefix}mute @${user.user.tag}, type, reason, length\``);
 
                     // If no user mention was given then just output the id they provided
                     } else {
                         // Let user know a reason is needed
-                        message.reply(`uh oh! It seems you forgot to give a reason for muting, please be sure to provide a reason for this action!\nExample: \`${prefix}mute ${user}, type, reason, length\``);
+                        message.reply(`Uh oh! It seems you forgot to give a reason for muting, please be sure to provide a reason for this action!\nExample: \`${prefix}mute ${user}, type, reason, length\``);
                     }
                 };
                 
             } else {
-                return message.reply(`uh oh! It seems you gave an unaccepted type of mute! Make sure you choose a mute from this list:  __server__, __voice__, __text__, or __reactions__`)
+                return message.reply(`Uh oh! It seems you gave an unaccepted type of mute! Make sure you choose a mute from this list:  __server__, __voice__, __text__, or __reactions__`)
             }
         } else {
             // Check if a user mention was used
             if(message.mentions.users.first()) {
                 // Let user know a type is needed
-                return message.reply(`uh oh! It seems you forgot to tell me the type of mute to perform on the user! Please try again with the accepted mute types: __server__, __voice__, __text__, or __reactions__!\nExample: \`${prefix}mute @${user.user.tag}, type, reason, length\``);
+                return message.reply(`Uh oh! It seems you forgot to tell me the type of mute to perform on the user! Please try again with the accepted mute types: __server__, __voice__, __text__, or __reactions__!\nExample: \`${prefix}mute @${user.user.tag}, type, reason, length\``);
 
             // If no user mention was given then just output the id they provided
             } else {
                 // Let user know a type is needed
-                return message.reply(`uh oh! It seems you forgot to tell me the type of mute to perform on the user! Please try again with the accepted mute types: __server__, __voice__, __text__, or __reactions__!\nExample: \`${prefix}mute @${user}, type, reason, length\``);
+                return message.reply(`Uh oh! It seems you forgot to tell me the type of mute to perform on the user! Please try again with the accepted mute types: __server__, __voice__, __text__, or __reactions__!\nExample: \`${prefix}mute @${user}, type, reason, length\``);
             }
         }
     },
@@ -1074,7 +1143,7 @@ module.exports = {
         if(!isNaN(args[0])) {
             // If invalid id let the user know
             if(message.guild.members.cache.get(args[0]) === undefined) {
-                return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
+                return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
 
             // If user found, assign it to the user var
             } else {
@@ -1085,11 +1154,11 @@ module.exports = {
             user = message.mentions.members.first(); // get user tag
             if(!user) {
                 // Let the user know they provided an invalid user mention
-                return message.reply(`uh oh! Looks like you gave an invalid user mention. Make sure that you are mentioning a valid user!`);
+                return message.reply(`Uh oh! Looks like you gave an invalid user mention. Make sure that you are mentioning a valid user!`);
             }
         } else {
             // Let user know they need to provide a user mention or a valid user id
-            return message.reply(`uh oh! You must provide me with a user mention or id so I know who to mute!`);
+            return message.reply(`Uh oh! You must provide me with a user mention or id so I know who to mute!`);
         }
 
         // Muted role
@@ -1099,11 +1168,11 @@ module.exports = {
         if(!mutedRole) {
             // Check if user is a super or higher role
             if(inSuperRole || inAdminRole || isOwner) {
-                return message.reply(`uh oh! It seems there isn't a muted role, please use \`${prefix}createmute\` to make the role!`);
+                return message.reply(`Uh oh! It seems there isn't a muted role, please use \`${prefix}createmute\` to make the role!`);
             // If not a super or higher let them know to ask a super or higher
             } else {
                 // If no muted role let user know to create it
-                return message.reply(`uh oh! It seems there isn't a muted role, please ask a ${superRole} or ${adminRole} to make the role with \`${prefix}createmute\`!`);
+                return message.reply(`Uh oh! It seems there isn't a muted role, please ask a ${superRole} or ${adminRole} to make the role with \`${prefix}createmute\`!`);
             }
         }
 
@@ -1120,7 +1189,7 @@ module.exports = {
 
             // If the user isn't already muted let the mod know
             if(!inMutedRole) {
-                return message.reply(`uh oh! Looks like ${user.displayName} isn't muted!`)
+                return message.reply(`Uh oh! Looks like ${user.displayName} isn't muted!`)
             }
 
             // Search the db for the mute
@@ -1189,7 +1258,7 @@ module.exports = {
                                     timestamp: new Date(),
                                 };
                                 // Send log to mod log and give feedback to user
-                                actionLog.send({embed: unmuteEmbed});
+                                actionLog.send({embeds: [unmuteEmbed]});
                                 message.channel.send(`${user.displayName} was successfully unmuted!`).then(() => {
                                     // Update the completed field for the mute
                                     Models.mute.update({completed: 1}, {where: {user_id: userId}});
@@ -1202,7 +1271,7 @@ module.exports = {
 
         } else {
             // Let the user know a reason is needed
-            message.reply(`uh oh! It seems you forgot to give a reason for unmuting, please be sure to provide a reason for this action!\nExample: \`${prefix}unmute ${user}, reason\``);
+            message.reply(`Uh oh! It seems you forgot to give a reason for unmuting, please be sure to provide a reason for this action!\nExample: \`${prefix}unmute ${user}, reason\``);
         }
     },
     createMuteHandler: async function(m, c) {
@@ -1221,24 +1290,27 @@ module.exports = {
             if(!mutedServer) {
                 // If no Muted - Server role then create one
                 mutedServer = await message.guild.roles.create({
-                    data: {
-                        name: `Muted - Server`,
-                        color: `#818386`,
-                        position: `${usersRole.position + 1}`,
-                        permissions: [], //set permissions to an empty array so no permissions are given
-                    },
-                    reason: `No "Muted - Server" role, need one to mute users!`,
+                    name: `Muted - Server`,
+                    color: `#818386`,
+                    position: `${usersRole.position + 1}`,
+                    permissions: [], //set permissions to an empty array so no permissions are given
+                    reason: `No "Muted - Server" role, need one to mute users!`
                 });
 
                 // Loop through all channels channels
                 message.guild.channels.cache.forEach(async (channel) => {
-                    // Deny the ability to send messages, speak, add reactions, and use voice activity for each channel for the Muted - Server role
-                    await channel.updateOverwrite(mutedServer, {
-                        SEND_MESSAGES: false,
-                        SPEAK: false,
-                        ADD_REACTIONS: false,
-                        USE_VAD: false
-                    });
+                    // Ignore threads since they don't have permissions
+                    if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
+                        // Deny the ability to send messages, speak, add reactions, and use voice activity for each channel for the Muted - Server role
+                        await channel.permissionOverwrites.edit(mutedServer, {
+                            SEND_MESSAGES: false,
+                            SPEAK: false,
+                            ADD_REACTIONS: false,
+                            USE_VAD: false,
+                            USE_PUBLIC_THREADS: false,
+                            USE_PRIVATE_THREADS: false
+                        });
+                    };
                 });
 
                 // Add the newly created role to the array
@@ -1249,22 +1321,23 @@ module.exports = {
             if(!mutedVoice) {
                 // If no Muted - Voice role then create one
                 mutedVoice = await message.guild.roles.create({
-                    data: {
-                        name: `Muted - Voice`,
-                        color: `#818386`,
-                        position: `${usersRole.position + 1}`,
-                        permissions: [], //set permissions to an empty array so no permissions are given
-                    },
-                    reason: `No "Muted - Voice" role, need one to mute users!`,
+                    name: `Muted - Voice`,
+                    color: `#818386`,
+                    position: `${usersRole.position + 1}`,
+                    permissions: [], //set permissions to an empty array so no permissions are given
+                    reason: `No "Muted - Voice" role, need one to mute users!`
                 });
 
                 // Loop through all channels channels
                 message.guild.channels.cache.forEach(async (channel) => {
-                    // Deny the ability to speak and use voice activity for each channel for the Muted - Voice role
-                    await channel.updateOverwrite(mutedVoice, {
-                        SPEAK: false,
-                        USE_VAD: false
-                    });
+                    // Ignore threads since they don't have permissions
+                    if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
+                        // Deny the ability to speak and use voice activity for each channel for the Muted - Voice role
+                        await channel.permissionOverwrites.edit(mutedVoice, {
+                            SPEAK: false,
+                            USE_VAD: false
+                        });
+                    };
                 });
 
                 // Add the newly created role to the array
@@ -1275,21 +1348,24 @@ module.exports = {
             if(!mutedText) {
                 // If no Muted - Text role then create one
                 mutedText = await message.guild.roles.create({
-                    data: {
-                        name: `Muted - Text`,
-                        color: `#818386`,
-                        position: `${usersRole.position + 1}`,
-                        permissions: [], //set permissions to an empty array so no permissions are given
-                    },
-                    reason: `No "Muted - Text" role, need one to mute users!`,
+                    name: `Muted - Text`,
+                    color: `#818386`,
+                    position: `${usersRole.position + 1}`,
+                    permissions: [], //set permissions to an empty array so no permissions are given
+                    reason: `No "Muted - Text" role, need one to mute users!`
                 });
 
                 // Loop through all channels channels
                 message.guild.channels.cache.forEach(async (channel) => {
-                    // Deny the ability to send messages for each channel for the Muted - Text role
-                    await channel.updateOverwrite(mutedText, {
-                        SEND_MESSAGES: false
-                    });
+                    // Ignore threads since they don't have permissions
+                    if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
+                        // Deny the ability to send messages for each channel for the Muted - Text role
+                        await channel.permissionOverwrites.edit(mutedText, {
+                            SEND_MESSAGES: false,
+                            USE_PUBLIC_THREADS: false,
+                            USE_PRIVATE_THREADS: false
+                        });
+                    };
                 });
 
                 // Add the newly created role to the array
@@ -1300,21 +1376,22 @@ module.exports = {
             if(!mutedReactions) {
                 // If no Muted - Reactions role then create one
                 mutedReactions = await message.guild.roles.create({
-                    data: {
-                        name: `Muted - Reactions`,
-                        color: `#818386`,
-                        position: `${usersRole.position + 1}`,
-                        permissions: [], //set permissions to an empty array so no permissions are given
-                    },
-                    reason: `No "Muted - Reactions" role, need one to mute users!`,
+                    name: `Muted - Reactions`,
+                    color: `#818386`,
+                    position: `${usersRole.position + 1}`,
+                    permissions: [], //set permissions to an empty array so no permissions are given
+                    reason: `No "Muted - Reactions" role, need one to mute users!`
                 });
 
                 // Loop through all channels channels
                 message.guild.channels.cache.forEach(async (channel) => {
-                    // Deny the ability to add reactions for each channel for the Muted - Reactions role
-                    await channel.updateOverwrite(mutedReactions, {
-                        ADD_REACTIONS: false
-                    });
+                    // Ignore threads since they don't have permissions
+                    if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
+                        // Deny the ability to add reactions for each channel for the Muted - Reactions role
+                        await channel.permissionOverwrites.edit(mutedReactions, {
+                            ADD_REACTIONS: false
+                        });
+                    }
                 });
 
                 // Add the newly created role to the array
@@ -1323,11 +1400,11 @@ module.exports = {
 
             message.channel.send(`The ${roles} role(s) was successfully created!`)
         } else {
-            return message.reply(`uh oh! Looks like the muted roles already exist!`)
+            return message.reply(`Uh oh! Looks like the muted roles already exist!`)
         }
     },
-    blacklistHandler: function(m, ar, c) {
-        const message = m, args = ar, client = c;
+    blacklistHandler: function(m, ar, c, tl, bu) {
+        const message = m, args = ar, client = c, triggers = tl, bannedUrls = bu;
         const prefix = client.settings.get("prefix");
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
         const subCommand = args.shift(); //remove the first arg and store it in the subcommand var
@@ -1376,7 +1453,7 @@ module.exports = {
                             timestamp: new Date()
                         };
                         // Send the embed to the action log channel
-                        actionLog.send({embed: blacklistsEmbed});
+                        actionLog.send({embeds: [blacklistsEmbed]});
                         // Let user know the data was sent
                         return message.channel.send(`I've sent the data you requested to ${actionLog}`)
                         
@@ -1393,7 +1470,7 @@ module.exports = {
             } else if(["add", "create"].includes(subCommand.toLowerCase())) {
                 // Make sure array has values
                 if(domains.length === 0) {
-                    return message.reply(`uh oh! Looks like you forgot to give me the url(s) to add!`)
+                    return message.reply(`Uh oh! Looks like you forgot to give me the url(s) to add!`)
                 } else {
 
                     // Regex for ensuring valid url
@@ -1462,8 +1539,12 @@ module.exports = {
                                     ],
                                     timestamp: new Date()
                                 }
+
+                                // Add the url to the bannedUrls List
+                                bannedUrls.list.push(domains[0]);
+
                                 // Send the embed to the action log channel
-                                actionLog.send({embed:blacklistEmbed});
+                                actionLog.send({embeds: [blacklistEmbed]});
                                 // Let the user know the domain was added
                                 message.channel.send(`${domains[0]} was successfully added to the list of banned domains!`);
                             })
@@ -1513,8 +1594,14 @@ module.exports = {
                                     ],
                                     timestamp: new Date()
                                 }
+
+                                // Add each domain to the bannedUrls list
+                                bulkDomains.forEach((item) => {
+                                    bannedUrls.list.push(item);
+                                })
+
                                 // Send the embed to the action log channel
-                                actionLog.send({embed:blacklistsEmbed});
+                                actionLog.send({embeds: [blacklistsEmbed]});
                                 // Let the user know the domain was added
                                 message.channel.send(`The domains were successfully added to the list of banned domains, see ${actionLog} for more info!`);
                                 // If any domains were rejected let the user know
@@ -1534,14 +1621,14 @@ module.exports = {
                 // Make sure user is a super or higher role
                 if(!inSuperRole && !inAdminRole && message.author !== isOwner) {
                     // If not let them know to ask a super or higher to remove the domain
-                    return message.reply(`uh oh! You aren't allowed to remove blacklisted domains, if you feel this domain should be removed please ask a ${superRole} or ${adminRole} to delete it!`)
+                    return message.reply(`Uh oh! You aren't allowed to remove blacklisted domains, if you feel this domain should be removed please ask a ${superRole} or ${adminRole} to delete it!`)
                 }
                 // If no domain was given let user know
                 if(domains.length === 0) {
-                    return message.reply(`uh oh! Looks like you forgot to give me the url(s) to add!`)
+                    return message.reply(`Uh oh! Looks like you forgot to give me the url(s) to add!`)
                 // If more than one domain was given let user know they can only delete one at a time
                 } else if(domains.length !== 1) {
-                    return message.reply(`uh oh! You can only delete one domain at a time!`);
+                    return message.reply(`Uh oh! You can only delete one domain at a time!`);
                 }
                 let domain = domains[0]; //domain var
 
@@ -1567,8 +1654,13 @@ module.exports = {
                         // Let the user know it was removed
                         }).then(() => {
 
-                            // Remove the domain from the allowedUrls list
-                            delete bannedurl.list[item];
+                            // Find the item within the bannedUrls list
+                            const itemIndex = bannedUrls.list.indexOf(item);
+
+                            // If the item was found, remove it from the bannedUrls list
+                            if(itemIndex) {
+                                bannedUrls.list.splice(itemIndex, 1);
+                            }
 
                             // Let user know domain was removed
                             message.channel.send(`I have successfully removed \`${domain}\` from the blacklisted domains!`);
@@ -1583,7 +1675,7 @@ module.exports = {
     },
     handleUrl: function(m, c, rm, deleteSet) {
         const message = m, client = c, regexMatch = rm;
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_l;og_channel_name")))); //mod log channel
+        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
 
         // Add the message id to the deleteSet
         deleteSet.add(message.id);
@@ -1621,8 +1713,9 @@ module.exports = {
             ],
             timestamp: new Date(),
         };
+
         // Send the embed to the mod log
-        actionLog.send({embed: urlEmbed}).then(() => {
+        actionLog.send({embeds: [urlEmbed]}).then(() => {
             // Delete the message with a reason
             message.delete({reason: "Blacklisted URL"}).then(() => {
                 // Let the user know why their message was deleted
@@ -1670,19 +1763,19 @@ module.exports = {
                         timestamp: new Date(),
                     };
 
-                    actionLog.send({embed: slowmodeEmbed});
+                    actionLog.send({embeds: [slowmodeEmbed]});
                     return message.channel.send(`Successfully set slowmode for ${channel} to ${args[2]} seconds!`);
                 });
             // If not a number let user know   
             } else {
-                return message.reply(`uh oh! Looks like you gave me an invalid slowmode interval, please give me the interval you wish to set in seconds between the value of **1** and **21600**!\nExample: \`${prefix}slow enable #${channel.name} 5\``);
+                return message.reply(`Uh oh! Looks like you gave me an invalid slowmode interval, please give me the interval you wish to set in seconds between the value of **1** and **21600**!\nExample: \`${prefix}slow enable #${channel.name} 5\``);
             }
         // If user asked to disable slowmode
         } else if (args[0].toLowerCase() === "disable") {
 
             // If the user tries to disable slowmode for a channel that isn't in slowmode let them know
             if(channel.rateLimitPerUser === 0) {
-                return message.reply(`uh oh! Looks like that channel isn't in slowmode!`)
+                return message.reply(`Uh oh! Looks like that channel isn't in slowmode!`)
             }
 
             // Set the channel to slowmode
@@ -1711,7 +1804,7 @@ module.exports = {
                     timestamp: new Date(),
                 };
 
-                actionLog.send({embed: slowmodeEmbed});
+                actionLog.send({embeds: [slowmodeEmbed]});
                 return message.channel.send(`Successfully disabled slowmode for ${channel}!`);
             });
         };
@@ -1755,7 +1848,7 @@ module.exports = {
                 }
             }).then(() => {
                 // Send the embed to the mod log
-                actionLog.send({embed: bansEmbed});
+                actionLog.send({embeds: [bansEmbed]});
                 // Let the user know the information was sent to the action log channel
                 message.reply(`I've sent the data to the ${actionLog} channel`);
             })
@@ -1831,12 +1924,11 @@ module.exports = {
                         }
 
                         // Send the embed to the action log channel
-                        actionLog.send({embed: banEmbed});
+                        actionLog.send({embeds: [banEmbed]});
                         // Let the user know the information was sent to the action log channel
                         message.reply(`I've sent the data to the ${actionLog} channel`);
                     }
                 }).catch((e) => {
-                    console.log(e)
                     message.channel.send(`Uh oh! It seems the id you provided isn't in the database!`);
                 })
             }
@@ -1863,7 +1955,7 @@ module.exports = {
         } else {
             // If invalid id let the user know
             if(message.guild.members.cache.get(args[1]) === undefined) {
-                return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
+                return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
 
             // If user found, assign it to the user var
             } else {
@@ -1877,7 +1969,7 @@ module.exports = {
             role = message.guild.roles.cache.get(args[2]);
 
             // If the role wasn't found let the user know
-            if(role === undefined) return message.reply(`uh oh! Looks like I wasn't able to find a role with the id \`${args[2]}\`, please try again!`);
+            if(role === undefined) return message.reply(`Uh oh! Looks like I wasn't able to find a role with the id \`${args[2]}\`, please try again!`);
 
         // If a number wasn't given try to find the role based on name
         } else {
@@ -1888,7 +1980,7 @@ module.exports = {
             role = message.guild.roles.cache.find(role => role.name.toLowerCase().includes(roleStr.toLowerCase()));
 
             // If the role wasn't found let the user know
-            if(role === undefined) return message.reply(`uh oh! Looks like I wasn't able to find a role with the name \`${roleStr}\`, please try again!`);
+            if(role === undefined) return message.reply(`Uh oh! Looks like I wasn't able to find a role with the name \`${roleStr}\`, please try again!`);
         }
 
 
@@ -1898,7 +1990,7 @@ module.exports = {
             
             // If author isn't able to edit the user, deny editing the user
             if(message.member.roles.highest.position <= user.roles.highest.position) {
-                return message.reply(`uh oh! You don't have permission to edit this user!`);
+                return message.reply(`Uh oh! You don't have permission to edit this user!`);
             // If author is able to edit the user, proceed
             } else {
                 // If add subcommand was used
@@ -1906,7 +1998,7 @@ module.exports = {
                     // Check if the user already has the role
                     if(user.roles.cache.some(r => r === role)) {
                         // If user already has the role then let author know
-                        return message.reply(`uh oh! This user is already in that role!`)
+                        return message.reply(`Uh oh! This user is already in that role!`)
                     }
 
                     // Add the role to the user
@@ -1941,7 +2033,7 @@ module.exports = {
                         };
 
                         // Send log
-                        actionLog.send({embed: addEmbed}).then(() => {
+                        actionLog.send({embeds: [addEmbed]}).then(() => {
                             // Send feedback
                             message.channel.send(`${user.displayName} was successfully added to the ${role.name} role!`);
                         });
@@ -1952,7 +2044,7 @@ module.exports = {
                     // Check if the user already has the role
                     if(!user.roles.cache.some(r => r === role)) {
                         // If user already has the role then let author know
-                        return message.reply(`uh oh! This user isn't in that role!`)
+                        return message.reply(`Uh oh! This user isn't in that role!`)
                     }
 
                     // Remove the role from the user
@@ -1987,7 +2079,7 @@ module.exports = {
                         };
 
                         // Send log
-                        actionLog.send({embed: removeEmbed}).then(() => {
+                        actionLog.send({embeds: [removeEmbed]}).then(() => {
                             // Send feedback
                             message.channel.send(`${user.displayName} was successfully removed from the ${role.name} role!`);
                         });
@@ -2000,7 +2092,7 @@ module.exports = {
                 // Check if the user already has the role
                 if(user.roles.cache.some(r => r === role)) {
                     // If user already has the role then let author know
-                    return message.reply(`uh oh! This user is already in that role!`)
+                    return message.reply(`Uh oh! This user is already in that role!`)
                 }
 
                 // Add the role to the user
@@ -2035,7 +2127,7 @@ module.exports = {
                     };
 
                     // Send log
-                    actionLog.send({embed: addEmbed}).then(() => {
+                    actionLog.send({embeds: [addEmbed]}).then(() => {
                         // Send feedback
                         message.channel.send(`${user.displayName} was successfully added to the ${role.name} role!`);
                     });
@@ -2046,7 +2138,7 @@ module.exports = {
                 // Check if the user already has the role
                 if(!user.roles.cache.some(r => r === role)) {
                     // If user already has the role then let author know
-                    return message.reply(`uh oh! This user isn't in that role!`)
+                    return message.reply(`Uh oh! This user isn't in that role!`)
                 }
 
                 // Remove the role from the user
@@ -2081,7 +2173,7 @@ module.exports = {
                     };
 
                     // Send log
-                    actionLog.send({embed: removeEmbed}).then(() => {
+                    actionLog.send({embeds: [removeEmbed]}).then(() => {
                         // Send feedback
                         message.channel.send(`${user.displayName} was successfully removed from the ${role.name} role!`);
                     });
@@ -2096,7 +2188,7 @@ module.exports = {
 
         // See if the user added a comma, if not, tell them it is needed
         if(!newArgs[1]) {
-            return message.reply(`uh oh! Looks like you forgot the comma after the user, please try again!`);
+            return message.reply(`Uh oh! Looks like you forgot the comma after the user, please try again!`);
         }
 
         newArgs[1] = newArgs[1].trim(); //remove spaces from new nickname
@@ -2110,7 +2202,7 @@ module.exports = {
                 user = await message.guild.members.fetch(newArgs[0]);
             // If unable to fetch the user let the moderator know
             } catch(e) {
-                return message.reply(`uh oh! It seems you provided me with an invalid user id or that user isn't part of this server!`)
+                return message.reply(`Uh oh! It seems you provided me with an invalid user id or that user isn't part of this server!`)
             }
         // If a user mention was provided
         } else if(newArgs[0].startsWith("<@")) {
@@ -2121,11 +2213,11 @@ module.exports = {
                 user = await message.guild.members.fetch(user);
             // If unable to fetch the user let the moderator know
             } catch(e) {
-                return message.reply(`uh oh! It seems something went wrong, please try again or contact an Administrator!`)
+                return message.reply(`Uh oh! It seems something went wrong, please try again or contact an Administrator!`)
             }
         // If a mention or id wasn't provided let the moderator know
         } else {
-            return message.reply("uh oh! It seems you didn't provide me with a user mention or id!")
+            return message.reply("Uh oh! It seems you didn't provide me with a user mention or id!")
         }
         // Get the current nickname of the user
         oldNick = user.nickname;
@@ -2133,7 +2225,7 @@ module.exports = {
         // Change the user's nickname to the 2nd arg provided
         user.setNickname(newArgs[1]).then(() => {
             // Let the mod know the user's nickname was changed
-            message.reply(`done! ${user.user.username}'s nickname is now \`${newArgs[1]}\`!`);
+            message.reply(`Done! ${user.user.username}'s nickname is now \`${newArgs[1]}\`!`);
 
             // Create the embed
             const nickEmbed = {
@@ -2174,11 +2266,11 @@ module.exports = {
                 timestamp: new Date(),
             };
             // Send the embed to the action log channel
-            actionLog.send({embed: nickEmbed});
+            actionLog.send({embeds: [nickEmbed]});
 
         // If unable to change the user's nickname let the moderator know
         }).catch(e => {
-            message.reply(`uh oh! It seems I'm not able to change that user's nickname, most likely due to permissions!`)
+            message.reply(`Uh oh! It seems I'm not able to change that user's nickname, most likely due to permissions!`)
         })
     },
     tempVoiceHandler: function(message, args, client) {
@@ -2190,12 +2282,12 @@ module.exports = {
 
         // If the user gave too many arguments let them know
         if(newArgs.length > 2) {
-            return message.reply(`uh oh! Looks like you gave too many arguments, please make sure to only give the required channel name and an optional member limit for the channel!\nExample: \`${prefix}tempvoice New Channel, 10\``);
+            return message.reply(`Uh oh! Looks like you gave too many arguments, please make sure to only give the required channel name and an optional member limit for the channel!\nExample: \`${prefix}tempvoice New Channel, 10\``);
 
         // If the user only gave one argument assign it as the channel name
         } else if(newArgs.length === 1) {
             // Create the temporary voice channel in the same category the server's afk channel is in
-            message.guild.channels.create(`⏱️ ${name}`, {type: 'voice', parent: message.guild.afkChannel.parent}).then((channel) => {
+            message.guild.channels.create(`⏱️ ${name}`, {type: 'GUILD_VOICE', parent: message.guild.afkChannel.parent}).then((channel) => {
                 // Move the newly created channel above the afk channel
                 channel.setPosition(message.guild.afkChannel.position - 1, {relative: true}).then(() => {
                     
@@ -2242,7 +2334,7 @@ module.exports = {
                             };
 
                             // Send the embed to the action log channel
-                            actionLog.send({embed: tempChannelEmbed});
+                            actionLog.send({embeds: [tempChannelEmbed]});
                         });
                     });
                 });
@@ -2252,11 +2344,11 @@ module.exports = {
         } else if (newArgs.length === 2) {
             // If the user limit given was less than 1 or greater than 99 let user know it is invalid
             if(isNaN(newArgs[1]) || newArgs[1] < 1 || newArgs[1] > 99) {
-                return message.reply(`uh oh! Looks like you tried to give me an invalid user limit, please provide me with a numerical limit that is between 1 and 99, or leave blank if no limit is needed!`);
+                return message.reply(`Uh oh! Looks like you tried to give me an invalid user limit, please provide me with a numerical limit that is between 1 and 99, or leave blank if no limit is needed!`);
             };
 
             // Create the temporary voice channel in the same category the server's afk channel is in with the user limit given
-            message.guild.channels.create(`⏱️ ${name}`, {type: 'voice', userLimit: newArgs[1], parent: message.guild.afkChannel.parent}).then(channel => {
+            message.guild.channels.create(`⏱️ ${name}`, {type: 'GUILD_VOICE', userLimit: newArgs[1], parent: message.guild.afkChannel.parent}).then(channel => {
                 // Move the newly created channel above the afk channel
                 channel.setPosition(message.guild.afkChannel.position -1, {relative: true}).then(() => {
                     /* 
@@ -2303,7 +2395,7 @@ module.exports = {
                             };
 
                             // Send the embed to the action log channel
-                            actionLog.send({embed: tempChannelEmbed});
+                            actionLog.send({embeds: [tempChannelEmbed]});
                         });
                     });
                 });
@@ -2321,33 +2413,45 @@ module.exports = {
             if (args[1] === "disable") {
 
                 // Make sure the user isn't trying to disable the config command
-                if(command.name === "config") {
-                    return message.reply(`well aren't you a silly one, you can't disable the ${args[0]} command! 😝`);
+                if(command.name === "configure") {
+                    return message.reply(`Well aren't you a silly one, you can't disable the configure command! 😝`);
                 }
 
                 // If the command isn't already disabled
                 if(command.enabled !== false) {
-                    const enabled = false; //var for enabled
+                    const state = false; //var for the state of the command
 
                     // Update the command in the local collection 
-                    client.commands.set(args[0], {...command, enabled});
+                    client.commands.set(args[0], {...command, enabled: state});
 
-                    // Update the value in the database or insert it if it doesn't exist
-                    Models.command.upsert(
-                        {
-                            name: command.name,
-                            enabled: enabled,
-                            mod: command.mod,
-                            super: command.super,
-                            admin: command.admin
-                        }, {where: {name: args[0]}});
+                    // Search for the command in the db
+                    Models.command.findOne({where: {name:command.name}, raw:true}).then((cmd) => {
+
+                        // If the command was found
+                        if(cmd) {
+                            // Update the command to be disabled
+                            Models.command.update({enabled: state}, {where: {name: cmd.name}});
+
+                        // If the command wasn't found
+                        } else {
+                            // Add it to the db
+                            Models.command.create({
+                                name: command.name,
+                                enabled: state,
+                                mod: command.mod,
+                                super: command.super,
+                                admin: command.admin
+
+                            });
+                        }
+                    });
 
                     // Let the user know the command has been disabled
                     message.reply(`I have successfully disabled the ${args[0]} command!`)
 
                 // If the command is already disabled let the user know
                 } else {
-                    message.reply(`uh oh! It seems this command is already disabled!`)
+                    message.reply(`Uh oh! It seems this command is already disabled!`)
                 }
                 
             // If the user requested to enable the command
@@ -2355,39 +2459,51 @@ module.exports = {
 
                 // If the command isn't already enabled
                 if(command.enabled !== true) {
-                    const enabled = true; //var for enabled
+                    const state = true; //var for the state of the command
 
                     // Update the command in the local collection 
-                    client.commands.set(args[0], {...command, enabled});
+                    client.commands.set(args[0], {...command, enabled: state});
 
-                    // Update the value in the database or insert it if it doesn't exist
-                    Models.command.upsert(
-                        {
-                            name: command.name,
-                            enabled: enabled,
-                            mod: command.mod,
-                            super: command.super,
-                            admin: command.admin
-                        }, {where: {name: args[0]}});
+                    // Search for the command in the db
+                    Models.command.findOne({where: {name:command.name}, raw:true}).then((cmd) => {
+
+                        // If the command was found
+                        if(cmd) {
+                            // Update the command to be disabled
+                            Models.command.update({enabled: state}, {where: {name: cmd.name}});
+
+                        // If the command wasn't found
+                        } else {
+                            // Add it to the db
+                            Models.command.create({
+                                name: command.name,
+                                enabled: state,
+                                mod: command.mod,
+                                super: command.super,
+                                admin: command.admin
+
+                            });
+                        }
+                    });
 
                     // Let the user know the command has been disabled
                     message.reply(`I have successfully enabled the ${args[0]} command!`)
 
                 // If the command is already enabled let the user know
                 } else {
-                    message.reply(`uh oh! It seems this command is already enabled!`)
+                    message.reply(`Uh oh! It seems this command is already enabled!`)
                 }
             // If the user tried to give a config option that doesn't exist
             } else {
                 let newArgs = args; //copy the args to a new var
                 newArgs.shift(); //remove the first arg
                 newArgs = newArgs.join(" "); //join the args
-                return message.reply(`uh oh! \`${newArgs}\` is not a configuration option!`)
+                return message.reply(`Uh oh! \`${newArgs}\` is not a configuration option!`)
             }
 
         // If the command wasn't found, let the user know
         } else {
-            return message.reply(`uh oh! Looks like you are trying to update a command that doesn't exist, please try again!\n If you need a list of commands use \`${prefix}help\``)
+            return message.reply(`Uh oh! Looks like you are trying to update a command that doesn't exist, please try again!\n If you need a list of commands use \`${prefix}help\``)
         }
     },
     settingsHandler: async function(args, message, client) {
@@ -2507,24 +2623,23 @@ module.exports = {
                         );
 
                         // Send the embed to the admin channel
-                        adminChannel.send({embed:viewEmbed});
+                        adminChannel.send({embeds: [viewEmbed]});
 
                         // If the channel isn't the admin channel, let the user know it was sent
                         if(adminChannel.name !== message.channel.name) {
                             message.channel.send(`I have sent the data you requested to ${adminChannel}!`);
                         };
-
                     }
     
                 // If no setting was found let the user know
                 } else {
-                    return message.reply(`uh oh! Looks like I wasn't able to find that setting, please check your setting name and try again!\nYour input: \`${message.content}\``);
+                    return message.reply(`Uh oh! Looks like I wasn't able to find that setting, please check your setting name and try again!\nYour input: \`${message.content}\``);
                 }
             });
 
         // If user didn't use the command properly
         } else {
-            message.reply(`uh oh! It seems you entered an unaccepted argument, please use \`${prefix}help settings\` for help using this command!`);
+            message.reply(`Uh oh! It seems you entered an unaccepted argument, please use \`${prefix}help settings\` for help using this command!`);
         }
     }
 }

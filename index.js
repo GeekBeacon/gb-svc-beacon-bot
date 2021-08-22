@@ -12,10 +12,13 @@ const databaseController = require("./controllers/DatabaseController");
 const moderationController = require("./controllers/ModerationController");
 const channelController = require("./controllers/ChannelController");
 const voiceController = require("./controllers/VoiceController");
+const reactionsController = require("./controllers/ReactionsController");
 const Models = require("./models/AllModels");
 
 // Instantiate a new Discord client and collection
-const client = new Discord.Client({disableEveryone: false, partials: ["MESSAGE", "REACTION"]});
+const client = new Discord.Client({
+    intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MEMBERS, Discord.Intents.FLAGS.GUILD_BANS, Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_PRESENCES, Discord.Intents.FLAGS.GUILD_MESSAGES, Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Discord.Intents.FLAGS.GUILD_VOICE_STATES],
+    partials: ["MESSAGE", "CHANNEL", "REACTION"]});
 client.commands = new Discord.Collection(); //create a new collection for commands
 client.settings = new Discord.Collection(); //create a new collection for the settings from the db
 
@@ -55,7 +58,7 @@ let deleteSet = new Set();
 let dbCmds;
 let settings;
 
-console.log(JSON.stringify(require("./config"), null, 4)) //shows the running config
+//console.log(JSON.stringify(require("./config"), null, 4)) //shows the running config
 
 // Stop the bot if any config vars are unassigned
 let unassignedVars = [];
@@ -107,7 +110,7 @@ client.once('ready', async () => {
     console.log('Bot Online!');
     
     // Set the status of the bot
-    client.user.setPresence({activity: {name: `${client.settings.get("prefix")}help`}, status: 'online'});
+    client.user.setPresence({activities: [{name: `${client.settings.get("prefix")}help`}], status: 'online'});
 
     // Populate the triggerList and check for unbans/unmutes
     try {
@@ -128,7 +131,7 @@ client.once('ready', async () => {
 });
 
 // Listen for messages to be sent
-client.on('message', async message => {
+client.on('messageCreate', async message => {
     // Call the function from /controllers/MessageController to handle the message
     try {
         messageController.messageHandler(message, client, triggerList, bannedUrls, deleteSet, dbCmds, settings);
@@ -155,6 +158,17 @@ client.on('guildMemberRemove', member => {
     try {
         leaveController.leaveHandler(member, client);
     } catch (e) {
+        console.error(e);
+    }
+});
+
+// Listen for members to be updated
+client.on('guildMemberUpdate', (oldMember, newMember) => {
+
+    // Attempt to run the screeningHandler method
+    try {
+        joinController.screeningHandler(oldMember, newMember);
+    } catch(e) {
         console.error(e);
     }
 });
@@ -246,6 +260,50 @@ client.on("channelCreate", channel => {
 client.on("voiceStateUpdate", (oldState, newState) => {
     // Call the channel left handler from the voice controller
     voiceController.voiceUpdateHandler(oldState, newState, client);
+});
+
+// Listen for reaction adds
+client.on("messageReactionAdd", async (reaction, user) => {
+    // Check if the reaction was a partial (used on an older message)
+    if(reaction.partial) {
+        // Try to cache the reaction
+        try {
+            await reaction.fetch().then(() => {
+                // Call the reaction add handler from the reactions controller
+                reactionsController.reactionAdd(reaction, user);
+            });
+        // Catch the error
+        } catch(e) {
+            console.error("There was an error fetching the message from this reaction", error);
+            return;
+        }
+    // If not a partial continue as normal
+    } else {
+        // Call the reaction add handler from the reactions controller
+        reactionsController.reactionAdd(reaction, user);
+    }
+});
+
+// Listen for reaction removals
+client.on("messageReactionRemove", async (reaction, user) => {
+    // Check if the reaction was a partial (used on an older message)
+    if(reaction.partial) {
+        // Try to cache the reaction
+        try {
+            await reaction.fetch().then(() => {
+                // Call the reaction remove handler from the reactions controller
+                reactionsController.reactionRemove(reaction, user);
+            });
+        // Catch the error
+        } catch(e) {
+            console.error("There was an error fetching the message from this reaction", e);
+            return;
+        }
+    // If not a partial continue as normal
+    } else {
+        // Call the reaction remove handler from the reactions controller
+        reactionsController.reactionRemove(reaction, user);
+    }
 });
 
 // Function to read the given directory recursively

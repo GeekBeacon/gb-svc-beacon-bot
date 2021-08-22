@@ -2,6 +2,7 @@
 const Discord = require("discord.js");
 const TriggersController = require("./TriggersController");
 const ModerationController = require("./ModerationController");
+const PointsController = require("./PointsController");
 const cooldowns = new Discord.Collection();
 
 // Create a new module export
@@ -40,7 +41,7 @@ module.exports = {
         });
 
         // Make sure the author isn't a bot and message is from a text channel before checking its' roles
-        if(!message.author.bot && message.channel.type === "text") {
+        if(!message.author.bot && (message.channel.type === "GUILD_TEXT" || message.channel.type === "GUILD_NEWS_THREAD" || message.channel.type === "GUILD_PUBLIC_THREAD" || message.channel.type === "GUILD_PRIVATE_THREAD")) {
             inModTraineeRole = message.member.roles.cache.some(role => role.id === mod_trainee_role);
             inModRole = message.member.roles.cache.some(role => role.id === mod_role);
             inSuperRole = message.member.roles.cache.some(role => role.id === super_role);
@@ -48,8 +49,8 @@ module.exports = {
             isOwner = message.member.guild.owner;
 
         // If not a bot and not in a text channel
-        } else if(!message.author.bot && message.channel.type === "dm") {
-            return message.channel.send(`Ohai, ${message.author.username}!\n\nIt seems you tried to message me within a dm, I appreciate you sliding up into my dms, but at this time I do not support any dm-based commands!`);
+        } else if(!message.author.bot && message.channel.type === "DM") {
+            return message.channel.send(`Oh hello, ${message.author.username}!\n\nIt seems you tried to message me within a dm, I appreciate you sliding up into my dms, but at this time I do not support any dm-based commands!`);
 
         // If a bot then just ignore
         } else {
@@ -100,9 +101,9 @@ module.exports = {
                     // If not then call the handleUrl function from the ModerationController file
                     ModerationController.handleUrl(message, client, regexMatch, deleteSet);
                 };
-            // If not a trigger word/phrase, a blacklisted domain, or a bot message then ignore
+            // If not a trigger word/phrase, a blacklisted domain, or a bot message then call the experience controller to give experience.
             } else {
-                return;
+                PointsController.givePoints(message, client);
             };
         };
 
@@ -121,11 +122,11 @@ module.exports = {
         // Check if the command is enabled
         if(!command.enabled) {
             // If not enabled, let the user know
-            return message.reply("sorry, this command has been disabled!");
+            return message.reply("Sorry, this command has been disabled!");
         }
 
         // Check if the channel is a text channel and the command is for guild only
-        if (command.guildOnly && message.channel.type !== "text") {
+        if (command.guildOnly && message.channel.type !== "GUILD_TEXT") {
             return message.reply("I can't execute that command inside DMs!");
         };
 
@@ -143,11 +144,11 @@ module.exports = {
 
         // Check if the user has the proper permissions for the command if not let them know
         if (command.admin === true && !(inAdminRole || message.member === isOwner)) {
-            return message.reply(`uh oh! Looks like you tried to use a command that is only for users in the ${adminRole.name} group!`);
+            return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${adminRole.name} group!`);
         } else if (command.super === true && !(inSuperRole || inAdminRole || message.member === isOwner)) {
-            return message.reply(`uh oh! Looks like you tried to use a command that is only for users in the ${superRole.name} group!`);
+            return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${superRole.name} group!`);
         } else if (command.mod === true && !(inModTraineeRole || inModRole || inSuperRole || inAdminRole || message.member === isOwner)) {
-            return message.reply(`uh oh! Looks like you tried to use a command that is only for users in the ${modRole.name} group!`);
+            return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${modRole.name} group!`);
         }
 
         // Check if the command has a cooldown time and set it if so
@@ -176,7 +177,7 @@ module.exports = {
 
         // Attempt to execute the command
         try {
-            command.execute(message, args, client, triggerList);
+            command.execute(message, args, client, triggerList, bannedUrls);
         } catch (error) {
             console.error(error);
             message.reply('There was an error trying to execute that command, please try again!')

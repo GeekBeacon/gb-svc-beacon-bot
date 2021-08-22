@@ -1,6 +1,6 @@
 {
   "name": "beaconbot",
-  "version": "0.25.6",
+  "version": "2.0.0",
   "description": "Custom Discord bot for GeekBeacon",
   "main": "index.js",
   "scripts": {
@@ -12,22 +12,22 @@
   "author": "Toby Horn (Kankuro)",
   "license": "ISC",
   "dependencies": {
-    "@docusaurus/core": "^2.0.0-alpha.70",
-    "@docusaurus/preset-classic": "^2.0.0-alpha.70",
+    "@docusaurus/core": "^2.0.0-beta.4",
+    "@docusaurus/preset-classic": "^2.0.0-beta.4",
     "classnames": "^2.2.6",
-    "discord.js": "^12.1.1",
+    "discord.js": "^13.1.0",
     "discord.js-pagination": "^1.0.3",
     "dotenv": "^8.2.0",
+    "glob-parent": "^6.0.1",
     "lodash": "^4.17.21",
     "moment": "^2.24.0",
     "moment-duration-format": "^2.3.2",
     "moment-timezone": "^0.5.27",
     "mysql2": "^2.1.0",
     "node-forge": "^0.10.0",
-    "react": "^17.0.1",
-    "react-dom": "^17.0.1",
     "sequelize": "^6.3.5",
-    "shortid": "^2.2.15"
+    "shortid": "^2.2.15",
+    "trim": "^1.0.1"
   },
   "browserslist": {
     "production": [

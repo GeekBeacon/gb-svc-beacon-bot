@@ -10,6 +10,7 @@ const TempChannel = require("./TempChannel");
 const Trigger = require("./Trigger");
 const Unban = require("./Unban");
 const Unmute = require("./Unmute");
+const User = require("./User");
 const Warning = require("./Warning");
 
 module.exports = {
@@ -25,5 +26,6 @@ module.exports = {
     trigger : Trigger,
     unban : Unban,
     unmute : Unmute,
+    user : User,
     warning : Warning,
 }

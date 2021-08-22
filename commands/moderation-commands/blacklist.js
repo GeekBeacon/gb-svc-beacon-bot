@@ -12,7 +12,7 @@ module.exports = {
     mod: true,
     super: false,
     admin: false,
-    execute(message, args, client) {
+    execute(message, args, client, triggers, blacklistUrls) {
         const prefix = client.settings.get("prefix");
         // Check if any arguments were given, it not let user know
         if (!args.length) {
@@ -22,7 +22,7 @@ module.exports = {
         } else {
 
             // Call the blacklist handler function from the ModerationController file
-            ModerationController.blacklistHandler(message, args, client);
+            ModerationController.blacklistHandler(message, args, client, triggers, blacklistUrls);
         }
     }
 }

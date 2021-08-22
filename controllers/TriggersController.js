@@ -118,7 +118,7 @@ module.exports = {
                     };
 
                     // Send the info to the mod channel
-                    modChannel.send({embed: triggerEmbed})
+                    modChannel.send({embeds: [triggerEmbed]})
                     .then(() => {
                         // Check if the current channel is the mod channel
                         if(message.channel !== modChannel) {
@@ -127,7 +127,7 @@ module.exports = {
                         }
                     });
                 }).catch((e) => {
-                    message.reply(`it looks like \`${trigger}\` doesn't exist!`);
+                    message.reply(`It looks like \`${trigger}\` doesn't exist!`);
                 });
 
             // If user isn't a super mod and passed in args let them know they can't use that command
@@ -180,11 +180,11 @@ module.exports = {
                     });
                 // If invalid severity level let user know
                 } else {
-                    message.reply(`you must use either **low**, **medium**, or **high** for the severity level!\nExample: \`${prefix}addtrigger ${triggerArgs[0]}, low/medium/high\``);
+                    message.reply(`You must use either **low**, **medium**, or **high** for the severity level!\nExample: \`${prefix}addtrigger ${triggerArgs[0]}, low/medium/high\``);
                 }
             // If no severity level let the user know it is required
             } else {
-                message.reply(`to add a trigger you must specify the severity level of that trigger.\nExample: \`${prefix}addtrigger ${triggerArgs[0]}, low/medium/high\``);
+                message.reply(`To add a trigger you must specify the severity level of that trigger.\nExample: \`${prefix}addtrigger ${triggerArgs[0]}, low/medium/high\``);
             }
 
         /*********** REMOVE TRIGGER ***********/
@@ -230,7 +230,7 @@ module.exports = {
                         });
                     // If already enabled let user know
                     } else {
-                        message.reply(`it looks like \`${trigger}\` is already enabled!`);
+                        message.reply(`It looks like \`${trigger}\` is already enabled!`);
                     };
                 // If the trigger wasn't found let the user know
                 } else {
@@ -257,7 +257,7 @@ module.exports = {
                         });
                     // If already disabled let user know
                     } else {
-                        message.reply(`it looks like \`${trigger}\` is already disabled!`);
+                        message.reply(`It looks like \`${trigger}\` is already disabled!`);
                     };
                 // If the trigger wasn't found let the user know
                 } else {
@@ -471,7 +471,7 @@ module.exports = {
                         // Delete the message
                         message.delete().then(() => {
                             // Send the embed with a copy of the message to the super log
-                            superLog.send({embed: delMsgEmbed}).then(d => {
+                            superLog.send({embeds: [delMsgEmbed]}).then(d => {
                                 // Update the db's message link
                                 Models.warning.update({message_link: d.url}, {
                                     where: {
@@ -482,7 +482,7 @@ module.exports = {
                         });
                     } else if (severity === "medium" || severity === "low") {
                         // Send embed to the super log
-                        superLog.send({embed: e});
+                        superLog.send({embeds: [e]});
                     }
 
                 // If mod uses a trigger
@@ -503,11 +503,11 @@ module.exports = {
                                 // Make sure a super log channel exists
                                 if(superLog) {
                                     // Send the embed with a copy of the message to the super log
-                                    superLog.send({embed: delMsgEmbed}).then(d => {
+                                    superLog.send({embeds: [delMsgEmbed]}).then(d => {
                                         // Change the url for the mod channel's embed to link to log in the log channel
                                         e.fields[4].value = d.url;
                                         // Send embed to the super channel
-                                        superChannel.send({embed: e});
+                                        superChannel.send({embeds: [e]});
 
                                         // Update the db's message link
                                         Models.warning.update({message_link: d.url}, {
@@ -519,7 +519,7 @@ module.exports = {
 
                                 // If no super log channel, just send deleted embed to super channel
                                 } else {
-                                    superChannel.send({embed: delMsgEmbed}).then(d => {
+                                    superChannel.send({embeds: [delMsgEmbed]}).then(d => {
                                         // Update the db's message link
                                         Models.warning.update({message_link: d.url}, {
                                             where: {
@@ -531,7 +531,7 @@ module.exports = {
                             });
                         } else if (severity === "medium" || severity === "low") {
                             // Send embed to the super log
-                            superLog.send({embed: e});
+                            superLog.send({embeds: e});
                         }
 
                     // If a super channel isn't found
@@ -540,11 +540,11 @@ module.exports = {
                            // Delete the message
                             message.delete().then(() => {
                                 // Send the embed with a copy of the message to the admin channel
-                                adminChannel.send({embed: delMsgEmbed});
+                                adminChannel.send({embeds: [delMsgEmbed]});
                             });
                         } else if (severity === "medium" || severity === "low") {
                             // Send embed to the admin channel
-                            adminChannel.send({embed: e});
+                            adminChannel.send({embeds: [e]});
                         }
                     }
 
@@ -554,11 +554,11 @@ module.exports = {
                         // Delete the message
                         message.delete().then(() => {
                             // Send the embed with a copy of the message to the mod log
-                            logChannel.send({embed: delMsgEmbed}).then(d => {
+                            logChannel.send({embeds: [delMsgEmbed]}).then(d => {
                                 // Change the url for the mod channel's embed to link to log in the log channel
                                 e.fields[4].value = d.url;
                                 // Send embed to the mod log
-                                logChannel.send("@here", {embed: e});
+                                logChannel.send("@here", {embeds: [e]});
 
                                 // Update the db's message link
                                 Models.warning.update({message_link: d.url}, {
@@ -570,16 +570,16 @@ module.exports = {
                         });
                     } else if (severity === "medium") {
                         // Warn the user
-                        message.reply(`please try to refrain from using words such as: \`${t}\``);
+                        message.reply(`Please try to refrain from using words such as: \`${t}\``);
 
                         // Send embed to the moderation log with here tag
-                        logChannel.send({embed: e});
+                        logChannel.send({embeds: [e]});
                     } else if (severity === "low") {
                         // Warn the user
-                        message.reply(`please try to refrain from using words such as: \`${t}\``);
+                        message.reply(`Please try to refrain from using words such as: \`${t}\``);
 
                         // Send embed to the moderation log
-                        logChannel.send({embed: e});
+                        logChannel.send({embeds: [e]});
                     }
                 }
             }

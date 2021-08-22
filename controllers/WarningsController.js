@@ -36,7 +36,7 @@ module.exports = {
                 if (data) {
                     // If the table is empty then let the user know
                     if(data.length === 0) {
-                        return message.reply("there are currently no warnings in the database!");
+                        return message.reply("There are currently no warnings in the database!");
                     }
 
                     let i = 1; // counter
@@ -77,7 +77,7 @@ module.exports = {
                     });
 
                     // Send the warnings to the action log channel
-                    actionLog.send({embed: recentEmbed}).then(() => {
+                    actionLog.send({embeds: [recentEmbed]}).then(() => {
                         // Don't send notification message if current channel is action log
                         if(message.channel.id === actionLog.id) return;
 
@@ -103,8 +103,8 @@ module.exports = {
                             // Assign values to the embed
                             specificEmbed.setTitle(`Warning for ${args[1]}`)
                             .setAuthor(guildUser.user.username, guildUser.user.displayAvatarURL({dynamic:true}))
-                            .addField(`User Id`, guildUser.id, false)
-                            .addField(`User`, guildUser, true)
+                            .addField(`User Id`, guildUser.user.tag, false)
+                            .addField(`User`, guildUser.toString(), true)
                             .addField(`Server Nickname`, `${guildUser.nickname || "None"}`, true)
                             .addField(`Warning Type`, warning.type, true)
                             .addField(`User Roles`, guildUser.roles.cache.map(role => role.name).join(", "))
@@ -114,7 +114,7 @@ module.exports = {
                             defineType();
 
                             // Send the embed to the action log
-                            actionLog.send({embed: specificEmbed}).then(() => {
+                            actionLog.send({embeds: [specificEmbed]}).then(() => {
                                 // Don't send notification message if current channel is action log
                                 if(message.channel.id === actionLog.id) return;
 
@@ -137,7 +137,7 @@ module.exports = {
                                 defineType();
                             }).then(() => {
                                 // Send the embed to the action log
-                                actionLog.send({embed: specificEmbed}).then(() => {
+                                actionLog.send({embeds: [specificEmbed]}).then(() => {
                                     // Don't send notification message if current channel is action log
                                     if(message.channel.id === actionLog.id) return;
 
@@ -153,6 +153,11 @@ module.exports = {
                             if(warning.type === "Trigger") {
                                 // Find the channel for the warning
                                 warnedChannel = client.guilds.cache.get(message.guild.id).channels.cache.get(warning.channel_id);
+
+                                // If the channel was deleted
+                                if(!warnedChannel) {
+                                    warnedChannel = "`Deleted Channel`";
+                                };
 
                                 // Set the color of the embed based on severity level
                                 switch(warning.severity) {
@@ -180,7 +185,7 @@ module.exports = {
                                 // Add the remaining fields
                                 specificEmbed.addField(`Trigger(s) Hit`, warning.triggers, false);
                                 specificEmbed.addField(`Severity`, warning.severity, false);
-                                specificEmbed.addField(`Channel`, warnedChannel, false);
+                                specificEmbed.addField(`Channel`, warnedChannel.toString(), false);
                                 specificEmbed.addField(`Time Trigger Was Hit`, moment(warning.createdAt).tz(moment.tz.guess()).format('MMM DD, YYYY HH:mm:ss'), false);
                                 specificEmbed.addField(`Full Message`, fullMessage, false);
                                 specificEmbed.addField(`Message URL`, warning.message_link, false)
@@ -202,12 +207,12 @@ module.exports = {
                 }).catch((e) => {
                     console.log(e)
                     // If unable to find warning/user
-                    return message.reply(`uh oh! I wasn't able to find the a warning with that warning id!\r If you think the warning exists, please check your warning id and try again!`);
+                    return message.reply(`Uh oh! I wasn't able to find the a warning with that warning id!\r If you think the warning exists, please check your warning id and try again!`);
                 });
 
             // If no second arg let user know
             } else {
-                return message.reply(`uh oh! Looks like you forgot to tell me the warning id!\rExample: \`${prefix}warnings specific {warning id}\``);
+                return message.reply(`Uh oh! Looks like you forgot to tell me the warning id!\rExample: \`${prefix}warnings specific {warning id}\``);
             };
         } else if (args[0].toLowerCase() === "user") {
 
@@ -224,7 +229,7 @@ module.exports = {
                         }
 
                     }).catch((e) => {
-                        return message.reply(`uh oh! I either wasn't able to find the user with that id or that user has no warnings!\r If you think the user has warnings, please check your id and try again!`);
+                        return message.reply(`Uh oh! I either wasn't able to find the user with that id or that user has no warnings!\r If you think the user has warnings, please check your id and try again!`);
                     });
 
                 // If the second argument starts with a tag query based on user mention
@@ -240,17 +245,17 @@ module.exports = {
                             sendUserWarnings(message, client, warnings);
                         }
                     }).catch((e) => {
-                        return message.reply(`uh oh! I either wasn't able to find the user with that id or that user has no warnings!\r If you think the user has warnings, please check your id and try again!`);
+                        return message.reply(`Uh oh! I either wasn't able to find the user with that id or that user has no warnings!\r If you think the user has warnings, please check your id and try again!`);
                     });
                 } else {
-                    return message.reply(`uh oh! You seem to have provided an unacceptable user search method. Please ensure that you're searching by either user mention or id!`);
+                    return message.reply(`Uh oh! You seem to have provided an unacceptable user search method. Please ensure that you're searching by either user mention or id!`);
                 }
             // If user forgot to give a username or id
             } else {
-                return message.reply(`uh oh! Looks like you forgot to tell me the user's id!\rExample: \`${prefix}warnings user {user_id}\``);
+                return message.reply(`Uh oh! Looks like you forgot to tell me the user's id!\rExample: \`${prefix}warnings user {user_id}\``);
             }
         } else {
-            return message.reply(`uh oh! Looks like you didn't use that command properly, please check its' usage with \`${prefix}help warnings\``);
+            return message.reply(`Uh oh! Looks like you didn't use that command properly, please check its' usage with \`${prefix}help warnings\``);
         }
 
         function sendUserWarnings(message, client, warnings) {
@@ -298,7 +303,7 @@ module.exports = {
                 }
             
             // Send the data to the action log
-            actionLog.send({embed: userWarningsEmbed}).then(() => {
+            actionLog.send({embeds: [userWarningsEmbed]}).then(() => {
                 // Don't send notification message if current channel is action log
                 if(message.channel.id === actionLog.id) return;
 

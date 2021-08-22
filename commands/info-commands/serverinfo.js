@@ -10,37 +10,47 @@ module.exports = {
     super: false,
     admin: false,
     usage: " ",
-    execute(message, args, client) {
+    async execute(message, args, client) {
         const server = message.guild;
         // Make sure the server is available
         if(server.available) {
             const createDate = moment(server.createdAt).format("MMM DD, YYYY"); // created date
-            let channels = server.channels.cache.array();
-            let roleCount = server.roles.cache.array().length;
+            const channels = server.channels.cache;
+            const roles = server.roles.cache;
+            let roleCount = 0;
             let categoryCount = 0;
             let newsChannelCount = 0;
             let textChannelCount = 0;
             let voiceChannelCount = 0;
+            let threadChannelCount = 0;
             let serverURL;
 
             channels.forEach((channel) => {
                 switch(channel.type) {
-                    case "category":
+                    case "GUILD_CATEGORY":
                         categoryCount++;
                         break;
-                    case "news":
+                    case "GUILD_NEWS":
                         newsChannelCount++;
                         break;
-                    case "voice":
+                    case "GUILD_VOICE":
                         voiceChannelCount++;
                         break;
-                    case "text":
+                    case "GUILD_TEXT":
                         textChannelCount++;
+                        break;
+                    case "GUILD_PUBLIC_THREAD":
+                        threadChannelCount++;
                         break;
                     default:
                         break;
                 };
             });
+
+            // Get the role count
+            roles.forEach(() => {
+                roleCount++;
+            })
 
             // If server has no vanity url then assign N/A
             if(server.vanityURLCode === null) {
@@ -75,12 +85,12 @@ module.exports = {
                     },
                     {
                         name: `Owner`,
-                        value: `${server.owner}`,
+                        value: `${await server.fetchOwner()}`,
                         inline: true,
                     },
                     {
                         name: `Boosts`,
-                        value: `${server.premiumSubscriptionCount}`,
+                        value: `${server.premiumSubscriptionCount}/30`,
                         inline: true,
                     },
                     {
@@ -94,11 +104,6 @@ module.exports = {
                         inline: true,
                     },
                     {
-                        name: `Region`,
-                        value: `${server.region}`,
-                        inline: true,
-                    },
-                    {
                         name: `Roles`,
                         value: `${roleCount}`,
                         inline: true,
@@ -109,18 +114,18 @@ module.exports = {
                         inline: true,
                     },
                     {
-                        name: `Vanity URL`,
-                        value: `${serverURL}`,
-                        inline: true,
-                    },
-                    {
                         name: `Rules Channel`,
                         value: `${server.rulesChannel || "Not Set"}`,
                         inline: true,
                     },
                     {
+                        name: `Vanity URL`,
+                        value: `${serverURL}`,
+                        inline: true,
+                    },
+                    {
                         name: `Channels`,
-                        value: `Categories: ${categoryCount} | News: ${newsChannelCount} | Text: ${textChannelCount} | Voice: ${voiceChannelCount}`,
+                        value: `Categories: ${categoryCount} | News: ${newsChannelCount} | Text: ${textChannelCount} | Threads: ${threadChannelCount} | Voice: ${voiceChannelCount}`,
                         inline: false,
                     },
                 ],
@@ -130,7 +135,7 @@ module.exports = {
                 }
             };
 
-            message.channel.send({embed: serverEmbed});
+            message.channel.send({embeds: [serverEmbed]});
         }
     },
 };

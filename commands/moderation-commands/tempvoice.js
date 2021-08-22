@@ -14,7 +14,7 @@ module.exports = {
     execute(message, args, client) {
         if (!args.length) {
             // If no arguments let users know arguments are required
-            return message.reply(`uh oh! You must tell me what you'd like to name the new temporary voice channel!\nExample: \`${prefix}tempvoice Temporary Channel\``);
+            return message.reply(`Uh oh! You must tell me what you'd like to name the new temporary voice channel!\nExample: \`${prefix}tempvoice Temporary Channel\``);
         } else {
             // Call the query handler from the Moderation Controller with required args
             ModerationController.tempVoiceHandler(message, args, client);
