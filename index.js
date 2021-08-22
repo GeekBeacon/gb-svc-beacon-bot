@@ -15,7 +15,7 @@ const voiceController = require("./controllers/VoiceController");
 const Models = require("./models/AllModels");
 
 // Instantiate a new Discord client and collection
-const client = new Discord.Client({disableEveryone: false, partials: ["MESSAGE", "REACTION"]});
+const client = new Discord.Client({intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MEMBERS, Discord.Intents.FLAGS.GUILD_BANS, Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_PRESENCES, Discord.Intents.FLAGS.GUILD_MESSAGES, Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS], partials: ["MESSAGE", "REACTION"]});
 client.commands = new Discord.Collection(); //create a new collection for commands
 client.settings = new Discord.Collection(); //create a new collection for the settings from the db
 
@@ -107,7 +107,7 @@ client.once('ready', async () => {
     console.log('Bot Online!');
     
     // Set the status of the bot
-    client.user.setPresence({activity: {name: `${client.settings.get("prefix")}help`}, status: 'online'});
+    client.user.setPresence({activities: [{name: `${client.settings.get("prefix")}help`}], status: 'online'});
 
     // Populate the triggerList and check for unbans/unmutes
     try {
@@ -128,7 +128,7 @@ client.once('ready', async () => {
 });
 
 // Listen for messages to be sent
-client.on('message', async message => {
+client.on('messageCreate', async message => {
     // Call the function from /controllers/MessageController to handle the message
     try {
         messageController.messageHandler(message, client, triggerList, bannedUrls, deleteSet, dbCmds, settings);
@@ -155,6 +155,17 @@ client.on('guildMemberRemove', member => {
     try {
         leaveController.leaveHandler(member, client);
     } catch (e) {
+        console.error(e);
+    }
+});
+
+// Listen for members to be updated
+client.on('guildMemberUpdate', (oldMember, newMember) => {
+
+    // Attempt to run the screeningHandler method
+    try {
+        joinController.screeningHandler(oldMember, newMember);
+    } catch(e) {
         console.error(e);
     }
 });

@@ -17,15 +17,6 @@ module.exports = {
         const currentTime = moment(); // create a new moment obj with current time
         const memberLength = moment.duration(currentTime.diff(joinedTimeStamp)).format("Y[y] D[d] H[h] m[m] s[s]"); //get the duration of the membership and format it
 
-        // See if the user has a last message
-        if (member.lastMessage) {
-            // If so assign it to lastMessage
-            lastMessage = member.lastMessage.content;
-        } else {
-            // If not give it the value of "None"
-            lastMessage = "None";
-        }
-
         // Create the leave embed
         const leaveEmbed = {
             color: 0xff5500,
@@ -46,11 +37,6 @@ module.exports = {
                     name: `Membership Duration`,
                     value: `${memberLength}`,
                     inline: true,
-                },
-                {
-                    name: `Last Message`,
-                    value: `${lastMessage}`,
-                    inline: false,
                 }
             ],
             timestamp: new Date(),
@@ -60,7 +46,7 @@ module.exports = {
         };
 
         // Send the leave embed to the super log
-        superLog.send({embed: leaveEmbed});
+        superLog.send({embeds: [leaveEmbed]});
 
     }
 }

@@ -40,7 +40,7 @@ module.exports = {
         });
 
         // Make sure the author isn't a bot and message is from a text channel before checking its' roles
-        if(!message.author.bot && message.channel.type === "text") {
+        if(!message.author.bot && (message.channel.type === "GUILD_TEXT" || message.channel.type === "GUILD_NEWS_THREAD" || message.channel.type === "GUILD_PUBLIC_THREAD" || message.channel.type === "GUILD_PRIVATE_THREAD")) {
             inModTraineeRole = message.member.roles.cache.some(role => role.id === mod_trainee_role);
             inModRole = message.member.roles.cache.some(role => role.id === mod_role);
             inSuperRole = message.member.roles.cache.some(role => role.id === super_role);
@@ -48,7 +48,7 @@ module.exports = {
             isOwner = message.member.guild.owner;
 
         // If not a bot and not in a text channel
-        } else if(!message.author.bot && message.channel.type === "dm") {
+        } else if(!message.author.bot && message.channel.type === "DM") {
             return message.channel.send(`Ohai, ${message.author.username}!\n\nIt seems you tried to message me within a dm, I appreciate you sliding up into my dms, but at this time I do not support any dm-based commands!`);
 
         // If a bot then just ignore
@@ -125,7 +125,7 @@ module.exports = {
         }
 
         // Check if the channel is a text channel and the command is for guild only
-        if (command.guildOnly && message.channel.type !== "text") {
+        if (command.guildOnly && message.channel.type !== "GUILD_TEXT") {
             return message.reply("I can't execute that command inside DMs!");
         };
 
