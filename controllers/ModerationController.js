@@ -860,7 +860,7 @@ module.exports = {
         if(!isNaN(newArgs[0])) {
             // If invalid id let the user know
             if(message.guild.members.cache.get(newArgs[0]) === undefined) {
-                return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
+                return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
 
             // If user found, assign it to the user var
             } else {
@@ -871,11 +871,11 @@ module.exports = {
             user = message.mentions.members.first(); // get user tag
             if(!user) {
                 // Let the user know they provided an invalid user mention
-                return message.reply(`uh oh! Looks like you gave an invalid user mention. Make sure that you are mentioning a valid user!`);
+                return message.reply(`Uh oh! Looks like you gave an invalid user mention. Make sure that you are mentioning a valid user!`);
             }
         } else {
             // Let user know they need to provide a user mention or a valid user id
-            return message.reply(`uh oh! You must provide me with a user mention or id so I know who to mute!`);
+            return message.reply(`Uh oh! You must provide me with a user mention or id so I know who to mute!`);
         }
 
         // If user is a bot then deny banning it
@@ -883,10 +883,10 @@ module.exports = {
             return message.channel.send(`You can't mute no beep boop!`);
         // If the user tries to ban themselves then deny banning them
         } else if(user.user.id === message.author.id) {
-            return message.reply(`you can't mute yourself, silly!`);
+            return message.reply(`You can't mute yourself, silly!`);
         // If the user is a mod+ then deny banning them
         } else if(user.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
-            return message.reply(`you got guts, trying to mute a ${user.roles.highest} member!`);
+            return message.reply(`You got guts, trying to mute a ${user.roles.highest} member!`);
         // If the user is the server owner then deny banning them
         } else if (user.user.id === user.guild.ownerID) {
             return message.reply(`I hope you didn't really think you could mute the server owner...`);
@@ -904,7 +904,7 @@ module.exports = {
                 if(newArgs[2] && user !== undefined) {
                     // If a length wasn't given then let the user know it is required
                     if(!newArgs[3]) {
-                        return message.reply(`uh oh! It seems you forgot a required part of the mute command, please be sure to provide all options for this action!\nExample: \`${prefix}mute ${user}, type, reason, length\``);
+                        return message.reply(`Uh oh! It seems you forgot a required part of the mute command, please be sure to provide all options for this action!\nExample: \`${prefix}mute ${user}, type, reason, length\``);
                     }
 
                     const reason = newArgs[2]; //assign the mute reason
@@ -915,25 +915,28 @@ module.exports = {
                     const timezone = moment().tz(moment.tz.guess()).format(`z`); // server timezone
                     const muteLengthRegex = /(\d+\s*\D+$|^permanent$|^perma$|^perm$|^p{1}){1}/; //regex for mute time format
                     let mutedRole = message.guild.roles.cache.find(r => r.name.toLowerCase() === `muted - ${muteType}`); //muted role
+                    let unmuteDate;
 
                     // Check if the user input for a perma mute
-                    if(muteUnit.toLowerCase() === "p" || muteUnit.toLowerCase().includes("perm")) {
+                    if(muteUnit.toLowerCase().includes("perm")) {
                         muteValue = 999; // assign value
                         muteUnit = "years"; // set unit
                         muteLength = "an indefinite amount of time"; // set length for description
                     // Check if the user provided an accepted format
+                    } else if (muteUnit.toLowerCase().includes("min")) {
+                        muteUnit = "minutes";
                     } else if(!muteLength.match(muteLengthRegex)) {
-                        return message.reply(`uh oh! It seems like you entered an invalue mute duration! Please use formats such as these for the mute duration: \`6 years\`, \`17d\`, \`permanent\`, \`3 wks\``)
-                    } else if (muteUnit === "s" || muteUnit === "sec" || muteUnit === "secs" || muteUnit === "seconds" || muteUnit === "second") {
-                        return message.reply(`please give a duration that is at least 1 minute in length!`);
+                        return message.reply(`Uh oh! It seems like you entered an invalue mute duration! Please use formats such as these for the mute duration: \`6 years\`, \`17d\`, \`permanent\`, \`3 wks\``)
+                    } else if (muteUnit.toLowerCase() === "sec" || muteUnit.toLowerCase() === "secs" || muteUnit.toLowerCase() === "seconds" || muteUnit.toLowerCase() === "second") {
+                        return message.reply(`Please give a duration that is at least 1 minute in length!`);
                     }
 
-                    let unmuteDate = now.add(muteValue, muteUnit); //create the unmute date
+                    unmuteDate = now.add(muteValue, muteUnit); //create the unmute date
 
                     // Make sure the unban date is after the current time
                     if(moment(unmuteDate).isAfter(now)) {
                         // If not after the current time, let the user know how to fix the problem
-                        return message.reply("uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
+                        return message.reply("Uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
                     }
                     unmuteDate = unmuteDate.format(`MMM DD, YYYY HH:mm:ss`); //format
 
@@ -944,17 +947,17 @@ module.exports = {
                     if(!mutedRole) {
                         // Check if user is a super or higher role
                         if(inSuperRole || inAdminRole || isOwner) {
-                            return message.reply(`uh oh! It seems there isn't a muted - ${muteType} role, please use \`${prefix}createmute\` to make the role!`);
+                            return message.reply(`Uh oh! It seems there isn't a muted - ${muteType} role, please use \`${prefix}createmute\` to make the role!`);
                         // If not a super or higher let them know to ask a super or higher
                         } else {
                             // If no muted role let user know to create it
-                            return message.reply(`uh oh! It seems there isn't a muted - ${muteType} role, please ask a ${superRole} or ${adminRole} to make the role with \`${prefix}createmute\`!`);
+                            return message.reply(`Uh oh! It seems there isn't a muted - ${muteType} role, please ask a ${superRole} or ${adminRole} to make the role with \`${prefix}createmute\`!`);
                         }
                     }
 
                     // If user is already muted let user know
                     if(inMutedRole) {
-                        return message.reply(`uh oh! Looks like ${user.displayName} is already muted!`)
+                        return message.reply(`Uh oh! Looks like ${user.displayName} is already muted!`)
                     }
 
                     /* 
@@ -1017,7 +1020,7 @@ module.exports = {
                                     ],
                                     timestamp: new Date(),
                                 };
-                                actionLog.send({embed: muteEmbed});
+                                actionLog.send({embeds: [muteEmbed]});
                                 message.channel.send(`${user.displayName} was successfully muted for ${muteLength}!`);
                             });
                         });
@@ -1027,28 +1030,28 @@ module.exports = {
                     // Check if a user mention was used
                     if(message.mentions.users.first()) {
                         // Let user know a reason is needed
-                        message.reply(`uh oh! It seems you forgot to give a reason for muting, please be sure to provide a reason for this action!\nExample: \`${prefix}mute @${user.user.tag}, type, reason, length\``);
+                        message.reply(`Uh oh! It seems you forgot to give a reason for muting, please be sure to provide a reason for this action!\nExample: \`${prefix}mute @${user.user.tag}, type, reason, length\``);
 
                     // If no user mention was given then just output the id they provided
                     } else {
                         // Let user know a reason is needed
-                        message.reply(`uh oh! It seems you forgot to give a reason for muting, please be sure to provide a reason for this action!\nExample: \`${prefix}mute ${user}, type, reason, length\``);
+                        message.reply(`Uh oh! It seems you forgot to give a reason for muting, please be sure to provide a reason for this action!\nExample: \`${prefix}mute ${user}, type, reason, length\``);
                     }
                 };
                 
             } else {
-                return message.reply(`uh oh! It seems you gave an unaccepted type of mute! Make sure you choose a mute from this list:  __server__, __voice__, __text__, or __reactions__`)
+                return message.reply(`Uh oh! It seems you gave an unaccepted type of mute! Make sure you choose a mute from this list:  __server__, __voice__, __text__, or __reactions__`)
             }
         } else {
             // Check if a user mention was used
             if(message.mentions.users.first()) {
                 // Let user know a type is needed
-                return message.reply(`uh oh! It seems you forgot to tell me the type of mute to perform on the user! Please try again with the accepted mute types: __server__, __voice__, __text__, or __reactions__!\nExample: \`${prefix}mute @${user.user.tag}, type, reason, length\``);
+                return message.reply(`Uh oh! It seems you forgot to tell me the type of mute to perform on the user! Please try again with the accepted mute types: __server__, __voice__, __text__, or __reactions__!\nExample: \`${prefix}mute @${user.user.tag}, type, reason, length\``);
 
             // If no user mention was given then just output the id they provided
             } else {
                 // Let user know a type is needed
-                return message.reply(`uh oh! It seems you forgot to tell me the type of mute to perform on the user! Please try again with the accepted mute types: __server__, __voice__, __text__, or __reactions__!\nExample: \`${prefix}mute @${user}, type, reason, length\``);
+                return message.reply(`Uh oh! It seems you forgot to tell me the type of mute to perform on the user! Please try again with the accepted mute types: __server__, __voice__, __text__, or __reactions__!\nExample: \`${prefix}mute @${user}, type, reason, length\``);
             }
         }
     },
@@ -1085,11 +1088,11 @@ module.exports = {
             user = message.mentions.members.first(); // get user tag
             if(!user) {
                 // Let the user know they provided an invalid user mention
-                return message.reply(`uh oh! Looks like you gave an invalid user mention. Make sure that you are mentioning a valid user!`);
+                return message.reply(`Uh oh! Looks like you gave an invalid user mention. Make sure that you are mentioning a valid user!`);
             }
         } else {
             // Let user know they need to provide a user mention or a valid user id
-            return message.reply(`uh oh! You must provide me with a user mention or id so I know who to mute!`);
+            return message.reply(`Uh oh! You must provide me with a user mention or id so I know who to mute!`);
         }
 
         // Muted role
@@ -1099,11 +1102,11 @@ module.exports = {
         if(!mutedRole) {
             // Check if user is a super or higher role
             if(inSuperRole || inAdminRole || isOwner) {
-                return message.reply(`uh oh! It seems there isn't a muted role, please use \`${prefix}createmute\` to make the role!`);
+                return message.reply(`Uh oh! It seems there isn't a muted role, please use \`${prefix}createmute\` to make the role!`);
             // If not a super or higher let them know to ask a super or higher
             } else {
                 // If no muted role let user know to create it
-                return message.reply(`uh oh! It seems there isn't a muted role, please ask a ${superRole} or ${adminRole} to make the role with \`${prefix}createmute\`!`);
+                return message.reply(`Uh oh! It seems there isn't a muted role, please ask a ${superRole} or ${adminRole} to make the role with \`${prefix}createmute\`!`);
             }
         }
 
@@ -1120,7 +1123,7 @@ module.exports = {
 
             // If the user isn't already muted let the mod know
             if(!inMutedRole) {
-                return message.reply(`uh oh! Looks like ${user.displayName} isn't muted!`)
+                return message.reply(`Uh oh! Looks like ${user.displayName} isn't muted!`)
             }
 
             // Search the db for the mute
@@ -1189,7 +1192,7 @@ module.exports = {
                                     timestamp: new Date(),
                                 };
                                 // Send log to mod log and give feedback to user
-                                actionLog.send({embed: unmuteEmbed});
+                                actionLog.send({embeds: [unmuteEmbed]});
                                 message.channel.send(`${user.displayName} was successfully unmuted!`).then(() => {
                                     // Update the completed field for the mute
                                     Models.mute.update({completed: 1}, {where: {user_id: userId}});
@@ -1202,7 +1205,7 @@ module.exports = {
 
         } else {
             // Let the user know a reason is needed
-            message.reply(`uh oh! It seems you forgot to give a reason for unmuting, please be sure to provide a reason for this action!\nExample: \`${prefix}unmute ${user}, reason\``);
+            message.reply(`Uh oh! It seems you forgot to give a reason for unmuting, please be sure to provide a reason for this action!\nExample: \`${prefix}unmute ${user}, reason\``);
         }
     },
     createMuteHandler: async function(m, c) {
@@ -1221,24 +1224,27 @@ module.exports = {
             if(!mutedServer) {
                 // If no Muted - Server role then create one
                 mutedServer = await message.guild.roles.create({
-                    data: {
-                        name: `Muted - Server`,
-                        color: `#818386`,
-                        position: `${usersRole.position + 1}`,
-                        permissions: [], //set permissions to an empty array so no permissions are given
-                    },
-                    reason: `No "Muted - Server" role, need one to mute users!`,
+                    name: `Muted - Server`,
+                    color: `#818386`,
+                    position: `${usersRole.position + 1}`,
+                    permissions: [], //set permissions to an empty array so no permissions are given
+                    reason: `No "Muted - Server" role, need one to mute users!`
                 });
 
                 // Loop through all channels channels
                 message.guild.channels.cache.forEach(async (channel) => {
-                    // Deny the ability to send messages, speak, add reactions, and use voice activity for each channel for the Muted - Server role
-                    await channel.updateOverwrite(mutedServer, {
-                        SEND_MESSAGES: false,
-                        SPEAK: false,
-                        ADD_REACTIONS: false,
-                        USE_VAD: false
-                    });
+                    // Ignore threads since they don't have permissions
+                    if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
+                        // Deny the ability to send messages, speak, add reactions, and use voice activity for each channel for the Muted - Server role
+                        await channel.permissionOverwrites.edit(mutedServer, {
+                            SEND_MESSAGES: false,
+                            SPEAK: false,
+                            ADD_REACTIONS: false,
+                            USE_VAD: false,
+                            USE_PUBLIC_THREADS: false,
+                            USE_PRIVATE_THREADS: false
+                        });
+                    };
                 });
 
                 // Add the newly created role to the array
@@ -1249,22 +1255,23 @@ module.exports = {
             if(!mutedVoice) {
                 // If no Muted - Voice role then create one
                 mutedVoice = await message.guild.roles.create({
-                    data: {
-                        name: `Muted - Voice`,
-                        color: `#818386`,
-                        position: `${usersRole.position + 1}`,
-                        permissions: [], //set permissions to an empty array so no permissions are given
-                    },
-                    reason: `No "Muted - Voice" role, need one to mute users!`,
+                    name: `Muted - Voice`,
+                    color: `#818386`,
+                    position: `${usersRole.position + 1}`,
+                    permissions: [], //set permissions to an empty array so no permissions are given
+                    reason: `No "Muted - Voice" role, need one to mute users!`
                 });
 
                 // Loop through all channels channels
                 message.guild.channels.cache.forEach(async (channel) => {
-                    // Deny the ability to speak and use voice activity for each channel for the Muted - Voice role
-                    await channel.updateOverwrite(mutedVoice, {
-                        SPEAK: false,
-                        USE_VAD: false
-                    });
+                    // Ignore threads since they don't have permissions
+                    if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
+                        // Deny the ability to speak and use voice activity for each channel for the Muted - Voice role
+                        await channel.permissionOverwrites.edit(mutedVoice, {
+                            SPEAK: false,
+                            USE_VAD: false
+                        });
+                    };
                 });
 
                 // Add the newly created role to the array
@@ -1275,21 +1282,24 @@ module.exports = {
             if(!mutedText) {
                 // If no Muted - Text role then create one
                 mutedText = await message.guild.roles.create({
-                    data: {
-                        name: `Muted - Text`,
-                        color: `#818386`,
-                        position: `${usersRole.position + 1}`,
-                        permissions: [], //set permissions to an empty array so no permissions are given
-                    },
-                    reason: `No "Muted - Text" role, need one to mute users!`,
+                    name: `Muted - Text`,
+                    color: `#818386`,
+                    position: `${usersRole.position + 1}`,
+                    permissions: [], //set permissions to an empty array so no permissions are given
+                    reason: `No "Muted - Text" role, need one to mute users!`
                 });
 
                 // Loop through all channels channels
                 message.guild.channels.cache.forEach(async (channel) => {
-                    // Deny the ability to send messages for each channel for the Muted - Text role
-                    await channel.updateOverwrite(mutedText, {
-                        SEND_MESSAGES: false
-                    });
+                    // Ignore threads since they don't have permissions
+                    if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
+                        // Deny the ability to send messages for each channel for the Muted - Text role
+                        await channel.permissionOverwrites.edit(mutedText, {
+                            SEND_MESSAGES: false,
+                            USE_PUBLIC_THREADS: false,
+                            USE_PRIVATE_THREADS: false
+                        });
+                    };
                 });
 
                 // Add the newly created role to the array
@@ -1300,21 +1310,22 @@ module.exports = {
             if(!mutedReactions) {
                 // If no Muted - Reactions role then create one
                 mutedReactions = await message.guild.roles.create({
-                    data: {
-                        name: `Muted - Reactions`,
-                        color: `#818386`,
-                        position: `${usersRole.position + 1}`,
-                        permissions: [], //set permissions to an empty array so no permissions are given
-                    },
-                    reason: `No "Muted - Reactions" role, need one to mute users!`,
+                    name: `Muted - Reactions`,
+                    color: `#818386`,
+                    position: `${usersRole.position + 1}`,
+                    permissions: [], //set permissions to an empty array so no permissions are given
+                    reason: `No "Muted - Reactions" role, need one to mute users!`
                 });
 
                 // Loop through all channels channels
                 message.guild.channels.cache.forEach(async (channel) => {
-                    // Deny the ability to add reactions for each channel for the Muted - Reactions role
-                    await channel.updateOverwrite(mutedReactions, {
-                        ADD_REACTIONS: false
-                    });
+                    // Ignore threads since they don't have permissions
+                    if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
+                        // Deny the ability to add reactions for each channel for the Muted - Reactions role
+                        await channel.permissionOverwrites.edit(mutedReactions, {
+                            ADD_REACTIONS: false
+                        });
+                    }
                 });
 
                 // Add the newly created role to the array
@@ -2321,8 +2332,8 @@ module.exports = {
             if (args[1] === "disable") {
 
                 // Make sure the user isn't trying to disable the config command
-                if(command.name === "config") {
-                    return message.reply(`well aren't you a silly one, you can't disable the ${args[0]} command! 😝`);
+                if(command.name === "configure") {
+                    return message.reply(`Well aren't you a silly one, you can't disable the configure command! 😝`);
                 }
 
                 // If the command isn't already disabled
@@ -2347,7 +2358,7 @@ module.exports = {
 
                 // If the command is already disabled let the user know
                 } else {
-                    message.reply(`uh oh! It seems this command is already disabled!`)
+                    message.reply(`Uh oh! It seems this command is already disabled!`)
                 }
                 
             // If the user requested to enable the command
@@ -2375,19 +2386,19 @@ module.exports = {
 
                 // If the command is already enabled let the user know
                 } else {
-                    message.reply(`uh oh! It seems this command is already enabled!`)
+                    message.reply(`Uh oh! It seems this command is already enabled!`)
                 }
             // If the user tried to give a config option that doesn't exist
             } else {
                 let newArgs = args; //copy the args to a new var
                 newArgs.shift(); //remove the first arg
                 newArgs = newArgs.join(" "); //join the args
-                return message.reply(`uh oh! \`${newArgs}\` is not a configuration option!`)
+                return message.reply(`Uh oh! \`${newArgs}\` is not a configuration option!`)
             }
 
         // If the command wasn't found, let the user know
         } else {
-            return message.reply(`uh oh! Looks like you are trying to update a command that doesn't exist, please try again!\n If you need a list of commands use \`${prefix}help\``)
+            return message.reply(`Uh oh! Looks like you are trying to update a command that doesn't exist, please try again!\n If you need a list of commands use \`${prefix}help\``)
         }
     },
     settingsHandler: async function(args, message, client) {

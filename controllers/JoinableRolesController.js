@@ -44,16 +44,16 @@ module.exports = {
 
             // If no role let user know
             if (!role) {
-                return message.reply(`that role doesn't exist, please try another role!`);
+                return message.reply(`That role doesn't exist, please try another role!`);
 
             // If role exists Look for it in the database
             } else if (role) {
                 const joinedRole = message.member.roles.cache.some(r => r.name.includes(role.name)); // Look for role in user's current roles
 
                 if (command.name === "joinrole" && joinedRole) {
-                    return message.reply(`you are already in that role!`);
+                    return message.reply(`You are already in that role!`);
                 } else if (command.name === "leaverole" && !joinedRole) {
-                    return message.reply(`you are not in that role!`);
+                    return message.reply(`You are not in that role!`);
                 } else {
                     // Get all rows and add their role to the joinable roles arr
                     JoinableRole.findOne({where: {role: role.name},raw:true}).then((data) => {
@@ -61,25 +61,25 @@ module.exports = {
                         if (data) {
                             if (command.name === "joinrole") {
                                 message.member.roles.add(role); // add the role
-                                return message.reply(`you've been successfully added to the ${role.name} role!`);
+                                return message.reply(`You've been successfully added to the ${role.name} role!`);
                             } else if (command.name === "leaverole") {
                                 message.member.roles.remove(role); // remove the role
-                                return message.reply(`you've have successfully left the ${role.name} role!`);
+                                return message.reply(`You've have successfully left the ${role.name} role!`);
                             }
 
                         // If no role was found in the db let user know
                         } else {
                             // If joinrole command
                             if (command.name === "joinrole") {
-                                return message.reply(`that role isn't joinable, please try another role!`);
+                                return message.reply(`That role isn't joinable, please try another role!`);
                             // If joinrole command
                             } else {
-                                return message.reply(`you cannot leave that role, please try another role!`);
+                                return message.reply(`You cannot leave that role, please try another role!`);
                             }
                         }
                     // If no joinable roles were found
                     }).catch(() => {
-                        return message.reply(`uh oh! It seems there are no joinable roles at this time!`);
+                        return message.reply(`Uh oh! It seems there are no joinable roles at this time!`);
                     });
                 }
             }
@@ -94,7 +94,7 @@ module.exports = {
 
                 // Check if the role has special permissions
                 if(role.permissions.any(client.settings.get("special_permission_flags").split(","))) {
-                    return message.reply(`uh oh! It seems that \`${joinableRole}\` has moderator or special permissions, please check to make sure you have the right role!`)
+                    return message.reply(`Uh oh! It seems that \`${joinableRole}\` has moderator or special permissions, please check to make sure you have the right role!`)
                 }
 
                 // Create a filter for the message collector
@@ -109,7 +109,7 @@ module.exports = {
                 message.channel.send(`Is \`${role.name}\` the right role you wish to add?\nPlease answer with either **yes** or **no**!`).then(() => {
 
                     // Listen for the user's response; giving them 10 seconds to reply
-                    message.channel.awaitMessages(filter, {max: 1, maxprocessed: 1, idle: 10000, errors:["idle"]}).then(res => {
+                    message.channel.awaitMessages({filter, max: 1, maxprocessed: 1, idle: 10000, errors:["idle"]}).then(res => {
                         // If the reply was "yes" then proceed with adding the role
                         if(res.first().content.toLowerCase() === "yes") {
                             /* 
@@ -147,11 +147,11 @@ module.exports = {
                         }
                     // If the user goes idle for 10 seconds let them know they timed out
                     }).catch(e => {
-                        message.reply(`uh oh! It seems that you got distracted, please try again!`)
+                        message.reply(`Uh oh! It seems that you got distracted, please try again!`)
                     });
                 });
             } else {
-                message.reply(`it looks like the role \`${joinableRole}\` doesn't exist!`);
+                message.reply(`It looks like the role \`${joinableRole}\` doesn't exist!`);
             };
 
         /*********** REMOVE JOINABLE ROLE ***********/
@@ -161,7 +161,7 @@ module.exports = {
 
             // If the role doesn't exist let the user know
             if(!role) {
-                return message.reply(`uh oh! Looks like you either tried to add a role that doesn't exist or used a role id or mention. Please tell me the name of the role instead!`);
+                return message.reply(`Uh oh! Looks like you either tried to add a role that doesn't exist or used a role id or mention. Please tell me the name of the role instead!`);
             }
 
             // Query the database for the joinable role passed in
@@ -236,7 +236,7 @@ module.exports = {
                         message.reply(`I've sent you the information on \`${joinableRoleData.role}\` to ${superChannel}!`);
                     });
                 }).catch((e) => {
-                    message.reply(`it looks like \`${joinableRole}\` doesn't exist!`);
+                    message.reply(`It looks like \`${joinableRole}\` doesn't exist!`);
                 });
                 
             // If user isn't a super mod and passed in args let them know they can't use that command

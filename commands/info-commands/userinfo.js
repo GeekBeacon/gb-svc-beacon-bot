@@ -76,7 +76,7 @@ module.exports = {
                 }
 
                 // If user is admin just set permissions to "All"
-                if(user.hasPermission("ADMINISTRATOR")) {
+                if(user.permissions.has("ADMINISTRATOR")) {
                     permissions = "All";
 
                 // If user isn't admin then show all permissions
@@ -154,7 +154,7 @@ module.exports = {
                         // If the command was used in a mod+ channel
                         } else {
                             // Send the message
-                            message.channel.send({embed: userEmbed})
+                            message.channel.send({embeds: [userEmbed]})
                         }
 
                     // If the user isn't a mod or higher
@@ -164,7 +164,7 @@ module.exports = {
                         .addField(`Permissions`, `${permissions}`, false);
 
                         // Send embed
-                        message.channel.send({embed: userEmbed});
+                        message.channel.send({embeds: [userEmbed]});
                     }
             }
         }

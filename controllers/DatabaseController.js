@@ -339,7 +339,7 @@ module.exports = {
                     };
 
                     // Send the embed to the log channel
-                    logChannel.send({embed: unbanEmbed});
+                    logChannel.send({embeds: [unbanEmbed]});
                 });
             });
         });
@@ -425,7 +425,7 @@ module.exports = {
                             };
 
                             // Send the embed to the log channel
-                            logChannel.send({embed: unmuteEmbed});
+                            logChannel.send({embeds: [unmuteEmbed]});
                         // If member doesn't have a muted rule then update the db and ignore
                         }).catch(() => {
                             // Update the completed field

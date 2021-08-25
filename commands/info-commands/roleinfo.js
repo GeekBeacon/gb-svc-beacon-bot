@@ -37,8 +37,14 @@ module.exports = {
             if(role) {
                 // Get all permissions, convert them to csv, then replace underscores with spaces
                 let permissions = role.permissions.toArray().join(", ").replace(/_/g," ");
+                let memberCount = 0; 
                 // Make the first letter of each word caps
                 permissions = permissions.split(' ').map(s => s.slice(0, 1).toUpperCase() + s.slice(1).toLowerCase()).join(' ');
+
+                // Get the member count
+                role.members.forEach(() => {
+                    memberCount++;
+                });
 
                 // Create the embed
                 const roleEmbed = {
@@ -47,7 +53,7 @@ module.exports = {
                     fields: [
                         {
                             name: `Members`,
-                            value: `${role.members.array().length}`,
+                            value: `${memberCount}`,
                             inline: true,
                         },
                         {
@@ -88,11 +94,11 @@ module.exports = {
                 };
 
                 // Send the embed
-                message.channel.send({embed: roleEmbed});
+                message.channel.send({embeds: [roleEmbed]});
 
             // If unable to find the role let user know
             } else {
-                return message.reply(`uh oh! It seems I wasn't able to find that role. Please try again!`)
+                return message.reply(`Uh oh! It seems I wasn't able to find that role. Please try again!`)
             }
         }
     }

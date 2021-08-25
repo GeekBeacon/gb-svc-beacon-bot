@@ -121,7 +121,7 @@ module.exports = {
         // Check if the command is enabled
         if(!command.enabled) {
             // If not enabled, let the user know
-            return message.reply("sorry, this command has been disabled!");
+            return message.reply("Sorry, this command has been disabled!");
         }
 
         // Check if the channel is a text channel and the command is for guild only
@@ -143,11 +143,11 @@ module.exports = {
 
         // Check if the user has the proper permissions for the command if not let them know
         if (command.admin === true && !(inAdminRole || message.member === isOwner)) {
-            return message.reply(`uh oh! Looks like you tried to use a command that is only for users in the ${adminRole.name} group!`);
+            return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${adminRole.name} group!`);
         } else if (command.super === true && !(inSuperRole || inAdminRole || message.member === isOwner)) {
-            return message.reply(`uh oh! Looks like you tried to use a command that is only for users in the ${superRole.name} group!`);
+            return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${superRole.name} group!`);
         } else if (command.mod === true && !(inModTraineeRole || inModRole || inSuperRole || inAdminRole || message.member === isOwner)) {
-            return message.reply(`uh oh! Looks like you tried to use a command that is only for users in the ${modRole.name} group!`);
+            return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${modRole.name} group!`);
         }
 
         // Check if the command has a cooldown time and set it if so

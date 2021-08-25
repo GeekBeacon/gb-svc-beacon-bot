@@ -116,7 +116,7 @@ module.exports = {
             };
 
             // Send the embed
-            return message.channel.send({embed:helpEmbed})
+            return message.channel.send({embeds:[helpEmbed]})
         }
 
         // Search for the command
@@ -156,7 +156,7 @@ module.exports = {
         if (command.admin === true) {
             // If user is an admin send the embed
             if (adminRole || message.member === ownerRole) {
-                message.channel.send({embed:cmdEmbed});
+                message.channel.send({embeds:[cmdEmbed]});
 
             // If user isn't an admin let them know they don't have permissions
             } else {
@@ -166,7 +166,7 @@ module.exports = {
         } else if (command.super === true) {
             // If user is a super or admin send embed
             if (superRole || adminRole || message.member === ownerRole) {
-                message.channel.send({embed:cmdEmbed});
+                message.channel.send({embeds:[cmdEmbed]});
             // If user isn't a super or admin let them know they don't have permissions
             } else {
                 return message.reply(`uh oh! Looks like you tried to get information about a command you don't have permission to use!`);
@@ -175,7 +175,7 @@ module.exports = {
         } else if (command.mod === true) {
             // If user is a mod, super, or admin send embed
             if (modTraineeRole || modRole || superRole || adminRole || message.member === ownerRole) {
-                message.channel.send({embed:cmdEmbed});
+                message.channel.send({embeds:[cmdEmbed]});
             // If user isn't a mod, super, or admin let them know they don't have permissions
             } else {
                 return message.reply(`uh oh! Looks like you tried to get information about a command you don't have permission to use!`);
@@ -189,7 +189,7 @@ module.exports = {
 
             // If user has permission then let them access the info
             } else {
-                message.channel.send({embed:cmdEmbed});
+                message.channel.send({embeds:{cmdEmbed}});
             }
         }
     }
