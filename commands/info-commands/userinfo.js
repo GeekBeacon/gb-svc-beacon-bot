@@ -28,7 +28,7 @@ module.exports = {
 
         // Make sure user provived an argument
         if(!args.length) {
-            return message.reply("you gotta tell me what user you want information on!");
+            return message.reply("You gotta tell me what user you want information on!");
         } else {
             // If the user provided a user mention
             if(args[0].startsWith("<@")) {
@@ -37,7 +37,7 @@ module.exports = {
             } else if(!isNaN(args[0])) {
                 // If invalid id let the user know
                 if(message.guild.members.cache.get(args[0]) === undefined) {
-                    return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`${prefix}whois @Username\``);
+                    return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`${prefix}whois @Username\``);
 
                 // If user found, assign it to the user var
                 } else {
@@ -45,7 +45,7 @@ module.exports = {
                 }
             // If user didn't provide a user id or mention
             } else {
-                return message.reply(`it seems you didn't provide either a user mention or id, please try again!`)
+                return message.reply(`It seems you didn't provide either a user mention or id, please try again!`)
             }
 
             // If the user exists
@@ -143,7 +143,7 @@ module.exports = {
                         // If the command was used in a public channel
                         if(message.channel !== modChannel && message.channel !== superChannel && message.channel !== adminChannel) {
                             // Send embed to the mod log channel
-                            actionLog.send({embed: userEmbed});
+                            actionLog.send({embeds: [userEmbed]});
 
                             // If the user didn't use the command in the action log channel
                             if(message.channel !== actionLog) {
