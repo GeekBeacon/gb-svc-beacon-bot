@@ -118,7 +118,7 @@ module.exports = {
                     };
 
                     // Send the info to the mod channel
-                    modChannel.send({embed: triggerEmbed})
+                    modChannel.send({embeds: [triggerEmbed]})
                     .then(() => {
                         // Check if the current channel is the mod channel
                         if(message.channel !== modChannel) {
@@ -471,7 +471,7 @@ module.exports = {
                         // Delete the message
                         message.delete().then(() => {
                             // Send the embed with a copy of the message to the super log
-                            superLog.send({embed: delMsgEmbed}).then(d => {
+                            superLog.send({embeds: [delMsgEmbed]}).then(d => {
                                 // Update the db's message link
                                 Models.warning.update({message_link: d.url}, {
                                     where: {
@@ -482,7 +482,7 @@ module.exports = {
                         });
                     } else if (severity === "medium" || severity === "low") {
                         // Send embed to the super log
-                        superLog.send({embed: e});
+                        superLog.send({embeds: [e]});
                     }
 
                 // If mod uses a trigger
@@ -503,11 +503,11 @@ module.exports = {
                                 // Make sure a super log channel exists
                                 if(superLog) {
                                     // Send the embed with a copy of the message to the super log
-                                    superLog.send({embed: delMsgEmbed}).then(d => {
+                                    superLog.send({embeds: [delMsgEmbed]}).then(d => {
                                         // Change the url for the mod channel's embed to link to log in the log channel
                                         e.fields[4].value = d.url;
                                         // Send embed to the super channel
-                                        superChannel.send({embed: e});
+                                        superChannel.send({embeds: [e]});
 
                                         // Update the db's message link
                                         Models.warning.update({message_link: d.url}, {
@@ -519,7 +519,7 @@ module.exports = {
 
                                 // If no super log channel, just send deleted embed to super channel
                                 } else {
-                                    superChannel.send({embed: delMsgEmbed}).then(d => {
+                                    superChannel.send({embeds: [delMsgEmbed]}).then(d => {
                                         // Update the db's message link
                                         Models.warning.update({message_link: d.url}, {
                                             where: {
@@ -531,7 +531,7 @@ module.exports = {
                             });
                         } else if (severity === "medium" || severity === "low") {
                             // Send embed to the super log
-                            superLog.send({embed: e});
+                            superLog.send({embeds: e});
                         }
 
                     // If a super channel isn't found
@@ -540,11 +540,11 @@ module.exports = {
                            // Delete the message
                             message.delete().then(() => {
                                 // Send the embed with a copy of the message to the admin channel
-                                adminChannel.send({embed: delMsgEmbed});
+                                adminChannel.send({embeds: [delMsgEmbed]});
                             });
                         } else if (severity === "medium" || severity === "low") {
                             // Send embed to the admin channel
-                            adminChannel.send({embed: e});
+                            adminChannel.send({embeds: [e]});
                         }
                     }
 
@@ -554,11 +554,11 @@ module.exports = {
                         // Delete the message
                         message.delete().then(() => {
                             // Send the embed with a copy of the message to the mod log
-                            logChannel.send({embed: delMsgEmbed}).then(d => {
+                            logChannel.send({embeds: [delMsgEmbed]}).then(d => {
                                 // Change the url for the mod channel's embed to link to log in the log channel
                                 e.fields[4].value = d.url;
                                 // Send embed to the mod log
-                                logChannel.send("@here", {embed: e});
+                                logChannel.send("@here", {embeds: [e]});
 
                                 // Update the db's message link
                                 Models.warning.update({message_link: d.url}, {
@@ -573,13 +573,13 @@ module.exports = {
                         message.reply(`please try to refrain from using words such as: \`${t}\``);
 
                         // Send embed to the moderation log with here tag
-                        logChannel.send({embed: e});
+                        logChannel.send({embeds: [e]});
                     } else if (severity === "low") {
                         // Warn the user
                         message.reply(`please try to refrain from using words such as: \`${t}\``);
 
                         // Send embed to the moderation log
-                        logChannel.send({embed: e});
+                        logChannel.send({embeds: [e]});
                     }
                 }
             }

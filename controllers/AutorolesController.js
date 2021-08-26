@@ -40,7 +40,7 @@ module.exports = {
 
                 // Check if the role has special permissions
                 if(role.permissions.any(client.settings.get("special_permission_flags").split(","))) {
-                    return message.reply(`uh oh! It seems that \`${autorole}\` has moderator or special permissions, please check to make sure you have the right role!`)
+                    return message.reply(`Uh oh! It seems that \`${autorole}\` has moderator or special permissions, please check to make sure you have the right role!`)
                 }
 
                 // Create a filter for the message collector
@@ -55,7 +55,7 @@ module.exports = {
                 message.channel.send(`Is \`${role.name}\` the right role you wish to add?\nPlease answer with either **yes** or **no**!`).then(() => {
 
                     // Listen for the user's response; giving them 10 seconds to reply
-                    message.channel.awaitMessages(filter, {max: 1, maxprocessed: 1, idle: 10000, errors:["idle"]}).then(res => {
+                    message.channel.awaitMessages({filter, max: 1, maxprocessed: 1, idle: 10000, errors:["idle"]}).then(res => {
                         // If the reply was "yes" then proceed with adding the role
                         if(res.first().content.toLowerCase() === "yes") {
                                 /* 
@@ -93,11 +93,11 @@ module.exports = {
                         }
                     // If the user goes idle for 10 seconds let them know they timed out
                     }).catch(e => {
-                        message.reply(`uh oh! It seems that you got distracted, please try again!`)
+                        message.reply(`Uh oh! It seems that you got distracted, please try again!`)
                     });
                 });
             } else {
-                message.reply(`uh oh! Looks like you either tried to add a role that doesn't exist or used a role id or mention. Please tell me the name of the role instead!`);
+                message.reply(`Uh oh! Looks like you either tried to add a role that doesn't exist or used a role id or mention. Please tell me the name of the role instead!`);
             };
 
         /*********** REMOVE AUTOROLE ***********/
@@ -195,7 +195,7 @@ module.exports = {
                         message.reply(`I've sent the information on \`${autoroleData.role}\` to the ${superChannel}!`);
                     })
                 }).catch((err) => {
-                    message.reply(`it looks like \`${autorole}\` doesn't exist!`);
+                    message.reply(`It looks like \`${autorole}\` doesn't exist!`);
                 });
 
             // If user isn't a super mod and passed in args let them know they can't use that command

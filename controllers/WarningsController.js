@@ -77,7 +77,7 @@ module.exports = {
                     });
 
                     // Send the warnings to the action log channel
-                    actionLog.send({embed: recentEmbed}).then(() => {
+                    actionLog.send({embeds: [recentEmbed]}).then(() => {
                         // Don't send notification message if current channel is action log
                         if(message.channel.id === actionLog.id) return;
 
@@ -103,8 +103,8 @@ module.exports = {
                             // Assign values to the embed
                             specificEmbed.setTitle(`Warning for ${args[1]}`)
                             .setAuthor(guildUser.user.username, guildUser.user.displayAvatarURL({dynamic:true}))
-                            .addField(`User Id`, guildUser.id, false)
-                            .addField(`User`, guildUser, true)
+                            .addField(`User Id`, guildUser.user.tag, false)
+                            .addField(`User`, guildUser.toString(), true)
                             .addField(`Server Nickname`, `${guildUser.nickname || "None"}`, true)
                             .addField(`Warning Type`, warning.type, true)
                             .addField(`User Roles`, guildUser.roles.cache.map(role => role.name).join(", "))
@@ -114,7 +114,7 @@ module.exports = {
                             defineType();
 
                             // Send the embed to the action log
-                            actionLog.send({embed: specificEmbed}).then(() => {
+                            actionLog.send({embeds: [specificEmbed]}).then(() => {
                                 // Don't send notification message if current channel is action log
                                 if(message.channel.id === actionLog.id) return;
 
@@ -137,7 +137,7 @@ module.exports = {
                                 defineType();
                             }).then(() => {
                                 // Send the embed to the action log
-                                actionLog.send({embed: specificEmbed}).then(() => {
+                                actionLog.send({embeds: [specificEmbed]}).then(() => {
                                     // Don't send notification message if current channel is action log
                                     if(message.channel.id === actionLog.id) return;
 
@@ -153,6 +153,11 @@ module.exports = {
                             if(warning.type === "Trigger") {
                                 // Find the channel for the warning
                                 warnedChannel = client.guilds.cache.get(message.guild.id).channels.cache.get(warning.channel_id);
+
+                                // If the channel was deleted
+                                if(!warnedChannel) {
+                                    warnedChannel = "`Deleted Channel`";
+                                };
 
                                 // Set the color of the embed based on severity level
                                 switch(warning.severity) {
@@ -180,7 +185,7 @@ module.exports = {
                                 // Add the remaining fields
                                 specificEmbed.addField(`Trigger(s) Hit`, warning.triggers, false);
                                 specificEmbed.addField(`Severity`, warning.severity, false);
-                                specificEmbed.addField(`Channel`, warnedChannel, false);
+                                specificEmbed.addField(`Channel`, warnedChannel.toString(), false);
                                 specificEmbed.addField(`Time Trigger Was Hit`, moment(warning.createdAt).tz(moment.tz.guess()).format('MMM DD, YYYY HH:mm:ss'), false);
                                 specificEmbed.addField(`Full Message`, fullMessage, false);
                                 specificEmbed.addField(`Message URL`, warning.message_link, false)
@@ -298,7 +303,7 @@ module.exports = {
                 }
             
             // Send the data to the action log
-            actionLog.send({embed: userWarningsEmbed}).then(() => {
+            actionLog.send({embeds: [userWarningsEmbed]}).then(() => {
                 // Don't send notification message if current channel is action log
                 if(message.channel.id === actionLog.id) return;
 

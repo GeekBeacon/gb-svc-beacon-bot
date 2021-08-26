@@ -64,7 +64,7 @@ module.exports = {
                                 };
 
                                 // Send the embed to the action log channel
-                                actionLog.send({embed: tempChannelRemovedEmbed});
+                                actionLog.send({embeds: [tempChannelRemovedEmbed]});
                             });
                         };
                     };

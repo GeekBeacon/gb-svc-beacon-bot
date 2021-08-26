@@ -60,7 +60,7 @@ module.exports = {
             }
 
             // Send the embed to the action log channel
-            actionLog.send({embed: delEmbed});
+            actionLog.send({embeds: [delEmbed]});
         }
     },
     purgeHandler: function(a, m, c) {
@@ -71,13 +71,13 @@ module.exports = {
         // Check if the argument given was a number
         if(!args[0].match(regex)) {
             // Let the user know that they provided an incorrect argument type
-            return message.reply(`uh oh! You have provided an incorrect value for the amount of messages to delete!`);
+            return message.reply(`Uh oh! You have provided an incorrect value for the amount of messages to delete!`);
         } else {
             let count = parseInt(args[0]); //count var
 
             // Ensure message limit isn't exceeded
             if(count > 100) {
-                return message.reply(`you can only delete 100 messages at a time, please try again!`);
+                return message.reply(`You can only delete 100 messages at a time, please try again!`);
             }
 
             // Delete the command message itself
@@ -112,7 +112,7 @@ module.exports = {
                         timestamp: new Date(),
                     };
 
-                    superLog.send({embed: bulkEmbed});
+                    superLog.send({embeds: [bulkEmbed]});
                 });
             })
         };
@@ -172,7 +172,7 @@ module.exports = {
             );
         }
         // Send the edit embed to the super log channel
-        superLog.send({embed: editEmbed}).then(() => {
+        superLog.send({embeds: [editEmbed]}).then(() => {
             // Loop through the bannedUrl list
             bannedUrls.list.forEach((domain) => {
                 // Add each domain to the bannedUrlArr var
@@ -196,14 +196,8 @@ module.exports = {
                     // If not then call the handleUrl function from the ModerationController file
                     this.handleUrl(newMsg, regexMatch, deleteSet);
                 };
-            } else {
-                // Make sure this is the first time the message has been edited
-                if(newMsg.edits.length < 3) {
-                    // Trigger the message event with the new message
-                    client.emit("message", newMsg);
-                }
             }
-        })
+        });
     },
     kickHandler: function(a, m, c) {
         const args = a, message = m, client = c;
@@ -343,7 +337,7 @@ module.exports = {
                                     // Kick the user from the server
                                     user.kick(reason).then(() => {
                                         // Send the embed to the action log channel
-                                        actionLog.send({embed: kickEmbed});
+                                        actionLog.send({embeds: [kickEmbed]});
                                         // Let mod know the user has been kicked
                                         message.channel.send(`${user.user.username} was successfully kicked from the server!`)
                                     });
@@ -565,7 +559,7 @@ module.exports = {
                                         // Ban the user from the server
                                         message.guild.members.ban(user.id, {reason: reason}).then(() => {
                                             // Send the embed to the action log channel
-                                            actionLog.send({embed: banEmbed});
+                                            actionLog.send({embeds: [banEmbed]});
                                             message.channel.send(`${user.username} was successfully banned for ${banLength}!`)
                                         });
                                     });
@@ -697,7 +691,7 @@ module.exports = {
                                             Models.ban.update({completed: 1}, {where: {user_id: userId}});
 
                                             // Send the embed to the action log channel
-                                            actionLog.send({embed: unbanEmbed});
+                                            actionLog.send({embeds: [unbanEmbed]});
 
                                             // Reply with a message
                                             message.channel.send(`${user.username} was successfully unbanned!`)
@@ -815,7 +809,7 @@ module.exports = {
                             }
                         };
 
-                        actionLog.send({embed: warnEmbed}); //send embed
+                        actionLog.send({embeds: [warnEmbed]}); //send embed
                         message.reply(`${user.user.username} was successfully warned!`);
                         
                     });
@@ -1387,7 +1381,7 @@ module.exports = {
                             timestamp: new Date()
                         };
                         // Send the embed to the action log channel
-                        actionLog.send({embed: blacklistsEmbed});
+                        actionLog.send({embeds: [blacklistsEmbed]});
                         // Let user know the data was sent
                         return message.channel.send(`I've sent the data you requested to ${actionLog}`)
                         
@@ -1474,7 +1468,7 @@ module.exports = {
                                     timestamp: new Date()
                                 }
                                 // Send the embed to the action log channel
-                                actionLog.send({embed:blacklistEmbed});
+                                actionLog.send({embeds: [blacklistEmbed]});
                                 // Let the user know the domain was added
                                 message.channel.send(`${domains[0]} was successfully added to the list of banned domains!`);
                             })
@@ -1525,7 +1519,7 @@ module.exports = {
                                     timestamp: new Date()
                                 }
                                 // Send the embed to the action log channel
-                                actionLog.send({embed:blacklistsEmbed});
+                                actionLog.send({embeds: [blacklistsEmbed]});
                                 // Let the user know the domain was added
                                 message.channel.send(`The domains were successfully added to the list of banned domains, see ${actionLog} for more info!`);
                                 // If any domains were rejected let the user know
@@ -1633,7 +1627,7 @@ module.exports = {
             timestamp: new Date(),
         };
         // Send the embed to the mod log
-        actionLog.send({embed: urlEmbed}).then(() => {
+        actionLog.send({embeds: [urlEmbed]}).then(() => {
             // Delete the message with a reason
             message.delete({reason: "Blacklisted URL"}).then(() => {
                 // Let the user know why their message was deleted
@@ -1681,19 +1675,19 @@ module.exports = {
                         timestamp: new Date(),
                     };
 
-                    actionLog.send({embed: slowmodeEmbed});
+                    actionLog.send({embeds: [slowmodeEmbed]});
                     return message.channel.send(`Successfully set slowmode for ${channel} to ${args[2]} seconds!`);
                 });
             // If not a number let user know   
             } else {
-                return message.reply(`uh oh! Looks like you gave me an invalid slowmode interval, please give me the interval you wish to set in seconds between the value of **1** and **21600**!\nExample: \`${prefix}slow enable #${channel.name} 5\``);
+                return message.reply(`Uh oh! Looks like you gave me an invalid slowmode interval, please give me the interval you wish to set in seconds between the value of **1** and **21600**!\nExample: \`${prefix}slow enable #${channel.name} 5\``);
             }
         // If user asked to disable slowmode
         } else if (args[0].toLowerCase() === "disable") {
 
             // If the user tries to disable slowmode for a channel that isn't in slowmode let them know
             if(channel.rateLimitPerUser === 0) {
-                return message.reply(`uh oh! Looks like that channel isn't in slowmode!`)
+                return message.reply(`Uh oh! Looks like that channel isn't in slowmode!`)
             }
 
             // Set the channel to slowmode
@@ -1722,7 +1716,7 @@ module.exports = {
                     timestamp: new Date(),
                 };
 
-                actionLog.send({embed: slowmodeEmbed});
+                actionLog.send({embeds: [slowmodeEmbed]});
                 return message.channel.send(`Successfully disabled slowmode for ${channel}!`);
             });
         };
@@ -1766,7 +1760,7 @@ module.exports = {
                 }
             }).then(() => {
                 // Send the embed to the mod log
-                actionLog.send({embed: bansEmbed});
+                actionLog.send({embeds: [bansEmbed]});
                 // Let the user know the information was sent to the action log channel
                 message.reply(`I've sent the data to the ${actionLog} channel`);
             })
@@ -1842,7 +1836,7 @@ module.exports = {
                         }
 
                         // Send the embed to the action log channel
-                        actionLog.send({embed: banEmbed});
+                        actionLog.send({embeds: [banEmbed]});
                         // Let the user know the information was sent to the action log channel
                         message.reply(`I've sent the data to the ${actionLog} channel`);
                     }
@@ -1874,7 +1868,7 @@ module.exports = {
         } else {
             // If invalid id let the user know
             if(message.guild.members.cache.get(args[1]) === undefined) {
-                return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
+                return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
 
             // If user found, assign it to the user var
             } else {
@@ -1888,7 +1882,7 @@ module.exports = {
             role = message.guild.roles.cache.get(args[2]);
 
             // If the role wasn't found let the user know
-            if(role === undefined) return message.reply(`uh oh! Looks like I wasn't able to find a role with the id \`${args[2]}\`, please try again!`);
+            if(role === undefined) return message.reply(`Uh oh! Looks like I wasn't able to find a role with the id \`${args[2]}\`, please try again!`);
 
         // If a number wasn't given try to find the role based on name
         } else {
@@ -1899,7 +1893,7 @@ module.exports = {
             role = message.guild.roles.cache.find(role => role.name.toLowerCase().includes(roleStr.toLowerCase()));
 
             // If the role wasn't found let the user know
-            if(role === undefined) return message.reply(`uh oh! Looks like I wasn't able to find a role with the name \`${roleStr}\`, please try again!`);
+            if(role === undefined) return message.reply(`Uh oh! Looks like I wasn't able to find a role with the name \`${roleStr}\`, please try again!`);
         }
 
 
@@ -1909,7 +1903,7 @@ module.exports = {
             
             // If author isn't able to edit the user, deny editing the user
             if(message.member.roles.highest.position <= user.roles.highest.position) {
-                return message.reply(`uh oh! You don't have permission to edit this user!`);
+                return message.reply(`Uh oh! You don't have permission to edit this user!`);
             // If author is able to edit the user, proceed
             } else {
                 // If add subcommand was used
@@ -1917,7 +1911,7 @@ module.exports = {
                     // Check if the user already has the role
                     if(user.roles.cache.some(r => r === role)) {
                         // If user already has the role then let author know
-                        return message.reply(`uh oh! This user is already in that role!`)
+                        return message.reply(`Uh oh! This user is already in that role!`)
                     }
 
                     // Add the role to the user
@@ -1952,7 +1946,7 @@ module.exports = {
                         };
 
                         // Send log
-                        actionLog.send({embed: addEmbed}).then(() => {
+                        actionLog.send({embeds: [addEmbed]}).then(() => {
                             // Send feedback
                             message.channel.send(`${user.displayName} was successfully added to the ${role.name} role!`);
                         });
@@ -1963,7 +1957,7 @@ module.exports = {
                     // Check if the user already has the role
                     if(!user.roles.cache.some(r => r === role)) {
                         // If user already has the role then let author know
-                        return message.reply(`uh oh! This user isn't in that role!`)
+                        return message.reply(`Uh oh! This user isn't in that role!`)
                     }
 
                     // Remove the role from the user
@@ -1998,7 +1992,7 @@ module.exports = {
                         };
 
                         // Send log
-                        actionLog.send({embed: removeEmbed}).then(() => {
+                        actionLog.send({embeds: [removeEmbed]}).then(() => {
                             // Send feedback
                             message.channel.send(`${user.displayName} was successfully removed from the ${role.name} role!`);
                         });
@@ -2011,7 +2005,7 @@ module.exports = {
                 // Check if the user already has the role
                 if(user.roles.cache.some(r => r === role)) {
                     // If user already has the role then let author know
-                    return message.reply(`uh oh! This user is already in that role!`)
+                    return message.reply(`Uh oh! This user is already in that role!`)
                 }
 
                 // Add the role to the user
@@ -2046,7 +2040,7 @@ module.exports = {
                     };
 
                     // Send log
-                    actionLog.send({embed: addEmbed}).then(() => {
+                    actionLog.send({embeds: [addEmbed]}).then(() => {
                         // Send feedback
                         message.channel.send(`${user.displayName} was successfully added to the ${role.name} role!`);
                     });
@@ -2057,7 +2051,7 @@ module.exports = {
                 // Check if the user already has the role
                 if(!user.roles.cache.some(r => r === role)) {
                     // If user already has the role then let author know
-                    return message.reply(`uh oh! This user isn't in that role!`)
+                    return message.reply(`Uh oh! This user isn't in that role!`)
                 }
 
                 // Remove the role from the user
@@ -2092,7 +2086,7 @@ module.exports = {
                     };
 
                     // Send log
-                    actionLog.send({embed: removeEmbed}).then(() => {
+                    actionLog.send({embeds: [removeEmbed]}).then(() => {
                         // Send feedback
                         message.channel.send(`${user.displayName} was successfully removed from the ${role.name} role!`);
                     });
@@ -2107,7 +2101,7 @@ module.exports = {
 
         // See if the user added a comma, if not, tell them it is needed
         if(!newArgs[1]) {
-            return message.reply(`uh oh! Looks like you forgot the comma after the user, please try again!`);
+            return message.reply(`Uh oh! Looks like you forgot the comma after the user, please try again!`);
         }
 
         newArgs[1] = newArgs[1].trim(); //remove spaces from new nickname
@@ -2121,7 +2115,7 @@ module.exports = {
                 user = await message.guild.members.fetch(newArgs[0]);
             // If unable to fetch the user let the moderator know
             } catch(e) {
-                return message.reply(`uh oh! It seems you provided me with an invalid user id or that user isn't part of this server!`)
+                return message.reply(`Uh oh! It seems you provided me with an invalid user id or that user isn't part of this server!`)
             }
         // If a user mention was provided
         } else if(newArgs[0].startsWith("<@")) {
@@ -2132,11 +2126,11 @@ module.exports = {
                 user = await message.guild.members.fetch(user);
             // If unable to fetch the user let the moderator know
             } catch(e) {
-                return message.reply(`uh oh! It seems something went wrong, please try again or contact an Administrator!`)
+                return message.reply(`Uh oh! It seems something went wrong, please try again or contact an Administrator!`)
             }
         // If a mention or id wasn't provided let the moderator know
         } else {
-            return message.reply("uh oh! It seems you didn't provide me with a user mention or id!")
+            return message.reply("Uh oh! It seems you didn't provide me with a user mention or id!")
         }
         // Get the current nickname of the user
         oldNick = user.nickname;
@@ -2144,7 +2138,7 @@ module.exports = {
         // Change the user's nickname to the 2nd arg provided
         user.setNickname(newArgs[1]).then(() => {
             // Let the mod know the user's nickname was changed
-            message.reply(`done! ${user.user.username}'s nickname is now \`${newArgs[1]}\`!`);
+            message.reply(`Done! ${user.user.username}'s nickname is now \`${newArgs[1]}\`!`);
 
             // Create the embed
             const nickEmbed = {
@@ -2185,11 +2179,11 @@ module.exports = {
                 timestamp: new Date(),
             };
             // Send the embed to the action log channel
-            actionLog.send({embed: nickEmbed});
+            actionLog.send({embeds: [nickEmbed]});
 
         // If unable to change the user's nickname let the moderator know
         }).catch(e => {
-            message.reply(`uh oh! It seems I'm not able to change that user's nickname, most likely due to permissions!`)
+            message.reply(`Uh oh! It seems I'm not able to change that user's nickname, most likely due to permissions!`)
         })
     },
     tempVoiceHandler: function(message, args, client) {
@@ -2201,12 +2195,12 @@ module.exports = {
 
         // If the user gave too many arguments let them know
         if(newArgs.length > 2) {
-            return message.reply(`uh oh! Looks like you gave too many arguments, please make sure to only give the required channel name and an optional member limit for the channel!\nExample: \`${prefix}tempvoice New Channel, 10\``);
+            return message.reply(`Uh oh! Looks like you gave too many arguments, please make sure to only give the required channel name and an optional member limit for the channel!\nExample: \`${prefix}tempvoice New Channel, 10\``);
 
         // If the user only gave one argument assign it as the channel name
         } else if(newArgs.length === 1) {
             // Create the temporary voice channel in the same category the server's afk channel is in
-            message.guild.channels.create(`⏱️ ${name}`, {type: 'voice', parent: message.guild.afkChannel.parent}).then((channel) => {
+            message.guild.channels.create(`⏱️ ${name}`, {type: 'GUILD_VOICE', parent: message.guild.afkChannel.parent}).then((channel) => {
                 // Move the newly created channel above the afk channel
                 channel.setPosition(message.guild.afkChannel.position - 1, {relative: true}).then(() => {
                     
@@ -2253,7 +2247,7 @@ module.exports = {
                             };
 
                             // Send the embed to the action log channel
-                            actionLog.send({embed: tempChannelEmbed});
+                            actionLog.send({embeds: [tempChannelEmbed]});
                         });
                     });
                 });
@@ -2263,11 +2257,11 @@ module.exports = {
         } else if (newArgs.length === 2) {
             // If the user limit given was less than 1 or greater than 99 let user know it is invalid
             if(isNaN(newArgs[1]) || newArgs[1] < 1 || newArgs[1] > 99) {
-                return message.reply(`uh oh! Looks like you tried to give me an invalid user limit, please provide me with a numerical limit that is between 1 and 99, or leave blank if no limit is needed!`);
+                return message.reply(`Uh oh! Looks like you tried to give me an invalid user limit, please provide me with a numerical limit that is between 1 and 99, or leave blank if no limit is needed!`);
             };
 
             // Create the temporary voice channel in the same category the server's afk channel is in with the user limit given
-            message.guild.channels.create(`⏱️ ${name}`, {type: 'voice', userLimit: newArgs[1], parent: message.guild.afkChannel.parent}).then(channel => {
+            message.guild.channels.create(`⏱️ ${name}`, {type: 'GUILD_VOICE', userLimit: newArgs[1], parent: message.guild.afkChannel.parent}).then(channel => {
                 // Move the newly created channel above the afk channel
                 channel.setPosition(message.guild.afkChannel.position -1, {relative: true}).then(() => {
                     /* 
@@ -2314,7 +2308,7 @@ module.exports = {
                             };
 
                             // Send the embed to the action log channel
-                            actionLog.send({embed: tempChannelEmbed});
+                            actionLog.send({embeds: [tempChannelEmbed]});
                         });
                     });
                 });
@@ -2518,7 +2512,7 @@ module.exports = {
                         );
 
                         // Send the embed to the admin channel
-                        adminChannel.send({embed:viewEmbed});
+                        adminChannel.send({embeds: [viewEmbed]});
 
                         // If the channel isn't the admin channel, let the user know it was sent
                         if(adminChannel.name !== message.channel.name) {
