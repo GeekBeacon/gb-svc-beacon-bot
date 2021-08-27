@@ -124,7 +124,7 @@ module.exports = {
 
         // If command doesn't exist let user know
         if (!command) {
-            return message.reply("uh oh! That command doesn't exist!");
+            return message.reply("Uh oh! That command doesn't exist!");
         }
 
         // Create the embed
@@ -160,7 +160,7 @@ module.exports = {
 
             // If user isn't an admin let them know they don't have permissions
             } else {
-                return message.reply(`uh oh! Looks like you tried to get information about a command you don't have permission to use!`);
+                return message.reply(`Uh oh! Looks like you tried to get information about a command you don't have permission to use!`);
             }
         // If command is super only
         } else if (command.super === true) {
@@ -169,7 +169,7 @@ module.exports = {
                 message.channel.send({embeds:[cmdEmbed]});
             // If user isn't a super or admin let them know they don't have permissions
             } else {
-                return message.reply(`uh oh! Looks like you tried to get information about a command you don't have permission to use!`);
+                return message.reply(`Uh oh! Looks like you tried to get information about a command you don't have permission to use!`);
             }
         // If command is mod only
         } else if (command.mod === true) {
@@ -178,14 +178,14 @@ module.exports = {
                 message.channel.send({embeds:[cmdEmbed]});
             // If user isn't a mod, super, or admin let them know they don't have permissions
             } else {
-                return message.reply(`uh oh! Looks like you tried to get information about a command you don't have permission to use!`);
+                return message.reply(`Uh oh! Looks like you tried to get information about a command you don't have permission to use!`);
             }
         // If the command doesn't require special permission send the embed
         } else {
 
             // If not Elder Squirrel or mod+ role then deny
             if(command.name === "role" && (!elderRole && !superRole && !adminRole && message.author.id !== ownerRole)) {
-                return message.reply(`uh oh! Looks like you tried to get information about a command you don't have permission to use!`);
+                return message.reply(`Uh oh! Looks like you tried to get information about a command you don't have permission to use!`);
 
             // If user has permission then let them access the info
             } else {

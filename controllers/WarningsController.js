@@ -36,7 +36,7 @@ module.exports = {
                 if (data) {
                     // If the table is empty then let the user know
                     if(data.length === 0) {
-                        return message.reply("there are currently no warnings in the database!");
+                        return message.reply("There are currently no warnings in the database!");
                     }
 
                     let i = 1; // counter
@@ -207,12 +207,12 @@ module.exports = {
                 }).catch((e) => {
                     console.log(e)
                     // If unable to find warning/user
-                    return message.reply(`uh oh! I wasn't able to find the a warning with that warning id!\r If you think the warning exists, please check your warning id and try again!`);
+                    return message.reply(`Uh oh! I wasn't able to find the a warning with that warning id!\r If you think the warning exists, please check your warning id and try again!`);
                 });
 
             // If no second arg let user know
             } else {
-                return message.reply(`uh oh! Looks like you forgot to tell me the warning id!\rExample: \`${prefix}warnings specific {warning id}\``);
+                return message.reply(`Uh oh! Looks like you forgot to tell me the warning id!\rExample: \`${prefix}warnings specific {warning id}\``);
             };
         } else if (args[0].toLowerCase() === "user") {
 
@@ -229,7 +229,7 @@ module.exports = {
                         }
 
                     }).catch((e) => {
-                        return message.reply(`uh oh! I either wasn't able to find the user with that id or that user has no warnings!\r If you think the user has warnings, please check your id and try again!`);
+                        return message.reply(`Uh oh! I either wasn't able to find the user with that id or that user has no warnings!\r If you think the user has warnings, please check your id and try again!`);
                     });
 
                 // If the second argument starts with a tag query based on user mention
@@ -245,17 +245,17 @@ module.exports = {
                             sendUserWarnings(message, client, warnings);
                         }
                     }).catch((e) => {
-                        return message.reply(`uh oh! I either wasn't able to find the user with that id or that user has no warnings!\r If you think the user has warnings, please check your id and try again!`);
+                        return message.reply(`Uh oh! I either wasn't able to find the user with that id or that user has no warnings!\r If you think the user has warnings, please check your id and try again!`);
                     });
                 } else {
-                    return message.reply(`uh oh! You seem to have provided an unacceptable user search method. Please ensure that you're searching by either user mention or id!`);
+                    return message.reply(`Uh oh! You seem to have provided an unacceptable user search method. Please ensure that you're searching by either user mention or id!`);
                 }
             // If user forgot to give a username or id
             } else {
-                return message.reply(`uh oh! Looks like you forgot to tell me the user's id!\rExample: \`${prefix}warnings user {user_id}\``);
+                return message.reply(`Uh oh! Looks like you forgot to tell me the user's id!\rExample: \`${prefix}warnings user {user_id}\``);
             }
         } else {
-            return message.reply(`uh oh! Looks like you didn't use that command properly, please check its' usage with \`${prefix}help warnings\``);
+            return message.reply(`Uh oh! Looks like you didn't use that command properly, please check its' usage with \`${prefix}help warnings\``);
         }
 
         function sendUserWarnings(message, client, warnings) {

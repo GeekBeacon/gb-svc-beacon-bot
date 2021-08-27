@@ -10,7 +10,7 @@ module.exports = {
     usage: "<Role Name | Role Tag | Role Id>",
     execute(message, args) {
         if(!args.length) {
-            return message.reply("you gotta tell me what role you want information on!");
+            return message.reply("You gotta tell me what role you want information on!");
         } else {
             let role;
             // If the arg is a role tag

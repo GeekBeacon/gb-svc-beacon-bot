@@ -220,7 +220,7 @@ module.exports = {
         // Make sure the first arg was a user mention or a user id
         if(isNaN(args[0]) && !args[0].startsWith("<@")) {
             // Let user know they need to provide a user mention or a valid user id
-            message.reply(`uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
+            message.reply(`Uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
         } else {
 
             // Check if a user mention was given
@@ -230,7 +230,7 @@ module.exports = {
             } else {
                 // If invalid id let the user know
                 if(message.guild.members.cache.get(args[0]) === undefined) {
-                    return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
+                    return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
 
                 // If user found, assign it to the user var
                 } else {
@@ -243,10 +243,10 @@ module.exports = {
                 return message.channel.send(`You can't kick no beep boop!`);
             // If the user tries to kick themselves then deny kicking them
             } else if(user.user.id === message.author.id) {
-                return message.reply(`you can't kick yourself from the server, silly!`);
+                return message.reply(`You can't kick yourself from the server, silly!`);
             // If the user is a mod+ then deny kicking them
             } else if(user.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
-                return message.reply(`you got guts, trying to kick a ${user.roles.highest} member!`);
+                return message.reply(`You got guts, trying to kick a ${user.roles.highest} member!`);
             // If the user is the server owner then deny kicking them
             } else if (user.user.id === user.guild.ownerID) {
                 return message.reply(`I hope you didn't really think you could kick the server owner...`);
@@ -350,12 +350,12 @@ module.exports = {
                 // Check if a user mention was used
                 if(message.mentions.users.first()) {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for kicking, please be sure to provide a reason for this action!\nExample: \`${prefix}kick @${user.user.tag}, reason\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for kicking, please be sure to provide a reason for this action!\nExample: \`${prefix}kick @${user.user.tag}, reason\``);
 
                 // If no user mention was given then just output the id they provided
                 } else {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for kicking, please be sure to provide a reason for this action!\nExample: \`${prefix}kick ${user}, reason\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for kicking, please be sure to provide a reason for this action!\nExample: \`${prefix}kick ${user}, reason\``);
                 }
             }
         }
@@ -379,7 +379,7 @@ module.exports = {
         // Make sure the first arg was a user mention or a user id
         if(isNaN(newArgs[0]) && !newArgs[0].startsWith("<@")) {
             // Let user know they need to provide a user mention or a valid user id
-            message.reply(`uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
+            message.reply(`Uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
         } else {
 
             // Check if a user mention was given
@@ -390,7 +390,7 @@ module.exports = {
                     user = message.mentions.members.first(); // get user tag
                 } catch(e) {
                     // If unable to get the user, let the mod know
-                    return message.reply(`uh oh! That user isn't a member of this guild!`);
+                    return message.reply(`Uh oh! That user isn't a member of this guild!`);
                 }
 
                 // If user is a bot then deny banning it
@@ -398,10 +398,10 @@ module.exports = {
                     return message.channel.send(`You can't ban no beep boop!`);
                 // If the user tries to ban themselves then deny banning them
                 } else if(user.user.id === message.author.id) {
-                    return message.reply(`you can't ban yourself from the server, silly!`);
+                    return message.reply(`You can't ban yourself from the server, silly!`);
                 // If the user is a mod+ then deny banning them
                 } else if(user.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
-                    return message.reply(`you got guts, trying to ban a ${user.roles.highest} member!`);
+                    return message.reply(`You got guts, trying to ban a ${user.roles.highest} member!`);
                 // If the user is the server owner then deny banning them
                 } else if (user.user.id === user.guild.ownerID) {
                     return message.reply(`I hope you didn't really think you could ban the server owner...`);
@@ -418,22 +418,22 @@ module.exports = {
                     user = await client.users.fetch(newArgs[0]);
                 } catch(e) {
                     // If unable to get the user, let the mod know
-                    return message.reply(`uh oh! I wasn't able to find that user!`);
+                    return message.reply(`Uh oh! I wasn't able to find that user!`);
                 }
 
                 // Get bans from the server
-                bans = await message.guild.fetchBans();
+                bans = await message.guild.bans.fetch();
 
                 // Check if user is banned
                 if(bans.has(user.id)) {
                     // If user is banned then use the mod know
-                    return message.reply(`you silly! ${user} is already banned!`);
+                    return message.reply(`You silly! ${user} is already banned!`);
                 };
                 
 
                 // If user is undefined let the moderator know
                 if(user === undefined) {
-                    return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
+                    return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
                 }
             }
 
@@ -441,7 +441,7 @@ module.exports = {
             if(newArgs[1] && user !== undefined) {
                 // If a length wasn't given then let the user know it is required
                 if(!newArgs[2]) {
-                    return message.reply(`uh oh! It seems you forgot to give a length for ther ban, please be sure to provide a ban length for this action!\nExample: \`${prefix}ban ${user}, reason, length\``);
+                    return message.reply(`Uh oh! It seems you forgot to give a length for ther ban, please be sure to provide a ban length for this action!\nExample: \`${prefix}ban ${user}, reason, length\``);
 
                 // If both a reason and length were given ban the user and log the action in the database
                 } else {
@@ -459,12 +459,12 @@ module.exports = {
                         banValue = 999; // assign value
                         banUnit = "years"; // set unit
                         banLength = "an indefinite amount of time"; // set length for description
+                    // If the user input a duration shorter than 1 hour
+                    } else if (banUnit.toLowerCase().includes("min") || banUnit,toLowerCase().includes("sec") || banUnit === "s" || banUnit === "m") {
+                        return message.reply(`Please provide a ban time that is at least 1 hour long.`);
                     // Check if the user provided an accepted format
                     } else if(!banLength.match(banLengthRegex)) {
-                        return message.reply(`uh oh! It seems like you entered an invalue ban duration! Please use formats such as these for the ban duration: \`6 years\`, \`17d\`, \`permanent\`, \`3 wks\``)
-                    // Ensure the ban duration is at least 1 minute
-                    } else if (banUnit === "s" || banUnit === "sec" || banUnit === "secs" || banUnit === "seconds" || banUnit === "second") {
-                        return message.reply(`please give a duration that is at least 1 minute in length!`);
+                        return message.reply(`Uh oh! It seems like you entered an invalue ban duration! Please use formats such as these for the ban duration: \`6 years\`, \`17d\`, \`permanent\`, \`3 wks\``)
                     }
 
                     let unbanDate = now.add(banValue, banUnit); //create the unban date
@@ -472,7 +472,7 @@ module.exports = {
                     // Make sure the unban date is after the current time
                     if(moment(unbanDate).isAfter(now)) {
                         // If not after the current time, let the user know how to fix the problem
-                        return message.reply("uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
+                        return message.reply("Uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
                     }
 
                     unbanDate = unbanDate.format(`MMM DD, YYYY HH:mm:ss`); //format
@@ -574,12 +574,12 @@ module.exports = {
                 // Check if a user mention was used
                 if(message.mentions.users.first()) {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for banning, please be sure to provide a reason for this action!\nExample: \`${prefix}ban @${user.tag}, reason, length\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for banning, please be sure to provide a reason for this action!\nExample: \`${prefix}ban @${user.tag}, reason, length\``);
 
                 // If no user mention was given then just output the id they provided
                 } else {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for banning, please be sure to provide a reason for this action!\nExample: \`${prefix}ban ${user}, reason, length\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for banning, please be sure to provide a reason for this action!\nExample: \`${prefix}ban ${user}, reason, length\``);
                 }
             }
         }
@@ -599,12 +599,12 @@ module.exports = {
         // Make sure the first arg was a user id
         if(isNaN(args[0])) {
             // Let user know they need to provide a valid user id
-            message.reply(`uh oh! Looks like you gave an invalid user id. Make sure that you are providing a valid user id!`);
+            message.reply(`Uh oh! Looks like you gave an invalid user id. Make sure that you are providing a valid user id!`);
         } else {
             let userId = args[0];
 
             // Attempt to fetch the user
-            client.users.fetch(userId.toString()).then((u) => {
+            client.users.fetch(userId).then((u) => {
                 user = u; //assign user
 
                 // If a reason was given then unban the user and log the action to the database
@@ -617,7 +617,7 @@ module.exports = {
                     reason = reason.trim(); // remove any excess whitespace
 
                     // Fetch the ban from the server
-                    message.guild.fetchBan(user).then(() => {
+                    message.guild.bans.fetch(user).then(() => {
                         
                         // Search the db for the ban
                         Models.ban.findOne({where: {user_id: userId, completed: 0}, raw:true}).then((data) => {
@@ -700,20 +700,20 @@ module.exports = {
                                 });
                             } else {
                                 // If no data was found in the db
-                                message.channel.send(`uh oh, it looks like there is no information on this ban in the database!`)
+                                message.channel.send(`Uh oh, it looks like there is no information on this ban in the database!`)
                             }
                         });
                     }).catch((e) => {
                         // If no ban was found for that user
-                        return message.reply(`you silly! ${user} isn't banned!`)
+                        return message.reply(`You silly! ${user} isn't banned!`)
                     });
                 } else {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for unbanning, please be sure to provide a reason for this action!\nExample: \`${prefix}unban ${userId}, reason\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for unbanning, please be sure to provide a reason for this action!\nExample: \`${prefix}unban ${userId}, reason\``);
                 };
             }).catch((e) => {
                 // Let the user know there was no user with the given id
-                return message.reply(`uh oh! Looks like there is no user with the id \`${userId}\``);
+                return message.reply(`Uh oh! Looks like there is no user with the id \`${userId}\``);
             });
         }
     },
@@ -736,12 +736,12 @@ module.exports = {
         // Make sure the first arg was a user mention or a user id
         if(isNaN(args[0]) && !args[0].startsWith("<@")) {
             // Let user know they need to provide a user mention or a valid user id
-            message.reply(`uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
+            message.reply(`Uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
         
         // Make sure the reason wasn't too long for the db column
         } else if(reason.length > 1024) {
             // If the reason is too long let the mod know
-            return message.reply(`uh oh! Looks like your message was too long, try shortening the reason or inserting a pastebin link instead!`);
+            return message.reply(`Uh oh! Looks like your message was too long, try shortening the reason or inserting a pastebin link instead!`);
         } else {
 
             // Check if a user mention was given
@@ -754,7 +754,7 @@ module.exports = {
 
                 // If user is undefined let the moderator know
                 if(user.user === undefined) {
-                    return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``)
+                    return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``)
                 }
             }
 
@@ -821,12 +821,12 @@ module.exports = {
                 // Check if a user mention was used
                 if(message.mentions.users.first()) {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for warning, please be sure to provide a reason for this action!\nExample: \`${prefix}warn @${user.tag}, reason\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for warning, please be sure to provide a reason for this action!\nExample: \`${prefix}warn @${user.tag}, reason\``);
 
                 // If no user mention was given then just output the id they provided
                 } else {
                     // Let user know a reason is needed
-                    message.reply(`uh oh! It seems you forgot to give a reason for warning, please be sure to provide a reason for this action!\nExample: \`${prefix}warn ${user}, reason\``);
+                    message.reply(`Uh oh! It seems you forgot to give a reason for warning, please be sure to provide a reason for this action!\nExample: \`${prefix}warn ${user}, reason\``);
                 }
             }
         }
@@ -1071,7 +1071,7 @@ module.exports = {
         if(!isNaN(args[0])) {
             // If invalid id let the user know
             if(message.guild.members.cache.get(args[0]) === undefined) {
-                return message.reply(`uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
+                return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
 
             // If user found, assign it to the user var
             } else {
@@ -1328,11 +1328,11 @@ module.exports = {
 
             message.channel.send(`The ${roles} role(s) was successfully created!`)
         } else {
-            return message.reply(`uh oh! Looks like the muted roles already exist!`)
+            return message.reply(`Uh oh! Looks like the muted roles already exist!`)
         }
     },
-    blacklistHandler: function(m, ar, c) {
-        const message = m, args = ar, client = c;
+    blacklistHandler: function(m, ar, c, tl, bu) {
+        const message = m, args = ar, client = c, triggers = tl, bannedUrls = bu;
         const prefix = client.settings.get("prefix");
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
         const subCommand = args.shift(); //remove the first arg and store it in the subcommand var
@@ -1398,7 +1398,7 @@ module.exports = {
             } else if(["add", "create"].includes(subCommand.toLowerCase())) {
                 // Make sure array has values
                 if(domains.length === 0) {
-                    return message.reply(`uh oh! Looks like you forgot to give me the url(s) to add!`)
+                    return message.reply(`Uh oh! Looks like you forgot to give me the url(s) to add!`)
                 } else {
 
                     // Regex for ensuring valid url
@@ -1467,6 +1467,10 @@ module.exports = {
                                     ],
                                     timestamp: new Date()
                                 }
+
+                                // Add the url to the bannedUrls List
+                                bannedUrls.list.push(domains[0]);
+
                                 // Send the embed to the action log channel
                                 actionLog.send({embeds: [blacklistEmbed]});
                                 // Let the user know the domain was added
@@ -1518,6 +1522,12 @@ module.exports = {
                                     ],
                                     timestamp: new Date()
                                 }
+
+                                // Add each domain to the bannedUrls list
+                                bulkDomains.forEach((item) => {
+                                    bannedUrls.list.push(item);
+                                })
+
                                 // Send the embed to the action log channel
                                 actionLog.send({embeds: [blacklistsEmbed]});
                                 // Let the user know the domain was added
@@ -1539,14 +1549,14 @@ module.exports = {
                 // Make sure user is a super or higher role
                 if(!inSuperRole && !inAdminRole && message.author !== isOwner) {
                     // If not let them know to ask a super or higher to remove the domain
-                    return message.reply(`uh oh! You aren't allowed to remove blacklisted domains, if you feel this domain should be removed please ask a ${superRole} or ${adminRole} to delete it!`)
+                    return message.reply(`Uh oh! You aren't allowed to remove blacklisted domains, if you feel this domain should be removed please ask a ${superRole} or ${adminRole} to delete it!`)
                 }
                 // If no domain was given let user know
                 if(domains.length === 0) {
-                    return message.reply(`uh oh! Looks like you forgot to give me the url(s) to add!`)
+                    return message.reply(`Uh oh! Looks like you forgot to give me the url(s) to add!`)
                 // If more than one domain was given let user know they can only delete one at a time
                 } else if(domains.length !== 1) {
-                    return message.reply(`uh oh! You can only delete one domain at a time!`);
+                    return message.reply(`Uh oh! You can only delete one domain at a time!`);
                 }
                 let domain = domains[0]; //domain var
 
@@ -1572,8 +1582,13 @@ module.exports = {
                         // Let the user know it was removed
                         }).then(() => {
 
-                            // Remove the domain from the allowedUrls list
-                            delete bannedurl.list[item];
+                            // Find the item within the bannedUrls list
+                            const itemIndex = bannedUrls.list.indexOf(item);
+
+                            // If the item was found, remove it from the bannedUrls list
+                            if(itemIndex) {
+                                bannedUrls.list.splice(itemIndex, 1);
+                            }
 
                             // Let user know domain was removed
                             message.channel.send(`I have successfully removed \`${domain}\` from the blacklisted domains!`);
@@ -1588,7 +1603,7 @@ module.exports = {
     },
     handleUrl: function(m, c, rm, deleteSet) {
         const message = m, client = c, regexMatch = rm;
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_l;og_channel_name")))); //mod log channel
+        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
 
         // Add the message id to the deleteSet
         deleteSet.add(message.id);
@@ -1626,6 +1641,7 @@ module.exports = {
             ],
             timestamp: new Date(),
         };
+
         // Send the embed to the mod log
         actionLog.send({embeds: [urlEmbed]}).then(() => {
             // Delete the message with a reason
@@ -1841,7 +1857,6 @@ module.exports = {
                         message.reply(`I've sent the data to the ${actionLog} channel`);
                     }
                 }).catch((e) => {
-                    console.log(e)
                     message.channel.send(`Uh oh! It seems the id you provided isn't in the database!`);
                 })
             }
@@ -2518,18 +2533,17 @@ module.exports = {
                         if(adminChannel.name !== message.channel.name) {
                             message.channel.send(`I have sent the data you requested to ${adminChannel}!`);
                         };
-
                     }
     
                 // If no setting was found let the user know
                 } else {
-                    return message.reply(`uh oh! Looks like I wasn't able to find that setting, please check your setting name and try again!\nYour input: \`${message.content}\``);
+                    return message.reply(`Uh oh! Looks like I wasn't able to find that setting, please check your setting name and try again!\nYour input: \`${message.content}\``);
                 }
             });
 
         // If user didn't use the command properly
         } else {
-            message.reply(`uh oh! It seems you entered an unaccepted argument, please use \`${prefix}help settings\` for help using this command!`);
+            message.reply(`Uh oh! It seems you entered an unaccepted argument, please use \`${prefix}help settings\` for help using this command!`);
         }
     }
 }

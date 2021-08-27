@@ -74,7 +74,7 @@ module.exports = {
 
             // If user didn't provide an accepted time duration let them know
             } else {
-                message.reply(`uh oh! Looks like you provided me with an invalid time duration. Please only use a number followed by the duration.\n\nAccepted durations:\n\`s, sec, secs, second, seconds, m, min, mins, minute, minutes, h, hour, hours, d, day, days, w, week, weeks, M, month, months, y, year, years\``);
+                message.reply(`Uh oh! Looks like you provided me with an invalid time duration. Please only use a number followed by the duration.\n\nAccepted durations:\n\`s, sec, secs, second, seconds, m, min, mins, minute, minutes, h, hour, hours, d, day, days, w, week, weeks, M, month, months, y, year, years\``);
             }
         // If no argument was given just provide the quote
         } else {

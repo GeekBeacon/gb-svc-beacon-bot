@@ -127,7 +127,7 @@ module.exports = {
                         }
                     });
                 }).catch((e) => {
-                    message.reply(`it looks like \`${trigger}\` doesn't exist!`);
+                    message.reply(`It looks like \`${trigger}\` doesn't exist!`);
                 });
 
             // If user isn't a super mod and passed in args let them know they can't use that command
@@ -180,11 +180,11 @@ module.exports = {
                     });
                 // If invalid severity level let user know
                 } else {
-                    message.reply(`you must use either **low**, **medium**, or **high** for the severity level!\nExample: \`${prefix}addtrigger ${triggerArgs[0]}, low/medium/high\``);
+                    message.reply(`You must use either **low**, **medium**, or **high** for the severity level!\nExample: \`${prefix}addtrigger ${triggerArgs[0]}, low/medium/high\``);
                 }
             // If no severity level let the user know it is required
             } else {
-                message.reply(`to add a trigger you must specify the severity level of that trigger.\nExample: \`${prefix}addtrigger ${triggerArgs[0]}, low/medium/high\``);
+                message.reply(`To add a trigger you must specify the severity level of that trigger.\nExample: \`${prefix}addtrigger ${triggerArgs[0]}, low/medium/high\``);
             }
 
         /*********** REMOVE TRIGGER ***********/
@@ -230,7 +230,7 @@ module.exports = {
                         });
                     // If already enabled let user know
                     } else {
-                        message.reply(`it looks like \`${trigger}\` is already enabled!`);
+                        message.reply(`It looks like \`${trigger}\` is already enabled!`);
                     };
                 // If the trigger wasn't found let the user know
                 } else {
@@ -257,7 +257,7 @@ module.exports = {
                         });
                     // If already disabled let user know
                     } else {
-                        message.reply(`it looks like \`${trigger}\` is already disabled!`);
+                        message.reply(`It looks like \`${trigger}\` is already disabled!`);
                     };
                 // If the trigger wasn't found let the user know
                 } else {
@@ -570,13 +570,13 @@ module.exports = {
                         });
                     } else if (severity === "medium") {
                         // Warn the user
-                        message.reply(`please try to refrain from using words such as: \`${t}\``);
+                        message.reply(`Please try to refrain from using words such as: \`${t}\``);
 
                         // Send embed to the moderation log with here tag
                         logChannel.send({embeds: [e]});
                     } else if (severity === "low") {
                         // Warn the user
-                        message.reply(`please try to refrain from using words such as: \`${t}\``);
+                        message.reply(`Please try to refrain from using words such as: \`${t}\``);
 
                         // Send embed to the moderation log
                         logChannel.send({embeds: [e]});

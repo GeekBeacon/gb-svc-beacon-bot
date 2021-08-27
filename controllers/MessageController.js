@@ -49,7 +49,7 @@ module.exports = {
 
         // If not a bot and not in a text channel
         } else if(!message.author.bot && message.channel.type === "DM") {
-            return message.channel.send(`Ohai, ${message.author.username}!\n\nIt seems you tried to message me within a dm, I appreciate you sliding up into my dms, but at this time I do not support any dm-based commands!`);
+            return message.channel.send(`Oh hello, ${message.author.username}!\n\nIt seems you tried to message me within a dm, I appreciate you sliding up into my dms, but at this time I do not support any dm-based commands!`);
 
         // If a bot then just ignore
         } else {
@@ -176,7 +176,7 @@ module.exports = {
 
         // Attempt to execute the command
         try {
-            command.execute(message, args, client, triggerList);
+            command.execute(message, args, client, triggerList, bannedUrls);
         } catch (error) {
             console.error(error);
             message.reply('There was an error trying to execute that command, please try again!')
