@@ -24,7 +24,7 @@ module.exports = {
         const modRole = message.guild.roles.cache.find(role => role.id === client.settings.get("mod_role_id"));
         const superRole = message.guild.roles.cache.find(role => role.id === client.settings.get("super_role_id"));
         const adminRole = message.guild.roles.cache.find(role => role.id === client.settings.get("admin_role_id"));
-        let warnings = 0; //warnings var
+        let warnings, kicks, bans = 0; // numeric vars
 
         // Make sure user provived an argument
         if(!args.length) {
@@ -58,7 +58,6 @@ module.exports = {
                 const boostTime = moment(user.premiumSince).format("h:mm A"); // boost time
                 let boostString = "Not Boosting";
                 let bot;
-                let permissions;
 
                 // set bot var based on user.bot boolean
                 switch(user.user.bot) {
@@ -75,23 +74,27 @@ module.exports = {
                     boostString = `${boostDate}\n${boostTime}`;
                 }
 
-                // If user is admin just set permissions to "All"
-                if(user.permissions.has("ADMINISTRATOR")) {
-                    permissions = "All";
-
-                // If user isn't admin then show all permissions
-                } else {
-                    // Get all permissions, convert them to csv, then replace underscores with spaces
-                    permissions = user.permissions.toArray().join(", ").replace(/_/g," ");
-                    // Make the first letter of each word caps
-                    permissions = permissions.split(' ').map(s => s.slice(0, 1).toUpperCase() + s.slice(1).toLowerCase()).join(' ');
-                }
-
                 // Find all warnings from the user, if any
-                await Models.warning.findAll({where:{user_id: user.user.id}, raw: true}).then((warns) => {
+                await Models.warning.findAll({where:{user_id: user.user.id}, raw: true}).then((info) => {
                     // If there are warnings then assign the amount to the warnings var
-                    if(warns) {
-                        warnings = warns.length;
+                    if(info) {
+                        warnings = info.length;
+                    }
+                });
+
+                // Find all kicks from the user, if any
+                await Models.kick.findAll({where:{user_id: user.user.id}, raw: true}).then((info) => {
+                    // If there are kicks then assign the amount to the kicks var
+                    if(info) {
+                        kicks = info.length;
+                    }
+                });
+
+                // Find all bans from the user, if any
+                await Models.ban.findAll({where:{user_id: user.user.id}, raw: true}).then((info) => {
+                    // If there are bans then assign the amount to the bans var
+                    if(info) {
+                        bans = info.length;
                     }
                 });
 
@@ -136,9 +139,10 @@ module.exports = {
                     // If the user is a mod or higher role and the requested user doesn't have any warnings
                     if(message.member.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name)) && warnings > 0) {
                         userEmbed
+                        .addField(`\u200b`, `\u200b`, true) // Add an empty field for formatting purposes
                         .addField(`Warnings`, `${warnings}`, true)
-                        .addField(`Roles`, `${user.roles.cache.map(role => role).join(", ")}`, false)
-                        .addField(`Permissions`, `${permissions}`, false);
+                        .addField(`Kicks`, `${kicks}`, true)
+                        .addField(`Bans`, `${bans}`, true);
 
                         // If the command was used in a public channel
                         if(message.channel !== modChannel && message.channel !== superChannel && message.channel !== adminChannel) {
@@ -159,10 +163,6 @@ module.exports = {
 
                     // If the user isn't a mod or higher
                     } else {
-                        userEmbed
-                        .addField(`Roles`, `${user.roles.cache.map(role => role).join(", ")}`, false)
-                        .addField(`Permissions`, `${permissions}`, false);
-
                         // Send embed
                         message.channel.send({embeds: [userEmbed]});
                     }

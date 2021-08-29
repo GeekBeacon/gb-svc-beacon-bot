@@ -55,7 +55,7 @@ let deleteSet = new Set();
 let dbCmds;
 let settings;
 
-console.log(JSON.stringify(require("./config"), null, 4)) //shows the running config
+//console.log(JSON.stringify(require("./config"), null, 4)) //shows the running config
 
 // Stop the bot if any config vars are unassigned
 let unassignedVars = [];

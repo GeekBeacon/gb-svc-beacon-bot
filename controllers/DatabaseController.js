@@ -289,7 +289,7 @@ module.exports = {
             // Loop through each user that needs to be unbanned
             bannedUsers.forEach((item) => {
                 // Find the server the user was banned from
-                const guild = client.guilds.cache.get(item.guildId);
+                const guild = client.guilds.cache.get(item.guild_id);
                 logChannel = guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //action log channel
 
                 // Unban the user with a time up reason

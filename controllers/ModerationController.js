@@ -10,8 +10,8 @@ module.exports = {
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
         let triggerArr = [];
 
-        // Exclude master control and trick-or-treat channels
-        if(message.channel.name.includes("master-control") || message.channel.name.includes("trick")) return;
+        // Exclude master control channels
+        if(message.channel.name.includes("master-control")) return;
 
         // If deleted due to an unapproved url then ignore
         if(deleteSet.has(message.id)) {
@@ -2347,20 +2347,32 @@ module.exports = {
 
                 // If the command isn't already disabled
                 if(command.enabled !== false) {
-                    const enabled = false; //var for enabled
+                    const state = false; //var for the state of the command
 
                     // Update the command in the local collection 
-                    client.commands.set(args[0], {...command, enabled});
+                    client.commands.set(args[0], {...command, enabled: state});
 
-                    // Update the value in the database or insert it if it doesn't exist
-                    Models.command.upsert(
-                        {
-                            name: command.name,
-                            enabled: enabled,
-                            mod: command.mod,
-                            super: command.super,
-                            admin: command.admin
-                        }, {where: {name: args[0]}});
+                    // Search for the command in the db
+                    Models.command.findOne({where: {name:command.name}, raw:true}).then((cmd) => {
+
+                        // If the command was found
+                        if(cmd) {
+                            // Update the command to be disabled
+                            Models.command.update({enabled: state}, {where: {name: cmd.name}});
+
+                        // If the command wasn't found
+                        } else {
+                            // Add it to the db
+                            Models.command.create({
+                                name: command.name,
+                                enabled: state,
+                                mod: command.mod,
+                                super: command.super,
+                                admin: command.admin
+
+                            });
+                        }
+                    });
 
                     // Let the user know the command has been disabled
                     message.reply(`I have successfully disabled the ${args[0]} command!`)
@@ -2375,20 +2387,32 @@ module.exports = {
 
                 // If the command isn't already enabled
                 if(command.enabled !== true) {
-                    const enabled = true; //var for enabled
+                    const state = true; //var for the state of the command
 
                     // Update the command in the local collection 
-                    client.commands.set(args[0], {...command, enabled});
+                    client.commands.set(args[0], {...command, enabled: state});
 
-                    // Update the value in the database or insert it if it doesn't exist
-                    Models.command.upsert(
-                        {
-                            name: command.name,
-                            enabled: enabled,
-                            mod: command.mod,
-                            super: command.super,
-                            admin: command.admin
-                        }, {where: {name: args[0]}});
+                    // Search for the command in the db
+                    Models.command.findOne({where: {name:command.name}, raw:true}).then((cmd) => {
+
+                        // If the command was found
+                        if(cmd) {
+                            // Update the command to be disabled
+                            Models.command.update({enabled: state}, {where: {name: cmd.name}});
+
+                        // If the command wasn't found
+                        } else {
+                            // Add it to the db
+                            Models.command.create({
+                                name: command.name,
+                                enabled: state,
+                                mod: command.mod,
+                                super: command.super,
+                                admin: command.admin
+
+                            });
+                        }
+                    });
 
                     // Let the user know the command has been disabled
                     message.reply(`I have successfully enabled the ${args[0]} command!`)
