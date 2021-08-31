@@ -2,7 +2,7 @@
 const Discord = require("discord.js");
 const TriggersController = require("./TriggersController");
 const ModerationController = require("./ModerationController");
-const ExperienceController = require("./ExperienceController");
+const PointsController = require("./PointsController");
 const cooldowns = new Discord.Collection();
 
 // Create a new module export
@@ -103,7 +103,7 @@ module.exports = {
                 };
             // If not a trigger word/phrase, a blacklisted domain, or a bot message then call the experience controller to give experience.
             } else {
-                ExperienceController.giveExp(message, client);
+                PointsController.givePoints(message);
             };
         };
 

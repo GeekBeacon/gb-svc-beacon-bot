@@ -4,8 +4,8 @@ const Models = require("../models/AllModels");
 // Create a new module export
 module.exports = {
 
-    giveExp: function(message, client) {
-        const thxRegex = /(\bthanks\b|\bty*\b|\bthank\s*you\b)/
+    givePoints: function(message) {
+        const thxRegex = /\b(thanks*|thx*|ty*|thank\s*you*)\b/
         // Check if the message was a reply
         if(message.reference) {
             // Make sure the post is from the same guild (not an automated message when following channels in other servers)
