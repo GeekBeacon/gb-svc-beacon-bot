@@ -256,6 +256,12 @@ client.on("channelCreate", channel => {
     };
 });
 
+// Listen for voice state updates
+client.on("voiceStateUpdate", (oldState, newState) => {
+    // Call the channel left handler from the voice controller
+    voiceController.voiceUpdateHandler(oldState, newState, client);
+});
+
 // Listen for reaction adds
 client.on("messageReactionAdd", async (reaction, user) => {
     // Check if the reaction was a partial (used on an older message)

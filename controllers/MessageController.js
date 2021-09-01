@@ -103,7 +103,7 @@ module.exports = {
                 };
             // If not a trigger word/phrase, a blacklisted domain, or a bot message then call the experience controller to give experience.
             } else {
-                PointsController.givePoints(message);
+                PointsController.givePoints(message, client);
             };
         };
 

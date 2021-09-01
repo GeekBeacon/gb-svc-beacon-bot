@@ -4,7 +4,7 @@ const Models = require("../models/AllModels");
 // Create a new module export
 module.exports = {
 
-    givePoints: function(message) {
+    givePoints: function(message, client) {
         const thxRegex = /\b(thanks*|thx*|ty*|thank\s*you*)\b/
         // Check if the message was a reply
         if(message.reference) {
@@ -48,32 +48,43 @@ module.exports = {
 
                         // Add points to the existing points value
                         let pointsVal = user.points + pval;
-                        let level = 0;
 
-                        // Determine the user's level
-                        switch(pointsVal) {
-                            case pointsVal >= 1000:
-                                level = 5;
-                                break;
-                            case pointsVal >= 500:
-                                level = 4;
-                                break;
-                            case pointsVal >= 100:
-                                level = 3;
-                                break;
-                            case pointsVal >= 50:
-                                level = 2;
-                                break;
-                            default:
-                                level = 1;
-                                break;
-                        };
+                        // Get the user's new level
+                        let newLevel =
+                            pointsVal >= 1000 ? 5 :
+                            pointsVal >= 500 ? 4 :
+                            pointsVal >= 100 ? 3 :
+                            pointsVal >= 50 ? 2 : 1;
+
+                        // If the user's level has went up
+                        if(newLevel > user.level) {
+                            const newRole = message.guild.roles.resolve(client.settings.get(`level_${newLevel}_role_id`)); //find the new role
+                            const member = message.guild.members.cache.get(user.user_id); //find the member
+
+                            // Assign the new role to the user
+                            member.edit({roles: [newRole]}, `${member.displayName} has leveled up!`);
+
+                            // If the member leveled higher than 1
+                            if(newLevel !== 1) {
+                                const oldRole = message.guild.roles.resolve(client.settings.get(`level_${newLevel-1}_role_id`)); //find the old role
+                                // Remove the previous role
+                                member.roles.remove(oldRole, `${member.displayName} has leveled up!`)
+                            }
+                        }
 
                         // Update the user's points and level
-                        Models.user.update({points: pointsVal, level: level}, {where: {user_id: uid}});
+                        Models.user.update({points: pointsVal, level: newLevel}, {where: {user_id: uid}});
 
                         // If the user isn't in the db
                     } else {
+
+                        const newRole = message.guild.roles.resolve(client.settings.get(`level_1_role_id`)); //find the new role
+                        const member = message.guild.members.cache.get(user.user_id); //find the member
+
+                        // Assign the new role to the user
+                        member.edit({roles: [newRole]}, `${member.displayName} has leveled up!`);
+
+
                         // Create a new user then and update the points and level
                         Models.user.create({
                             user_id: uid,
