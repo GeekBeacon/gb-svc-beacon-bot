@@ -18,7 +18,7 @@ const Warning = sequelize.define('warning', {
         allowNull: false
     },
     user_id: {
-        type: Sequelize.BIGINT,
+        type: Sequelize.TEXT,
         allowNull: false
     },
 
@@ -35,7 +35,7 @@ const Warning = sequelize.define('warning', {
         type: Sequelize.TEXT
     },
     mod_id: {
-        type: Sequelize.BIGINT
+        type: Sequelize.TEXT
     },
 
     /****** Fields for triggers warnings ******/
@@ -55,7 +55,7 @@ const Warning = sequelize.define('warning', {
         type: Sequelize.STRING
     },
     channel_id: {
-        type: Sequelize.BIGINT
+        type: Sequelize.TEXT
     }
 },
 {

@@ -532,7 +532,7 @@ module.exports = {
                         banUnit = "years"; // set unit
                         banLength = "an indefinite amount of time"; // set length for description
                     // If the user input a duration shorter than 1 hour
-                    } else if (banUnit.toLowerCase().includes("min") || banUnit,toLowerCase().includes("sec") || banUnit === "s" || banUnit === "m") {
+                    } else if (banUnit.toLowerCase().includes("min") || banUnit.toLowerCase().includes("sec") || banUnit === "s" || banUnit === "m") {
                         return message.reply(`Please provide a ban time that is at least 1 hour long.`);
                     // Check if the user provided an accepted format
                     } else if(!banLength.match(banLengthRegex)) {

@@ -24,7 +24,7 @@ module.exports = {
         const modRole = message.guild.roles.cache.find(role => role.id === client.settings.get("mod_role_id"));
         const superRole = message.guild.roles.cache.find(role => role.id === client.settings.get("super_role_id"));
         const adminRole = message.guild.roles.cache.find(role => role.id === client.settings.get("admin_role_id"));
-        let warnings, kicks, bans = 0; // numeric vars
+        let warnings, mutes, kicks, bans, points, level = 0; // numeric vars
 
         // Make sure user provived an argument
         if(!args.length) {
@@ -90,6 +90,14 @@ module.exports = {
                 }
             });
 
+            // Find all mutes from the user, if any
+            await Models.mute.findAll({where:{user_id: u.user.id}, raw: true}).then((info) => {
+                // If there are warnings then assign the amount to the warnings var
+                if(info) {
+                    mutes = info.length;
+                }
+            });
+
             // Find all kicks from the user, if any
             await Models.kick.findAll({where:{user_id: u.user.id}, raw: true}).then((info) => {
                 // If there are kicks then assign the amount to the kicks var
@@ -106,6 +114,19 @@ module.exports = {
                 }
             });
 
+            // Find all points and level from the user, if any
+            await Models.user.findAll({where:{user_id: u.user.id}, raw: true}).then((info) => {
+                // If there are points then assign the amount to the bans var
+                if(info) {
+                    points = info.points;
+                    level = info.level;
+                }
+            });
+
+            // If points or level are undefined set to 0
+            if (points === undefined) points = 0;
+            if (level === undefined) level = 0;
+
             // Create the embed
             let userEmbed = new Discord.MessageEmbed()
                 .setColor(u.displayHexColor)
@@ -113,6 +134,11 @@ module.exports = {
                 .setAuthor(`${u.user.username}#${u.user.discriminator}`, u.user.displayAvatarURL({dynamic:true}))
                 .setThumbnail(u.user.displayAvatarURL({dynamic:true}))
                 .addFields(
+                    {
+                        name: `Nickname`,
+                        value: `${u.nickname || "None"}`,
+                        inline: false
+                    },
                     {
                         name: `Joined`,
                         value: `${joinDate}\n${joinTime}`,
@@ -129,15 +155,20 @@ module.exports = {
                         inline: true
                     },
                     {
-                        name: `Nickname`,
-                        value: `${u.nickname || "None"}`,
-                        inline: true
-                    },
-                    {
                         name: `Beep Boop`,
                         value: `${bot}`,
                         inline: true
                     },
+                    {
+                        name: `Level`,
+                        value: `${level}`,
+                        inline: true
+                    },
+                    {
+                        name: `Points`,
+                        value: `${points}`,
+                        inline: true
+                    }
 
 
                 )
@@ -147,10 +178,12 @@ module.exports = {
                 // If the user is a mod or higher role and the requested user doesn't have any warnings
                 if(message.member.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name)) && warnings > 0) {
                     userEmbed
-                    .addField(`\u200b`, `\u200b`, true) // Add an empty field for formatting purposes
                     .addField(`Warnings`, `${warnings}`, true)
+                    .addField(`Mutes`, `${mutes}`, true)
+                    .addField(`\u200B`, `\u200B`, true) //add empty field for formatting
                     .addField(`Kicks`, `${kicks}`, true)
-                    .addField(`Bans`, `${bans}`, true);
+                    .addField(`Bans`, `${bans}`, true)
+                    .addField(`\u200B`, `\u200B`, true); //add empty field for formatting
 
                     // If the command was used in a public channel
                     if(message.channel !== modChannel && message.channel !== superChannel && message.channel !== adminChannel) {

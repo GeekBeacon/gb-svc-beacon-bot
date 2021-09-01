@@ -23,30 +23,6 @@ const User = sequelize.define('user', {
         type: Sequelize.BIGINT,
         allowNull: false,
         defaultValue: 0
-    },
-    // Create required warnings int column
-    warnings: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-    },
-    // Create required mutes int column
-    mutes: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-    },
-    // Create required kicks int column
-    kicks: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-    },
-    // Create required bans int column
-    bans: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        defaultValue: 0
     }
 
 }, {

@@ -41,6 +41,12 @@ module.exports = {
                 // Make the first letter of each word caps
                 permissions = permissions.split(' ').map(s => s.slice(0, 1).toUpperCase() + s.slice(1).toLowerCase()).join(' ');
 
+                // If the role has the admin permission
+                if(permissions.includes("Administrator")) {
+                    // Set permissions to only show admin
+                    permissions = "Administrator"
+                };
+
                 // Get the member count
                 role.members.forEach(() => {
                     memberCount++;
