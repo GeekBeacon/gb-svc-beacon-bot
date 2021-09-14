@@ -123,10 +123,6 @@ module.exports = {
                 }
             });
 
-            // If points or level are undefined set to 0
-            if (points === undefined) points = 0;
-            if (level === undefined) level = 0;
-
             // Create the embed
             let userEmbed = new Discord.MessageEmbed()
                 .setColor(u.displayHexColor)
