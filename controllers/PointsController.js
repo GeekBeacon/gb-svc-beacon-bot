@@ -79,7 +79,7 @@ module.exports = {
                     } else {
 
                         const newRole = message.guild.roles.resolve(client.settings.get(`level_1_role_id`)); //find the new role
-                        const member = message.guild.members.cache.get(user.user_id); //find the member
+                        const member = message.guild.members.cache.get(uid); //find the member
 
                         // Assign the new role to the user
                         member.edit({roles: [newRole]}, `${member.displayName} has leveled up!`);
