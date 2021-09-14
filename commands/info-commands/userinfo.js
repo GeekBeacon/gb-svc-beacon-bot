@@ -115,7 +115,7 @@ module.exports = {
             });
 
             // Find all points and level from the user, if any
-            await Models.user.findAll({where:{user_id: u.user.id}, raw: true}).then((info) => {
+            await Models.user.findOne({where:{user_id: u.user.id}, raw: true}).then((info) => {
                 // If there are points then assign the amount to the bans var
                 if(info) {
                     points = info.points;
