@@ -62,7 +62,7 @@ module.exports = {
                             const member = message.guild.members.cache.get(user.user_id); //find the member
 
                             // Assign the new role to the user
-                            member.edit({roles: [newRole]}, `${member.displayName} has leveled up!`);
+                            member.roles.add(newRole, `${member.displayName} has leveled up!`);
 
                             // If the member leveled higher than 1
                             if(newLevel !== 1) {
@@ -82,7 +82,7 @@ module.exports = {
                         const member = message.guild.members.cache.get(uid); //find the member
 
                         // Assign the new role to the user
-                        member.edit({roles: [newRole]}, `${member.displayName} has leveled up!`);
+                        member.roles.add(newRole, `${member.displayName} has leveled up!`);
 
 
                         // Create a new user then and update the points and level
