@@ -24,7 +24,7 @@ module.exports = {
         const modRole = message.guild.roles.cache.find(role => role.id === client.settings.get("mod_role_id"));
         const superRole = message.guild.roles.cache.find(role => role.id === client.settings.get("super_role_id"));
         const adminRole = message.guild.roles.cache.find(role => role.id === client.settings.get("admin_role_id"));
-        let warnings, mutes, kicks, bans, points, level = 0; // numeric vars
+        let warnings, mutes, kicks, bans, points, level, rank = 0; // numeric vars
 
         // Make sure user provived an argument
         if(!args.length) {
@@ -123,6 +123,16 @@ module.exports = {
                 }
             });
 
+            // Find the user's ranking for points
+            await Models.user.findAll({order:[['points', 'DESC']],raw:true}).then((info) => {
+                if(info) {
+                    // Look through the array of users and find the one with the correct ID
+                    rank = info.map(function (e) {
+                        return e.user_id;
+                    }).indexOf(u.user.id);
+                }
+            })
+
             // Create the embed
             let userEmbed = new Discord.MessageEmbed()
                 .setColor(u.displayHexColor)
@@ -133,7 +143,17 @@ module.exports = {
                     {
                         name: `Nickname`,
                         value: `${u.nickname || "None"}`,
-                        inline: false
+                        inline: true
+                    },
+                    {
+                        name: `Beep Boop`,
+                        value: `${bot}`,
+                        inline: true
+                    },
+                    {
+                        name: `\u200B`,
+                        value: `\u200B`,
+                        inline: true
                     },
                     {
                         name: `Joined`,
@@ -151,11 +171,6 @@ module.exports = {
                         inline: true
                     },
                     {
-                        name: `Beep Boop`,
-                        value: `${bot}`,
-                        inline: true
-                    },
-                    {
                         name: `Level`,
                         value: `${level}`,
                         inline: true
@@ -163,6 +178,11 @@ module.exports = {
                     {
                         name: `Points`,
                         value: `${points}`,
+                        inline: true
+                    },
+                    {
+                        name: `Rank`,
+                        value: `#${rank +1}`,
                         inline: true
                     }
 
