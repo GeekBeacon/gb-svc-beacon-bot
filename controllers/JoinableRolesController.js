@@ -74,7 +74,7 @@ module.exports = {
 
                                     // Send the warning & disclaimer to the user
                                     message.channel.send(`**Warning:** ${role} is part of our *Squirrel Army*, this section of GeekBeacon focuses on mental health and many users within this group are sensitive to certain situations.\nPlease be careful with how you approach these precious users.\n\n**Disclaimer: GeekBeacon is NOT a professional or liscensed mental health company nor do we have any on our staff team!**`).then(() => {
-                                        // Listen for the user's response; giving them 10 seconds to reply
+                                        // Listen for the user's response; giving them 1 minute to reply
                                         message.channel.awaitMessages({filter, max: 1, maxprocessed: 1, idle: 60000, errors:["idle"]}).then(res => {
                                             // If the reply was "yes" then proceed with adding the role
                                             if(res.first().content.toLowerCase() === "yes") {
