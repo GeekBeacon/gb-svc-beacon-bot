@@ -60,11 +60,44 @@ module.exports = {
                         // If a role was found in the db add it to/remove it from the user
                         if (data) {
                             if (command.name === "joinrole") {
-                                message.member.roles.add(role); // add the role
-                                return message.reply(`You've been successfully added to the ${role.name} role!`);
+
+                                // Check if the role is part of the Squirrel Army
+                                if(role.name.toLowerCase().includes("squirrel")) {
+
+                                    // Create a filter for the message collector
+                                    const filter = m => {
+                                        // If user says "yes" or "no" then return true
+                                        if(m.author.id === message.author.id && (m.content.toLowerCase() === "yes" || m.content.toLowerCase() === "no")) {
+                                            return true;
+                                        }
+                                    }
+
+                                    // Send the warning & disclaimer to the user
+                                    message.channel.send(`**Warning:** ${role} is part of our *Squirrel Army*, this section of GeekBeacon focuses on mental health and many users within this group are sensitive to certain situations.\nPlease be careful with how you approach these precious users.\n\n**Disclaimer: GeekBeacon is NOT a professional or liscensed mental health company nor do we have any on our staff team!**`).then(() => {
+                                        // Listen for the user's response; giving them 1 minute to reply
+                                        message.channel.awaitMessages({filter, max: 1, maxprocessed: 1, idle: 60000, errors:["idle"]}).then(res => {
+                                            // If the reply was "yes" then proceed with adding the role
+                                            if(res.first().content.toLowerCase() === "yes") {
+                                                message.member.roles.add(role); // add the role
+                                                return message.reply(`You've been successfully added to the ${role} role!`);
+
+                                            // If the user responded with "no"
+                                            } else if(res.first().content.toLowerCase() === "no") {
+                                                message.reply(`I have not added you to the ${role}!`)
+                                            }
+                                        // If the user went idle for a minute or more
+                                        }).catch(e => {
+                                            message.reply(`Uh oh! It seems that you got distracted, please try again if you wish, remember to type "yes" or "no" so I know whether to give you the role or not!`)
+                                        });
+                                    })
+                                // If the role wasn't part of the Squirrel Army
+                                } else {
+                                    message.member.roles.add(role); // add the role
+                                    return message.reply(`You've been successfully added to the ${role} role!`);
+                                }
                             } else if (command.name === "leaverole") {
                                 message.member.roles.remove(role); // remove the role
-                                return message.reply(`You've have successfully left the ${role.name} role!`);
+                                return message.reply(`You've have successfully left the ${role} role!`);
                             }
 
                         // If no role was found in the db let user know
