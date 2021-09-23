@@ -73,17 +73,17 @@ module.exports = {
                                     }
 
                                     // Send the warning & disclaimer to the user
-                                    message.channel.send(`**Warning:** ${role} is part of our *Squirrel Army*, this section of GeekBeacon focuses on mental health and many users within this group are sensitive to certain situations.\nPlease be careful with how you approach these precious users.\n\n**Disclaimer: GeekBeacon is NOT a professional or liscensed mental health company nor do we have any on our staff team!**\n\nDo you still wish to join the ${role}? (yes/no)`).then(() => {
+                                    message.channel.send(`**Warning:** ${role.name} is part of our *Squirrel Army*, this section of GeekBeacon focuses on mental health and many users within this group are sensitive to certain situations.\nPlease be careful with how you approach these precious users.\n\n**Disclaimer: GeekBeacon is NOT a professional or liscensed mental health company nor do we have any on our staff team!**\n\nDo you still wish to join the ${role.name}? (yes/no)`).then(() => {
                                         // Listen for the user's response; giving them 1 minute to reply
                                         message.channel.awaitMessages({filter, max: 1, maxprocessed: 1, idle: 60000, errors:["idle"]}).then(res => {
                                             // If the reply was "yes" then proceed with adding the role
                                             if(res.first().content.toLowerCase() === "yes") {
                                                 message.member.roles.add(role); // add the role
-                                                return message.reply(`You've been successfully added to the ${role} role!`);
+                                                return message.reply(`You've been successfully added to the ${role.name} role!`);
 
                                             // If the user responded with "no"
                                             } else if(res.first().content.toLowerCase() === "no") {
-                                                message.reply(`I have not added you to the ${role}!`)
+                                                message.reply(`I have not added you to the ${role.name}!`)
                                             }
                                         // If the user went idle for a minute or more
                                         }).catch(e => {
@@ -93,11 +93,11 @@ module.exports = {
                                 // If the role wasn't part of the Squirrel Army
                                 } else {
                                     message.member.roles.add(role); // add the role
-                                    return message.reply(`You've been successfully added to the ${role} role!`);
+                                    return message.reply(`You've been successfully added to the ${role.name} role!`);
                                 }
                             } else if (command.name === "leaverole") {
                                 message.member.roles.remove(role); // remove the role
-                                return message.reply(`You've have successfully left the ${role} role!`);
+                                return message.reply(`You've have successfully left the ${role.name} role!`);
                             }
 
                         // If no role was found in the db let user know
