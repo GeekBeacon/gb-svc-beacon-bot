@@ -23,6 +23,8 @@ module.exports = {
         const excluded_trigger_channels = client.settings.get("excluded_channels").split(",");
         const url_role_whitelist = client.settings.get("url_role_whitelist").split(",");
 
+        console.log(prefix);
+
         // Find roles
         const modRole = message.guild.roles.cache.find(role => role.id === mod_role);
         const superRole = message.guild.roles.cache.find(role => role.id === super_role);
@@ -105,6 +107,9 @@ module.exports = {
             } else {
                 PointsController.givePoints(message, client);
             };
+
+            // If the message starts with the prefix then continue
+            return;
         };
 
         // Store the arguments and command name in a variable
