@@ -10,8 +10,7 @@ module.exports = {
         momentDuration(moment);
 
         const member = m, client = c;
-        let lastMessage;
-        const superLog = member.guild.channels.cache.find((c => c.name.includes(client.settings.get("super_log_channel_name")))); //super log channel
+        const modLog = member.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
         const joinedDate = moment(member.joinedAt).format("MMM DD, YYYY HH:mm:ss"); // joined date
         const joinedTimeStamp = moment(member.joinedTimestamp); // timestamp user joined
         const currentTime = moment(); // create a new moment obj with current time
@@ -45,8 +44,8 @@ module.exports = {
             }
         };
 
-        // Send the leave embed to the super log
-        superLog.send({embeds: [leaveEmbed]});
+        // Send the leave embed to the mod log
+        modLog.send({embeds: [leaveEmbed]});
 
     }
 }

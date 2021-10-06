@@ -193,6 +193,7 @@ module.exports = {
     editHandler: function(o, n, c, tl, bu, deleteSet) {
         const oldMsg = o, newMsg = n, client = c, triggerList = tl, bannedUrls = bu; // create vars for parameter values
         const superLog = newMsg.guild.channels.cache.find((c => c.name.includes(client.settings.get("super_log_channel_name")))); //super log channel
+        const modLog = newMsg.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
         // Create author var
         const author = client.users.cache.get(newMsg.author.id);
         let bannedUrlArr = [];
@@ -243,8 +244,14 @@ module.exports = {
 
             );
         }
-        // Send the edit embed to the super log channel
-        superLog.send({embeds: [editEmbed]}).then(() => {
+        // If the edit was made in the super channel send to super logs
+        if(message.channel.name.includes("master-control")) {
+            superLog.send({embeds: [editEmbed]});
+        }
+
+
+        // Send the edit embed to the mod log channel
+        modLog.send({embeds: [editEmbed]}).then(() => {
             // Loop through the bannedUrl list
             bannedUrls.list.forEach((domain) => {
                 // Add each domain to the bannedUrlArr var

@@ -189,7 +189,7 @@ module.exports = {
 
             // If user has permission then let them access the info
             } else {
-                message.channel.send({embeds:{cmdEmbed}});
+                message.channel.send({embeds:[cmdEmbed]});
             }
         }
     }

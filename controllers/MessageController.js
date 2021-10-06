@@ -105,6 +105,9 @@ module.exports = {
             } else {
                 PointsController.givePoints(message, client);
             };
+
+            // If the message starts with the prefix then continue
+            return;
         };
 
         // Store the arguments and command name in a variable
