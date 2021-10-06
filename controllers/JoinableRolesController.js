@@ -6,13 +6,13 @@ const JoinableRole = require("../models/JoinableRole");
 module.exports = {
 
     // Create a function with required args
-    joinableRolesHandler: function(cmd, c, a, m) {
+    joinableRolesHandler: async function(cmd, c, a, m) {
         // Create vars
         const command = cmd, client = c, args = a, message = m;
         const prefix = client.settings.get("prefix");
         const superRole = message.member.roles.cache.some(role => role.id === client.settings.get("super_role_id"));
         const adminRole = message.member.roles.cache.some(role => role.id === client.settings.get("admin_role_id"));
-        const ownerRole = message.member.guild.owner;
+        const ownerRole = await message.member.guild.fetchOwner;
         const superChannel = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("super_channel_name"))));
         let joinableRole;
             
@@ -29,7 +29,11 @@ module.exports = {
         if(!isNaN(args[0])) {
             // Fine the role by its' id
             const idRole = message.guild.roles.cache.find(role => role.id === args[0]);
-            joinableRole = idRole.name; //assign the role name to joinableRole
+
+            // If a role was found
+            if(idRole) {
+                joinableRole = idRole.name; //assign the role name to joinableRole
+            }
         }
 
         /*********** JOIN/LEAVE ROLE ***********/
