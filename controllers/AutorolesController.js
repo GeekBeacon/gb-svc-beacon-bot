@@ -27,7 +27,11 @@ module.exports = {
         if(!isNaN(args[0])) {
             // Fine the role by its' id
             const idRole = message.guild.roles.cache.find(role => role.id === args[0]);
-            autorole = idRole.name; //assign the role name to autorole
+
+            // If a role was found
+            if(idRole) {
+                autorole = idRole.name; //assign the role name to autorole
+            }
         }
 
         /*********** ADD AUTOROLE ***********/

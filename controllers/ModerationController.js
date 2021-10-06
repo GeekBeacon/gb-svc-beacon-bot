@@ -245,7 +245,7 @@ module.exports = {
             );
         }
         // If the edit was made in the super channel send to super logs
-        if(message.channel.name.includes("master-control")) {
+        if(newMsg.channel.name.includes("master-control")) {
             superLog.send({embeds: [editEmbed]});
         }
 

@@ -21,6 +21,7 @@ module.exports = {
         const superRole = message.member.roles.cache.some(role => role.id === client.settings.get("super_role_id"));
         const adminRole = message.member.roles.cache.some(role => role.id === client.settings.get("admin_role_id"));
         const ownerRole = message.member.guild.ownerID;
+        let aliases;
         
 
         // Check if any args were passed in
@@ -125,6 +126,14 @@ module.exports = {
         // If command doesn't exist let user know
         if (!command) {
             return message.reply("Uh oh! That command doesn't exist!");
+        } else {
+            
+        }
+
+        if(command.aliases && Array.isArray(command.aliases)) {
+            aliases = command.aliases.join(", ");
+        } else {
+            aliases = "None";
         }
 
         // Create the embed
@@ -135,12 +144,12 @@ module.exports = {
             fields: [
                 {
                     name: "**Usage**",
-                    value: `${command.usage}`,
+                    value: `${prefix}${command.name} ${command.usage.trim()}`,
                     inline: false,
                 },
                 {
                     name: "**Aliases**",
-                    value: `${command.aliases.join(", ") || "None"}`,
+                    value: `${aliases}`,
                     inline: true,
                 },
                 {

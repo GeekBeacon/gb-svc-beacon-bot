@@ -12,6 +12,7 @@ module.exports = {
     super: false,
     admin: false,
     execute(message, args, client) {
+        const prefix = client.settings.get("prefix");
         if (!args.length) {
             // If no arguments let users know arguments are required
             return message.reply(`Uh oh! You must tell me what you'd like to name the new temporary voice channel!\nExample: \`${prefix}tempvoice Temporary Channel\``);
