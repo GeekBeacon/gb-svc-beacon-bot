@@ -1,4 +1,4 @@
-const moment = require("moment");
+const Discord = require("discord.js");
 
 module.exports = {
     name: 'serverinfo',
@@ -14,7 +14,7 @@ module.exports = {
         const server = message.guild;
         // Make sure the server is available
         if(server.available) {
-            const createDate = moment(server.createdAt).format("MMM DD, YYYY"); // created date
+            const createDate = server.createdAt; // created date
             const channels = server.channels.cache;
             const roles = server.roles.cache;
             let roleCount = 0;
@@ -80,7 +80,7 @@ module.exports = {
                     },
                     {
                         name: `Created`,
-                        value: `${createDate}`,
+                        value: `${Discord.Formatters.time(createDate, "D")} (${Discord.Formatters.time(createDate, "R")})`,
                         inline: true,
                     },
                     {
@@ -129,7 +129,7 @@ module.exports = {
                         inline: false,
                     },
                 ],
-                timestamp: new Date(),
+                    timestamp: new Date(),
                 footer: {
                     text: `Server ID: ${server.id}`,
                 }

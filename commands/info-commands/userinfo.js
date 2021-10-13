@@ -1,4 +1,3 @@
-const moment = require("moment");
 const Discord = require("discord.js");
 const Models = require("../../models/AllModels");
 
@@ -58,13 +57,10 @@ module.exports = {
         }
 
         async function userData(u) {
-            const joinDate = moment(u.joinedAt).format("MMM DD, YYYY"); // joined date
-            const joinTime = moment(u.joinedAt).format("h:mm A"); // joined time
-            const registerDate = moment(u.user.createdAt).format("MMM DD, YYYY"); // register date
-            const registerTime = moment(u.user.createdAt).format("h:mm A"); // register time
-            const boostDate = moment(u.premiumSince).format("MMM DD, YYYY"); // boost date
-            const boostTime = moment(u.premiumSince).format("h:mm A"); // boost time
-            let boostString = "No";
+            const joinDate = u.joinedAt; // joined date
+            const registerDate = u.user.createdAt; // register date
+            const boostDate = u.premiumSince; // boost date
+            let boostString = "Not Boosting";
             let bot;
 
             // set bot var based on user.bot boolean
@@ -79,7 +75,7 @@ module.exports = {
 
             // If user is boosting the server
             if(u.premiumSince) {
-                boostString = `${boostDate}\n${boostTime}`;
+                boostString = `${Discord.Formatters.time(boostDate, "D")}`;
             }
 
             // Find all warnings from the user, if any
@@ -157,12 +153,12 @@ module.exports = {
                     },
                     {
                         name: `Joined`,
-                        value: `${joinDate}\n${joinTime}`,
+                        value: `${Discord.Formatters.time(joinDate, "D")}`,
                         inline: true
                     },
                     {
                         name: `Registered`,
-                        value: `${registerDate}\n${registerTime}`,
+                        value: `${Discord.Formatters.time(registerDate, "D")}`,
                         inline: true
                     },
                     {

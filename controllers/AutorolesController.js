@@ -1,5 +1,4 @@
 // Import the required files
-const moment = require('moment');
 const AutoRole = require("../models/AutoRole");
 
 // Create a new module export
@@ -162,8 +161,8 @@ module.exports = {
                     autoroleData.id = data.get('id'); //get id
                     autoroleData.role = data.get('role'); //get role
                     autoroleData.creator = client.users.cache.get(data.get('user_id')); //get user id
-                    autoroleData.created = moment(data.get('createdAt')).format('MMM DD, YYYY HH:mm:ss'); //get created date
-                    autoroleData.updated = moment(data.get('updatedAt')).format('MMM DD, YYYY HH:mm:ss'); //get updated date
+                    autoroleData.created = data.get('createdAt'); //get created date
+                    autoroleData.updated = data.get('updatedAt'); //get updated date
 
                 // Send the autorole to the user in a DM
                 }).then(() => {
@@ -188,7 +187,7 @@ module.exports = {
                             }
                         ],
                         footer: {
-                            text: `Created: ${autoroleData.created} | Updated: ${autoroleData.updated}`
+                            text: `Created: ${Discord.Formatters.time(autoroleData.created, "D")} (${Discord.Formatters.time(autoroleData.created, "R")}) | Updated: ${Discord.Formatters.time(autoroleData.updated, "D")} (${Discord.Formatters.time(autoroleData.updated, "R")})`
                         },
 
                     };

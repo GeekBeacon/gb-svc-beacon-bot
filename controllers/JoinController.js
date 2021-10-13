@@ -1,6 +1,7 @@
 // Import required files
 const moment = require("moment-timezone");
 const Models = require("../models/AllModels");
+const Discord = require("discord.js");
 
 // Create a new module export
 module.exports = {
@@ -8,9 +9,6 @@ module.exports = {
     // Create a function to be called
     joinHandler: async function(m, c) {
         const member = m, client = c; //assign the member var to the passed in member parameter
-        const registerDate = moment(member.user.createdAt).format("MMM DD, YYYY"); // register date
-        const registerTime = moment(member.user.createdAt).format("h:mm A"); // register time
-        const roles = []; //create the roles array
         const joinLog = member.guild.channels.cache.find((c => c.name.includes(client.settings.get("join_log_channel_name")))); //join log channel
         let warnings = 0;
 
@@ -38,7 +36,7 @@ module.exports = {
                 },
                 {
                     name: `Registered`,
-                    value: `${registerDate} - ${registerTime}`,
+                    value: `${Discord.Formatters.time(member.user.createdAt, "f")} (${Discord.Formatters.time(member.user.createdAt, "R")})`,
                     inline: false,
                 },
             ],

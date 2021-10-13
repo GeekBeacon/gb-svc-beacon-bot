@@ -296,7 +296,7 @@ module.exports = {
                 guild.members.unban(item.userId, "Ban Expiration").then(() => {
                     const user = client.users.cache.get(item.userId); //get the user that was banned
                     const moderator = client.users.cache.get(item.modId); //get the moderator that performed the ban
-                    let banDate = moment(item.created).format(`MMM DD, YYYY HH:mm:ss`);
+                    let banDate = item.created;
 
                     // Update the completed field
                     Models.ban.update({completed: true}, {where: {id: item.id}});
@@ -318,7 +318,7 @@ module.exports = {
                             },
                             {
                                 name: `Date Banned`,
-                                value: `${banDate} (${timezone})`,
+                                value: `${Discord.Formatters.time(banDate, "f")} (${Discord.Formatters.time(banDate, "R")})`,
                                 inline: true,
                             },
                             {
@@ -377,7 +377,7 @@ module.exports = {
                         // Unmute the user
                         member.roles.remove(mutedRole).then(() => {
                             const moderator = client.users.cache.get(mute.moderator_id); //get the moderator that performed the mute
-                            let muteDate = moment(mute.created).format(`MMM DD, YYYY HH:mm:ss`);
+                            let muteDate = mute.created;
 
                             // Update the completed field
                             Models.mute.update({completed: true}, {where: {id: mute.id}});
@@ -409,7 +409,7 @@ module.exports = {
                                     },
                                     {
                                         name: `Date Muted`,
-                                        value: `${muteDate} (${timezone})`,
+                                        value: `${Discord.Formatters.time(muteDate, "f")} (${Discord.Formatters.time(muteDate, "R")})`,
                                         inline: true,
                                     },
                                     {

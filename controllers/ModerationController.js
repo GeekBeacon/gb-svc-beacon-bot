@@ -554,7 +554,7 @@ module.exports = {
                         return message.reply("Uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
                     }
 
-                    unbanDate = unbanDate.format(`MMM DD, YYYY HH:mm:ss`); //format
+                    
 
                     /* 
                     * Sync the model to the table
@@ -592,7 +592,7 @@ module.exports = {
                                     },
                                     {
                                         name: `Unban Date`,
-                                        value: `${unbanDate} (${timezone})`,
+                                        value: `${Discord.Formatters.time(unbanDate.toDate(), "f")} (${Discord.Formatters.time(unbanDate.toDate(), "R")})`,
                                         inline: true,
                                     },
                                     {
@@ -752,7 +752,7 @@ module.exports = {
                                                 },
                                                 {
                                                     name: `Ban Date`,
-                                                    value: `${banDate}`,
+                                                    value: `${Discord.Formatters.time(banDate.toDate(), "f")} (${Discord.Formatters.time(banDate.toDate(), "R")})`,
                                                     inline: false,
                                                 },
                                                 {
@@ -1011,7 +1011,6 @@ module.exports = {
                         // If not after the current time, let the user know how to fix the problem
                         return message.reply("Uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
                     }
-                    unmuteDate = unmuteDate.format(`MMM DD, YYYY HH:mm:ss`); //format
 
                     // Check if user is in the muted role
                     const inMutedRole = user.roles.cache.some(role => role.name.toLowerCase().includes(`muted - ${muteType}`));
@@ -1082,7 +1081,7 @@ module.exports = {
                                         },
                                         {
                                             name: `Unmute Date`,
-                                            value: `${unmuteDate} (${timezone})`,
+                                            value: `${Discord.Formatters.time(unmuteDate.toDate(), "f")} (${Discord.Formatters.time(unmuteDate.toDate(), "R")})`,
                                             inline: false,
                                         },
                                         {
@@ -1203,7 +1202,7 @@ module.exports = {
             Models.mute.findOne({where: {user_id: userId, completed: 0}, raw: true}).then((data) => {
                 // Make sure data was retrieved
                 if(data) {
-                    const muteDate = moment(data.createdAt).format(`MMM DD, YYYY HH:mm:ss`); //assign mute date
+                    const muteDate = data.createdAt; //assign mute date
                     const muteReason = data.reason; //assign mute reason
                     /* 
                     * Sync the model to the table
@@ -1253,7 +1252,7 @@ module.exports = {
                                         },
                                         {
                                             name: `Mute Date`,
-                                            value: `${muteDate}`,
+                                            value: `${Discord.Formatters.time(muteDate, "f")} (${Discord.Formatters.time(muteDate, "R")})`,
                                             inline: false,
                                         },
                                         {
@@ -1913,12 +1912,12 @@ module.exports = {
                                 },
                                 {
                                     name: `Date Banned`,
-                                    value: moment(ban.createdAt).format(`MMM DD, YYYY HH:mm:ss`),
+                                    value: `${Discord.Formatters.time(ban.createdAt, "f")} (${Discord.Formatters.time(ban.createdAt, "R")})`,
                                     inline: true
                                 },
                                 {
                                     name: `Unban Date`,
-                                    value: moment(ban.unban_date).format(`MMM DD, YYYY HH:mm:ss`),
+                                    value: `${Discord.Formatters.time(ban.unban_date, "f")} (${Discord.Formatters.time(ban.unban_date, "R")})`,
                                     inline: true
                                 },
                                 {
@@ -1945,7 +1944,6 @@ module.exports = {
         const isSuper = message.member.roles.cache.some(role => role.id === client.settings.get("super_role_id"));
         const isAdmin = message.member.roles.cache.some(role => role.id === client.settings.get("admin_role_id"));
         const isElder = message.member.roles.cache.some(role => role.name.toLowerCase().includes("elder squirrel"));
-        const squirrelRole = message.guild.roles.cache.find(role => role.name.toLowerCase().includes("squirrel army"));
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
         let isOwner;
         let user;
@@ -1989,203 +1987,98 @@ module.exports = {
             // If the role wasn't found let the user know
             if(role === undefined) return message.reply(`Uh oh! Looks like I wasn't able to find a role with the name \`${roleStr}\`, please try again!`);
         }
-
-
-
-        // Check if the role is Squirrel Army and the author is able to give that role
-        if(role.name.toLowerCase().includes("squirrel army") && (isElder || isAdmin || isOwner)) {
-            
-            // If author isn't able to edit the user, deny editing the user
-            if(message.member.roles.highest.position <= user.roles.highest.position) {
-                return message.reply(`Uh oh! You don't have permission to edit this user!`);
-            // If author is able to edit the user, proceed
-            } else {
-                // If add subcommand was used
-                if(args[0].toLowerCase() === "add") {
-                    // Check if the user already has the role
-                    if(user.roles.cache.some(r => r === role)) {
-                        // If user already has the role then let author know
-                        return message.reply(`Uh oh! This user is already in that role!`)
-                    }
-
-                    // Add the role to the user
-                    user.roles.add(role).then(() => {
-                        // Create embed
-                        const addEmbed = {
-                            color: 0x886CE4,
-                            title: `Role Added To User`,
-                            author: {
-                                name: `${message.member.displayName}`,
-                                icon_url: `${message.author.displayAvatarURL()}`
-                            },
-                            description: `${message.member.displayName} has given ${user.displayName} a new role.`,
-                            fields: [
-                                {
-                                    name: `User Edited`,
-                                    value: `${user}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Role Given`,
-                                    value: `${role}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Given By`,
-                                    value: `${message.author}`,
-                                    inline: true,
-                                }
-                            ],
-                            timestamp: new Date(),
-                        };
-
-                        // Send log
-                        actionLog.send({embeds: [addEmbed]}).then(() => {
-                            // Send feedback
-                            message.channel.send(`${user.displayName} was successfully added to the ${role.name} role!`);
-                        });
-                    });
-
-                // If remove subcommand was used
-                } else if(args[0].toLowerCase() === "remove") {
-                    // Check if the user already has the role
-                    if(!user.roles.cache.some(r => r === role)) {
-                        // If user already has the role then let author know
-                        return message.reply(`Uh oh! This user isn't in that role!`)
-                    }
-
-                    // Remove the role from the user
-                    user.roles.remove(role).then(() => {
-                        // Create embed
-                        const removeEmbed = {
-                            color: 0x886CE4,
-                            title: `Role Removed From User`,
-                            author: {
-                                name: `${message.member.displayName}`,
-                                icon_url: `${message.author.displayAvatarURL()}`
-                            },
-                            description: `${message.member.displayName} has removed a role from ${user.displayName}.`,
-                            fields: [
-                                {
-                                    name: `User Edited`,
-                                    value: `${user}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Role Removed`,
-                                    value: `${role}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Removed By`,
-                                    value: `${message.author}`,
-                                    inline: true,
-                                }
-                            ],
-                            timestamp: new Date(),
-                        };
-
-                        // Send log
-                        actionLog.send({embeds: [removeEmbed]}).then(() => {
-                            // Send feedback
-                            message.channel.send(`${user.displayName} was successfully removed from the ${role.name} role!`);
-                        });
-                    });
-                }
+        
+        // If add subcommand was used
+        if(args[0].toLowerCase() === "add") {
+            // Check if the user already has the role
+            if(user.roles.cache.some(r => r === role)) {
+                // If user already has the role then let author know
+                return message.reply(`Uh oh! This user is already in that role!`)
             }
-        } else {
-            // If add subcommand was used
-            if(args[0].toLowerCase() === "add") {
-                // Check if the user already has the role
-                if(user.roles.cache.some(r => r === role)) {
-                    // If user already has the role then let author know
-                    return message.reply(`Uh oh! This user is already in that role!`)
-                }
 
-                // Add the role to the user
-                user.roles.add(role).then(() => {
-                    // Create embed
-                    const addEmbed = {
-                        color: 0x886CE4,
-                        title: `Role Added To User`,
-                        author: {
-                            name: `${message.member.displayName}`,
-                            icon_url: `${message.author.displayAvatarURL()}`
+            // Add the role to the user
+            user.roles.add(role).then(() => {
+                // Create embed
+                const addEmbed = {
+                    color: 0x886CE4,
+                    title: `Role Added To User`,
+                    author: {
+                        name: `${message.member.displayName}`,
+                        icon_url: `${message.author.displayAvatarURL()}`
+                    },
+                    description: `${message.member.displayName} has given ${user.displayName} a new role.`,
+                    fields: [
+                        {
+                            name: `User Edited`,
+                            value: `${user}`,
+                            inline: true,
                         },
-                        description: `${message.member.displayName} has given ${user.displayName} a new role.`,
-                        fields: [
-                            {
-                                name: `User Edited`,
-                                value: `${user}`,
-                                inline: true,
-                            },
-                            {
-                                name: `Role Given`,
-                                value: `${role}`,
-                                inline: true,
-                            },
-                            {
-                                name: `Given By`,
-                                value: `${message.author}`,
-                                inline: true,
-                            }
-                        ],
-                        timestamp: new Date(),
-                    };
-
-                    // Send log
-                    actionLog.send({embeds: [addEmbed]}).then(() => {
-                        // Send feedback
-                        message.channel.send(`${user.displayName} was successfully added to the ${role.name} role!`);
-                    });
-                });
-
-            // If remove subcommand was used
-            } else if(args[0].toLowerCase() === "remove") {
-                // Check if the user already has the role
-                if(!user.roles.cache.some(r => r === role)) {
-                    // If user already has the role then let author know
-                    return message.reply(`Uh oh! This user isn't in that role!`)
-                }
-
-                // Remove the role from the user
-                user.roles.remove(role).then(() => {
-                    // Create embed
-                    const removeEmbed = {
-                        color: 0x886CE4,
-                        title: `Role Removed From User`,
-                        author: {
-                            name: `${message.member.displayName}`,
-                            icon_url: `${message.author.displayAvatarURL()}`
+                        {
+                            name: `Role Given`,
+                            value: `${role}`,
+                            inline: true,
                         },
-                        description: `${message.member.displayName} has removed a role from ${user.displayName}.`,
-                        fields: [
-                            {
-                                name: `User Edited`,
-                                value: `${user}`,
-                                inline: true,
-                            },
-                            {
-                                name: `Role Removed`,
-                                value: `${role}`,
-                                inline: true,
-                            },
-                            {
-                                name: `Removed By`,
-                                value: `${message.author}`,
-                                inline: true,
-                            }
-                        ],
-                        timestamp: new Date(),
-                    };
+                        {
+                            name: `Given By`,
+                            value: `${message.author}`,
+                            inline: true,
+                        }
+                    ],
+                    timestamp: new Date(),
+                };
 
-                    // Send log
-                    actionLog.send({embeds: [removeEmbed]}).then(() => {
-                        // Send feedback
-                        message.channel.send(`${user.displayName} was successfully removed from the ${role.name} role!`);
-                    });
+                // Send log
+                actionLog.send({embeds: [addEmbed]}).then(() => {
+                    // Send feedback
+                    message.channel.send(`${user.displayName} was successfully added to the ${role.name} role!`);
                 });
+            });
+
+        // If remove subcommand was used
+        } else if(args[0].toLowerCase() === "remove") {
+            // Check if the user already has the role
+            if(!user.roles.cache.some(r => r === role)) {
+                // If user already has the role then let author know
+                return message.reply(`Uh oh! This user isn't in that role!`)
             }
+
+            // Remove the role from the user
+            user.roles.remove(role).then(() => {
+                // Create embed
+                const removeEmbed = {
+                    color: 0x886CE4,
+                    title: `Role Removed From User`,
+                    author: {
+                        name: `${message.member.displayName}`,
+                        icon_url: `${message.author.displayAvatarURL()}`
+                    },
+                    description: `${message.member.displayName} has removed a role from ${user.displayName}.`,
+                    fields: [
+                        {
+                            name: `User Edited`,
+                            value: `${user}`,
+                            inline: true,
+                        },
+                        {
+                            name: `Role Removed`,
+                            value: `${role}`,
+                            inline: true,
+                        },
+                        {
+                            name: `Removed By`,
+                            value: `${message.author}`,
+                            inline: true,
+                        }
+                    ],
+                    timestamp: new Date(),
+                };
+
+                // Send log
+                actionLog.send({embeds: [removeEmbed]}).then(() => {
+                    // Send feedback
+                    message.channel.send(`${user.displayName} was successfully removed from the ${role.name} role!`);
+                });
+            });
         }
     },
     nicknameHandler: async function(message, args, client) {
@@ -2547,8 +2440,8 @@ module.exports = {
                     let fieldCounter = 0; //field counter
 
                     settings.forEach((setting) => {
-                        // Format the last updated time
-                        const lastUpdated = moment(setting.updatedAt).format(`MMM DD, YYYY HH:mm:ss`);
+                        // Assign the last updated time
+                        const lastUpdated = setting.updatedAt;
 
                         // Add the setting info fields
                         settingsEmbed.addFields(
@@ -2564,7 +2457,7 @@ module.exports = {
                             },
                             {
                                 name: `Last Update`,
-                                value: `${lastUpdated}`,
+                                value: `${Discord.Formatters.time(lastUpdated, "f")} (${Discord.Formatters.time(lastUpdated, "R")})`,
                                 inline: true,
                             }
                         );
@@ -2607,8 +2500,8 @@ module.exports = {
                     // If the user is wanting to view a setting
                     if(args[1].toLowerCase() === "view") {
 
-                        // Format the last updated time
-                        const lastUpdated = moment(setting.updatedAt).format(`MMM DD, YYYY HH:mm:ss`);
+                        // Assign the last updated time
+                        const lastUpdated = setting.updatedAt;
 
                         // Set the fields for the setting
                         viewEmbed.addFields(
@@ -2624,7 +2517,7 @@ module.exports = {
                             },
                             {
                                 name: "Last Update",
-                                value: lastUpdated,
+                                value: `${Discord.Formatters.time(lastUpdated, "f")} (${Discord.Formatters.time(lastUpdated, "R")})`,
                                 inline: false,
                             }
                         );
