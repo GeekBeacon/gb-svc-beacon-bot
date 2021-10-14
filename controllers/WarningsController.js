@@ -62,13 +62,13 @@ module.exports = {
                             // Warning from a mod note
                             recentEmbed.addField(
                                 `Warning #${i}`, //title
-                                `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${date}**` //value
+                                `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.Formatters.time(date, "D")} (${Discord.Formatters.time(date, "R")})**` //value
                             );
                         } else {
                             // Warning for all other types
                             recentEmbed.addField(
                                 `Warning #${i}`, //title
-                                `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${date}**` //value
+                                `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.Formatters.time(date, "D")} (${Discord.Formatters.time(date, "R")})**` //value
                             );
 
                         }

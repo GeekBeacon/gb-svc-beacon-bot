@@ -1,6 +1,7 @@
 // Import required files
 const moment = require("moment");
 const momentDuration = require("moment-duration-format");
+const Discord = require("discord.js")
 
 // Create a new module export
 module.exports = {

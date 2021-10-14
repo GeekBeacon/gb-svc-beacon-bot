@@ -444,7 +444,9 @@ module.exports = {
         let warnId = shortid.generate(); //generate a short id for the warning
         const prefix = client.settings.get("prefix");
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        let user, bans;
+        let user, bans; //vars
+        let msgDel = 0; //number of days to clear messages
+        let msgCleared = "No"; //bool for cleared messages
         // Get the mod+ roles
         const modTraineeRole = message.guild.roles.cache.find(role => role.id === client.settings.get("trainee_role_id"));
         const modRole = message.guild.roles.cache.find(role => role.id === client.settings.get("mod_role_id"));
@@ -454,6 +456,23 @@ module.exports = {
         let argsStr = args.join(" "); //create a string out of the args
         argsStr = argsStr.replace(/,/g, ", "); // replace
         const newArgs = argsStr.split(",").map(i => i.trim()); //create a new args array and trim the whitespace from the items
+
+        // Check if an argument for days of messages to remove was given
+        if(newArgs[3]) {
+            // Ensure a number was given
+            if(isNaN(newArgs[3])) {
+                return message.reply(`You must either give me a number (0-7) for the amount of days to clear the user's messages or leave blank.\nExample: \`${prefix}ban @user, Reason, Perma, 7\``)
+            } else {
+                // Ensure the number is between 0 and 7
+                if(newArgs[3] < 0 || newArgs[3] > 7) {
+                    return message.reply(`The maximum number of days I can clear messages for is 7, please enter a number between 0 and 7.\`${prefix}ban @user, Reason, Perma, 3\``)
+                } else {
+                    // If the number is between 0 and 7 assign the value to msgDel and set the msgCleared bool to "Yes"
+                    msgDel = newArgs[3];
+                    msgCleared = "Yes";
+                }
+            }
+        }
 
         // Make sure the first arg was a user mention or a user id
         if(isNaN(newArgs[0]) && !newArgs[0].startsWith("<@")) {
@@ -530,7 +549,6 @@ module.exports = {
                     let banValue = banLength.replace(/\D+/, '').trim(); //assign the ban value
                     let banUnit = banLength.replace(/\d+/, '').trim(); //assign the ban unit
                     const now = moment();
-                    const timezone = moment().tz(moment.tz.guess()).format(`z`); // server timezone
                     const banLengthRegex = /(\d+\s*\D+$|^permanent$|^perma$|^perm$|^p{1}$){1}/; //regex for ban time format
 
                     // Check if the user input for a perma ban
@@ -591,13 +609,18 @@ module.exports = {
                                         inline: true,
                                     },
                                     {
+                                        name: `Banned By`,
+                                        value: `${message.author}`,
+                                        inline: true,
+                                    },
+                                    {
                                         name: `Unban Date`,
                                         value: `${Discord.Formatters.time(unbanDate.toDate(), "f")} (${Discord.Formatters.time(unbanDate.toDate(), "R")})`,
                                         inline: true,
                                     },
                                     {
-                                        name: `Banned By`,
-                                        value: `${message.author}`,
+                                        name: `Messages Cleared`,
+                                        value: `${msgCleared}`,
                                         inline: true,
                                     },
                                     {
@@ -636,7 +659,7 @@ module.exports = {
                                     }).then(() => {
 
                                         // Ban the user from the server
-                                        message.guild.members.ban(user.id, {reason: reason}).then(() => {
+                                        message.guild.members.ban(user.id, {days: msgDel, reason: reason}).then(() => {
                                             // Send the embed to the action log channel
                                             actionLog.send({embeds: [banEmbed]});
                                             message.channel.send(`${user.username} was successfully banned for ${banLength}!`)
@@ -703,7 +726,7 @@ module.exports = {
 
                             // Make sure data was retrieved
                             if(data) {
-                                const banDate = moment(data.createdAt).format(`MMM DD, YYYY HH:mm:ss`); //assign ban date
+                                const banDate = moment(data.createdAt); //assign ban date
                                 const banReason = data.reason; //assign ban reason
                                 /* 
                                 * Sync the model to the table
