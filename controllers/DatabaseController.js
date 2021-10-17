@@ -5,6 +5,7 @@ const AutorolesController = require("./AutorolesController");
 const JoinableRolesController = require("./JoinableRolesController");
 const WarningsController = require("./WarningsController");
 const ModerationController = require("./ModerationController");
+const AnnouncementController = require("./AnnouncementController");
 const Models = require("../models/AllModels");
 
 // Create a new module export

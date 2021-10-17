@@ -1,5 +1,6 @@
 // Import required files
 const Models = require("../models/AllModels");
+const AnnouncementController = require("./AnnouncementController");
 
 // Create a new module export
 module.exports = {

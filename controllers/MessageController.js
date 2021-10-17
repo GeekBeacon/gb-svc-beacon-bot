@@ -146,11 +146,11 @@ module.exports = {
         };
 
         // Check if the user has the proper permissions for the command if not let them know
-        if (command.admin === true && !(inAdminRole || message.member === isOwner)) {
+        if (command.admin == true && !(inAdminRole || message.member === isOwner)) {
             return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${adminRole.name} group!`);
-        } else if (command.super === true && !(inSuperRole || inAdminRole || message.member === isOwner)) {
+        } else if (command.super == true && !(inSuperRole || inAdminRole || message.member === isOwner)) {
             return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${superRole.name} group!`);
-        } else if (command.mod === true && !(inModTraineeRole || inModRole || inSuperRole || inAdminRole || message.member === isOwner)) {
+        } else if (command.mod == true && !(inModTraineeRole || inModRole || inSuperRole || inAdminRole || message.member === isOwner)) {
             return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${modRole.name} group!`);
         }
 
