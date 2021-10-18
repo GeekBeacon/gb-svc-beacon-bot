@@ -4,16 +4,161 @@ const Models = require("../models/AllModels");
 const Discord = require('discord.js');
 
 module.exports = {
-    createAnnouncment: function() {
+    crudHandler: async function(message, args, client) {
+        const subcommands = ['create', 'view', 'edit', 'delete']; //subcommands var
+        const prefix = client.settings.get("prefix");
+        // Check if an accepted subcommand was used
+        if(!subcommands.includes(args[0].toLowerCase())) {
+            // If not an accepted subcommand let the user know
+            message.reply(`Uh oh! You seem to have provided me with an invalid subcommand.\nPlease tell me which subcommand you wish to run from the following options: **create**, **view**, **edit**, **delete**!`)
+        } else {
+            // Run the proper function based on the subcommand given
+            switch(args[0].toLowerCase()) {
+                case "create":
+                    createAnnounce();
+                    break;
+                case "view":
+                    viewAnnounce();
+                    break;
+                case "edit":
+                    editAnnounce();
+                    break;
+                case "delete":
+                    deleteAnnounce();
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // Function to handle creating an announcement
+        async function createAnnounce() {
+            let announcement = {
+                title: null,
+                body: null,
+                author: null,
+                show_author: null,
+                channel: null,
+                scheduled_date: null,
+                reactions: null,
+
+            };
+
+            // Create a filter to ensure the response is from the same person that used the command
+            const authorFilter = m => {
+                if(m.author.id === message.author.id) {
+                    return true;
+                }
+            };
+
+            const yesNoFilter = m => {
+                // If user says "yes" or "no" then return true
+                if(m.author.id === message.author.id && (m.content.toLowerCase() === "yes" || m.content.toLowerCase() === "no")) {
+                    return true;
+                }
+            }
+
+            /*
+            ###########################################
+            ################## TITLE ##################
+            ###########################################
+            */
+            // Ask the user for the title of the announcement then assign the resolved promise's value to the title of the announcement
+            announcement.title = await message.reply(`Please tell me the title of this announcement.`).then(() => {
+                // Listen for the response (30 second wait) and return it
+                return message.channel.awaitMessages({authorFilter, max: 1,  time: 30000, errors:["time"]}).then(res => {
+                    // Make sure res is valid
+                    if(res) {
+                        // return the content of the first (and only) response
+                       return res.first().content;
+                    }
+                // If the user goes idle for 10 seconds let them know they timed out
+                }).catch(e => {
+                    message.reply(`Uh oh! It seems that you got distracted, please try again!`)
+                });
+            })
+
+            /*
+            ##########################################
+            ################## BODY ##################
+            ##########################################
+            */
+            // Ask the user for the body of the announcement then assign the resolved promise's value to the body of the announcement
+            announcement.body = await message.reply(`Please tell me the body of this announcement.\nTo learn to create a hyperlink please run \`\`${prefix}help announce\`\``).then(() => {
+                // Listen for the response (5 min wait) and return it
+                return message.channel.awaitMessages({authorFilter, max: 1,  time: 300000, errors:["time"]}).then(res => {
+                    // Make sure res is valid
+                    if(res) {
+                        // return the content of the first (and only) response
+                       return res.first().content;
+                    }
+                // If the user goes idle for 10 seconds let them know they timed out
+                }).catch(e => {
+                    message.reply(`Uh oh! It seems that you got distracted, please try again!\nIf you need extra time, write out the announcement before running the command again.`)
+                });
+            })
+
+            /*
+            ###########################################
+            ############### SHOW AUTHOR ###############
+            ###########################################
+            */
+            // Ask the user if they want to be the auther of the announcement or not then assign the resolved promise's value to the show_author of the announcement
+            announcement.body = await message.reply(`Do you want to show yourself as the author of the post instead of the bot?\n*Note: The bot will still be the poster and owner of the message.*`).then(() => {
+                // Listen for the response (30 sec wait) and return it
+                return message.channel.awaitMessages({yesNoFilter, max: 1,  time: 30000, errors:["time"]}).then(res => {
+                    // Make sure res is valid
+                    if(res) {
+                        const answer = res.first().content;
+                        
+                        if(answer.toLowerCase() === "no") {
+                            return false;
+                        } else if (answer.toLowerCase() === "yes") {
+                            return true;
+                        }
+                    }
+                // If the user goes idle for 10 seconds let them know they timed out
+                }).catch(e => {
+                    message.reply(`Uh oh! It seems that you got distracted, please try again!`)
+                });
+            })
+
+            /*
+            #######################################
+            ############### CHANNEL ###############
+            #######################################
+            */
+            // Ask the user for the channel the announcement should be posted to then assign the resolved promise's value to the channel of the announcement
+            announcement.body = await message.reply(`Do you want to show yourself as the author of the post instead of the bot?\n*Note: The bot will still be the poster and owner of the message.*`).then(() => {
+                // Listen for the response (30 sec wait) and return it
+                return message.channel.awaitMessages({yesNoFilter, max: 1,  time: 30000, errors:["time"]}).then(res => {
+                    // Make sure res is valid
+                    if(res) {
+                        //code
+                    }
+                // If the user goes idle for 10 seconds let them know they timed out
+                }).catch(e => {
+                    message.reply(`Uh oh! It seems that you got distracted, please try again!`)
+                });
+            })
+
+            console.log(announcement)
+        }
+
+        // Function to handle viewing an announcement
+        function viewAnnounce() {
+            
+        }
+
+        // Function to handle editing an announcement
+        function editAnnounce() {
+            
+        }
+
+        // Function to handle deleting an announcement
+        function deleteAnnounce() {
+            
+        }
 
     },
-    editAnnouncement: function() {
-        
-    },
-    deleteAnnouncement: function() {
-        
-    },
-    viewAnnouncement: function() {
-
-    }
 }

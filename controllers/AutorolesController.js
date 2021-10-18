@@ -1,5 +1,6 @@
 // Import the required files
 const AutoRole = require("../models/AutoRole");
+const Discord = require("discord.js");
 
 // Create a new module export
 module.exports = {
@@ -71,7 +72,7 @@ module.exports = {
                                 */
                                 AutoRole.sync({ force: false }).then(() => {
                                     // Query the database for the autorole
-                                    AutoRole.findOne({where:{role: autorole}}).then((arole) => {
+                                    AutoRole.findOne({where:{role: role.name}}).then((arole) => {
                                         // If there is no autorole add it
                                         if (!arole) {
                                             AutoRole.create({
@@ -132,7 +133,7 @@ module.exports = {
             adminRole = message.member.roles.cache.some(role => role.id === client.settings.get("admin_role_id"));
             ownerRole = message.member.guild.owner === message.author;
 
-            // If user is a mod and didn't pass in any args, list autoroles
+            // If the user didn't provide any args, list autoroles
             if (!args.length) {
                 let autoroles = [];
 
@@ -141,13 +142,9 @@ module.exports = {
                     data.forEach((item) => {
                         autoroles.push(item.get('role'));
                     });
-                // Send the autoroles to the user in a DM
+                // Send the autoroles to the user
                 }).then(() => {
-                    modChannel.send('**Autoroles:** '+autoroles.map(role => `\`${role}\``).join(', '))
-                    // Let user know to check the mod channel for the information
-                    .then(() => {
-                        message.reply(`I've sent the list of autoroles to ${modChannel}!`);
-                    })
+                    message.reply('**Autoroles:** '+autoroles.map(role => `\`${role}\``).join(', '))
                 });
 
             // If user is a super mod and passed in args, then give all data about that autorole
@@ -177,32 +174,48 @@ module.exports = {
                         fields: [
                             {
                                 name: 'Role',
-                                value: autoroleData.role,
+                                value: `${autoroleData.role}`,
+                                inline: true,
+                            },
+                            {
+                                name: '\u200b',
+                                value: '\u200b',
                                 inline: true,
                             },
                             {
                                 name: `Added By`,
-                                value: autoroleData.creator,
+                                value: `${autoroleData.creator}`,
+                                inline: true,
+                            },
+                            {
+                                name: `Created`,
+                                value: `${Discord.Formatters.time(autoroleData.created, "D")} (${Discord.Formatters.time(autoroleData.created, "R")})`,
+                                inline: true,
+                            },
+                            {
+                                name: `Updated`,
+                                value: `${Discord.Formatters.time(autoroleData.updated, "D")} (${Discord.Formatters.time(autoroleData.updated, "R")})`,
                                 inline: true,
                             }
                         ],
-                        footer: {
-                            text: `Created: ${Discord.Formatters.time(autoroleData.created, "D")} (${Discord.Formatters.time(autoroleData.created, "R")}) | Updated: ${Discord.Formatters.time(autoroleData.updated, "D")} (${Discord.Formatters.time(autoroleData.updated, "R")})`
-                        },
+                        timestamp: new Date(),
 
                     };
 
-                    superChannel.send({embed: autoroleEmbed})
+                    superChannel.send({embeds: [autoroleEmbed]})
                     // Let user know to check the super channel for the information
                     .then(() => {
-                        message.reply(`I've sent the information on \`${autoroleData.role}\` to the ${superChannel}!`);
+                        // If not in the super channel let the user know it was sent there
+                        if(message.channel !== superChannel) {
+                            message.reply(`I've sent the information on \`${autoroleData.role}\` to the ${superChannel}!`);
+                        }
                     })
                 }).catch((err) => {
                     message.reply(`It looks like \`${autorole}\` doesn't exist!`);
                 });
 
             // If user isn't a super mod and passed in args let them know they can't use that command
-            } else if (!message.member.hasPermission("MANAGE_ROLES") && args.length) {
+            } else if (!superRole && args.length) {
                 message.channel.send(`You do not have the proper permissions to use this command!\nIf you were trying to get the autorole list, use \`${prefix}listautoroles\``);
             };
         };
