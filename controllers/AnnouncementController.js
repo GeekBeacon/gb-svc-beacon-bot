@@ -58,6 +58,16 @@ module.exports = {
                 }
             }
 
+            const channelFilter = m => {
+                // Ensure the user replied with ONLY a channel mention
+                if(m.author.id === message.author.id && m.content.match(/(^<#[0-9]+>$)/)) {
+                    return true;
+                // If the response wasn't just a channel mention let them know.
+                } else if(m.author.id === message.author.id) {
+                    message.reply(`Uh oh! It seems that you didn't provide me with a channel to post to.\nPlease tag the channel you wish to post this announcement to.\nMake sure you are **only** replying with the channel object (\`\`#channel\`\`)!`)
+                }
+            }
+
             /*
             ###########################################
             ################## TITLE ##################
@@ -66,7 +76,7 @@ module.exports = {
             // Ask the user for the title of the announcement then assign the resolved promise's value to the title of the announcement
             announcement.title = await message.reply(`Please tell me the title of this announcement.`).then(() => {
                 // Listen for the response (30 second wait) and return it
-                return message.channel.awaitMessages({authorFilter, max: 1,  time: 30000, errors:["time"]}).then(res => {
+                return message.channel.awaitMessages({filter: authorFilter, max: 1,  time: 30000, errors:["time"]}).then(res => {
                     // Make sure res is valid
                     if(res) {
                         // return the content of the first (and only) response
@@ -86,7 +96,7 @@ module.exports = {
             // Ask the user for the body of the announcement then assign the resolved promise's value to the body of the announcement
             announcement.body = await message.reply(`Please tell me the body of this announcement.\nTo learn to create a hyperlink please run \`\`${prefix}help announce\`\``).then(() => {
                 // Listen for the response (5 min wait) and return it
-                return message.channel.awaitMessages({authorFilter, max: 1,  time: 300000, errors:["time"]}).then(res => {
+                return message.channel.awaitMessages({filter: authorFilter, max: 1,  time: 300000, errors:["time"]}).then(res => {
                     // Make sure res is valid
                     if(res) {
                         // return the content of the first (and only) response
@@ -104,9 +114,9 @@ module.exports = {
             ###########################################
             */
             // Ask the user if they want to be the auther of the announcement or not then assign the resolved promise's value to the show_author of the announcement
-            announcement.body = await message.reply(`Do you want to show yourself as the author of the post instead of the bot?\n*Note: The bot will still be the poster and owner of the message.*`).then(() => {
+            announcement.show_author = await message.reply(`Do you want to show yourself as the author of the post instead of the bot?\n*Note: The bot will still be the poster and owner of the message.*`).then(() => {
                 // Listen for the response (30 sec wait) and return it
-                return message.channel.awaitMessages({yesNoFilter, max: 1,  time: 30000, errors:["time"]}).then(res => {
+                return message.channel.awaitMessages({filter: yesNoFilter, max: 1,  time: 30000, errors:["time"]}).then(res => {
                     // Make sure res is valid
                     if(res) {
                         const answer = res.first().content;
@@ -129,14 +139,15 @@ module.exports = {
             #######################################
             */
             // Ask the user for the channel the announcement should be posted to then assign the resolved promise's value to the channel of the announcement
-            announcement.body = await message.reply(`Do you want to show yourself as the author of the post instead of the bot?\n*Note: The bot will still be the poster and owner of the message.*`).then(() => {
+            announcement.channel = await message.reply(`Which channel would you like this announcement to be posted to?\nPlease be sure to tag it using \`\`#channel-name\`\`!`).then(() => {
                 // Listen for the response (30 sec wait) and return it
-                return message.channel.awaitMessages({yesNoFilter, max: 1,  time: 30000, errors:["time"]}).then(res => {
+                return message.channel.awaitMessages({filter: channelFilter, max: 1, time: 30000, errors:["time"]}).then(res => {
                     // Make sure res is valid
                     if(res) {
-                        //code
+                        // Return just the channel id from the channel object
+                        return res.first().content.replace(/[<#>]/g, ``)
                     }
-                // If the user goes idle for 10 seconds let them know they timed out
+                // If the user goes idle for 30 seconds let them know they timed out
                 }).catch(e => {
                     message.reply(`Uh oh! It seems that you got distracted, please try again!`)
                 });
