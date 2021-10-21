@@ -93,6 +93,13 @@ module.exports = {
                 }
             }
 
+            const reactionFilter = m => {
+                // Make sure the author is the same as the command user then continue when the user types "done"
+                if(m.author.id === message.author.id && m.content.toLowerCase() === "done") {
+                    return true;
+                }
+            }
+
             /*
             ###########################################
             ################## TITLE ##################
@@ -184,9 +191,9 @@ module.exports = {
             ###########################################
             */
             // Ask the user for the channel the announcement should be posted to then assign the resolved promise's value to the channel of the announcement
-            announcement.scheduled_date = await message.reply(`When would you like this announcement to be posted?\n**Please use UTC times only and a valid ISO 8601 or RFC 2822 date time format!**`).then(() => {
-                // Listen for the response (30 sec wait) and return it
-                return message.channel.awaitMessages({filter: dateFilter, max: 1, time: 60000, errors:["time"]}).then(res => {
+            announcement.scheduled_date = await message.reply(`When would you like this announcement to be posted?\n**Please use a valid ISO 8601 or RFC 2822 date time format!**`).then(() => {
+                // Listen for the response (5 min wait) and return it
+                return message.channel.awaitMessages({filter: dateFilter, max: 1, time: 300000, errors:["time"]}).then(res => {
                     // Make sure res is valid
                     if(res) {
 
@@ -194,13 +201,100 @@ module.exports = {
                         let date = moment(res.first().content).format(`YYYY-MM-DD HH:mm:ss`);
                         return date;
                     }
-                // If the user goes idle for 30 seconds let them know they timed out
+                // If the user goes idle for 5 mins let them know they timed out
                 }).catch(e => {
                     message.reply(`Uh oh! It seems that you got distracted, please try again!`)
                 });
             })
 
-            console.log(announcement)
+            /*
+            #######################################
+            ############## REACTIONS ##############
+            #######################################
+            */
+            // Ask the user for the channel the announcement should be posted to then assign the resolved promise's value to the channel of the announcement
+            announcement.reactions = await message.reply(`If you'd like to attach any reactions to this announcement, react to this message in the order you want them to appear, if not or when finished type \`\`done\`\`.`).then((botMsg) => {
+                // Listen for the response (5 min wait) and return it
+                return message.channel.awaitMessages({filter: reactionFilter, max: 1, time: 300000, errors:["time"]}).then(res => {
+                    // Make sure res is valid
+                    if(res) {
+
+                        // Check if a user added any reactions
+                        if(botMsg.reactions.cache.size > 0) {
+                            let emojis;
+                            // Get each emoji from the message and assign to the var above
+                            emojis = botMsg.reactions.cache.map(e => e.emoji.toString());
+                            return emojis.join(","); //join the emojis array
+                        } else {
+                            // If no reactions then return null
+                            return null;
+                        }
+                    }
+                // If the user goes idle for 5 mins let them know they timed out
+                }).catch(e => {
+                    message.reply(`Uh oh! It seems that you got distracted, please try again!`)
+                });
+            })
+
+            announcement.author = message.author.id;
+            const postChannel = await message.guild.channels.fetch(announcement.channel);
+
+            // Create the announcement embed
+            let announceEmbed = new Discord.MessageEmbed()
+                .setColor(`#551CFF`)
+                .setTitle(announcement.title)
+                .setDescription(announcement.body)
+                .addField("Post Date", `${Discord.Formatters.time(new Date(announcement.scheduled_date), "f")} (${Discord.Formatters.time(new Date(announcement.scheduled_date), "R")})`, true)
+                .addField("Channel", `${postChannel}`, true)
+                .setTimestamp(new Date());
+
+
+                // If the user wanted to be the author set it to their display name and avatar
+                if(announcement.show_author === true) {
+                    announceEmbed.setAuthor(message.member.displayName, message.member.displayAvatarURL());
+
+                // If the user didn't want to be the author set to the bot's display name and avatar
+                } else {
+                    announceEmbed.setAuthor(message.guild.me.displayName, message.guild.me.displayAvatarURL());
+                }
+
+            // Send the announceEmbed to the user for them to validate it
+            message.reply({content: `Here is your announcement, is this correct?`, embeds: [announceEmbed]}).then((announceMsg) =>{
+
+                // If reactions were given
+                if(announcement.reactions !== null) {
+                    // Attempt to react to announceMsg
+                    try {
+                        // Convert the reactions string to an array
+                        const reactionArr = announcement.reactions.split(",");
+
+                        // Loop through the array and react with the reactions in order given
+                        reactionArr.forEach(async (reaction) => {
+                            await announceMsg.react(reaction)
+                        })
+                    // Catch and log any errors
+                    } catch(e) {
+                        console.error("One of the emojis from the announcement builder failed to react!", e)
+                    }
+                }
+
+                // Listen for the user's response (30 seconds)
+                message.channel.awaitMessages({filter: yesNoFilter, max: 1,  time: 30000, errors:["time"]}).then(res => {
+                    // Make sure the res is valid
+                    if(res) {
+                        // If the user confirms it is correct add it to the DB
+                        if(res.first().content === "yes") {
+                            
+                           //Add to db
+
+                        // If the user confirms it is incorrect, ask them to redo the command
+                        } else {
+                            return res.first().reply(`Please run the command again and fix whatever it was that was incorrect.`)
+                        }
+                    }
+               })
+           })
+
         }
 
         // Function to handle viewing an announcement
