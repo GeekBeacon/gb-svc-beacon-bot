@@ -16,7 +16,7 @@ module.exports = {
 
         if (!args.length) {
             // If no arguments let users know arguments are required
-            return message.reply(`You must tell me what you want to do with this command; Create, edit, remove, or view\n\nExamples:\n• \`\`${prefix}announce create\`\`\n• \`\`!${prefix}announce view @${message.author}\`\`\n• \`\`!${prefix}announce edit 3\`\``);
+            return message.reply(`You must tell me what you want to do with this command; Create, edit, remove, or view\n\nExamples:\n• \`\`${prefix}announce create\`\`\n• \`\`${prefix}announce view @${message.author}\`\`\n• \`\`${prefix}announce edit 3\`\``);
         } else {
             // Call the query handler from the database controller with required args
             DatabaseController.queryHandler(message, args, client);

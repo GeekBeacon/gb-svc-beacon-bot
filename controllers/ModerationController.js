@@ -1193,16 +1193,9 @@ module.exports = {
         // Muted role
         let mutedRole = user.roles.cache.find(r => r.name.toLowerCase().includes("muted")); //muted role
 
-        // Make sure a muted role exists
+        // Make sure the user is muted
         if(!mutedRole) {
-            // Check if user is a super or higher role
-            if(inSuperRole || inAdminRole || isOwner) {
-                return message.reply(`Uh oh! It seems there isn't a muted role, please use \`${prefix}createmute\` to make the role!`);
-            // If not a super or higher let them know to ask a super or higher
-            } else {
-                // If no muted role let user know to create it
-                return message.reply(`Uh oh! It seems there isn't a muted role, please ask a ${superRole} or ${adminRole} to make the role with \`${prefix}createmute\`!`);
-            }
+            return message.reply(`You silly! You can't unmute a user that isn't muted!`);
         }
 
         // If a reason was given then unban the user and log the action to the database

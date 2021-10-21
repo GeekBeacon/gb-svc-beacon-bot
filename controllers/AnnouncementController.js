@@ -3,6 +3,9 @@ const moment = require("moment");
 const Models = require("../models/AllModels");
 const Discord = require('discord.js');
 
+// Suppress the deprecation warnings from moment
+moment.suppressDeprecationWarnings = true;
+
 module.exports = {
     crudHandler: async function(message, args, client) {
         const subcommands = ['create', 'view', 'edit', 'delete']; //subcommands var
@@ -65,6 +68,28 @@ module.exports = {
                 // If the response wasn't just a channel mention let them know.
                 } else if(m.author.id === message.author.id) {
                     message.reply(`Uh oh! It seems that you didn't provide me with a channel to post to.\nPlease tag the channel you wish to post this announcement to.\nMake sure you are **only** replying with the channel object (\`\`#channel\`\`)!`)
+                }
+            }
+
+            const dateFilter = m => {
+
+                // Ignore if message was from a bot
+                if(m.author.bot) return;
+                
+                let date, validDate; //vars
+
+                try {
+                    date = moment(new Date(m.content)).format("YYYY-MM-DDTHH:mm:ss.SSSZZ", true);
+                    validDate = moment(date).isValid();
+                } catch(e) {
+                    console.log(e)
+                }
+                // Ensure the user replied with the accepted date format
+                if(m.author.id === message.author.id && validDate === true) {
+                    return true;
+                // If the response wasn't valid, let them know.
+                } else if(m.author.id === message.author.id) {
+                    message.reply(`Uh oh! You didn't use the proper date format, please provide a proper date format and be sure to use UTC to ensure the post date is accurate!\n**Note: Only valid ISO 8601 or RFC 2822 formats are accepted!**`)
                 }
             }
 
@@ -146,6 +171,28 @@ module.exports = {
                     if(res) {
                         // Return just the channel id from the channel object
                         return res.first().content.replace(/[<#>]/g, ``)
+                    }
+                // If the user goes idle for 30 seconds let them know they timed out
+                }).catch(e => {
+                    message.reply(`Uh oh! It seems that you got distracted, please try again!`)
+                });
+            })
+
+            /*
+            ###########################################
+            ############## SCHEDULE DATE ##############
+            ###########################################
+            */
+            // Ask the user for the channel the announcement should be posted to then assign the resolved promise's value to the channel of the announcement
+            announcement.scheduled_date = await message.reply(`When would you like this announcement to be posted?\n**Please use UTC times only and a valid ISO 8601 or RFC 2822 date time format!**`).then(() => {
+                // Listen for the response (30 sec wait) and return it
+                return message.channel.awaitMessages({filter: dateFilter, max: 1, time: 60000, errors:["time"]}).then(res => {
+                    // Make sure res is valid
+                    if(res) {
+
+                        // Format the string to match the other datetime format in the database
+                        let date = moment(res.first().content).format(`YYYY-MM-DD HH:mm:ss`);
+                        return date;
                     }
                 // If the user goes idle for 30 seconds let them know they timed out
                 }).catch(e => {
