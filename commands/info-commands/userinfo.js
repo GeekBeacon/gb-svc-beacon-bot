@@ -23,7 +23,7 @@ module.exports = {
         const modRole = message.guild.roles.cache.find(role => role.id === client.settings.get("mod_role_id"));
         const superRole = message.guild.roles.cache.find(role => role.id === client.settings.get("super_role_id"));
         const adminRole = message.guild.roles.cache.find(role => role.id === client.settings.get("admin_role_id"));
-        let warnings, mutes, kicks, bans, points, level, rank = 0; // numeric vars
+        let warnings, mutes, kicks, bans, points, level, rank; // numeric vars
 
         // Make sure user provived an argument
         if(!args.length) {
@@ -112,10 +112,15 @@ module.exports = {
 
             // Find all points and level from the user, if any
             await Models.user.findOne({where:{user_id: u.user.id}, raw: true}).then((info) => {
-                // If there are points then assign the amount to the bans var
+                // If the user has points then assign the points and level
                 if(info) {
                     points = info.points;
                     level = info.level;
+
+                // If not then set the points and level to N/A
+                } else {
+                    points = "N/A";
+                    level = "N/A";
                 }
             });
 
@@ -126,6 +131,15 @@ module.exports = {
                     rank = info.map(function (e) {
                         return e.user_id;
                     }).indexOf(u.user.id);
+
+                    // If the user isn't found assign the rank to be "N/A"
+                    if(rank < 0) {
+                        rank = "N/A"
+
+                    // If the user was found, assign their rank
+                    } else {
+                        rank = `#${rank+1}`
+                    }
                 }
             })
 
@@ -178,7 +192,7 @@ module.exports = {
                     },
                     {
                         name: `Rank`,
-                        value: `#${rank +1}`,
+                        value: `${rank}`,
                         inline: true
                     }
 

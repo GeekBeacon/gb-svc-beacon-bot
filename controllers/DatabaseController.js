@@ -262,7 +262,6 @@ module.exports = {
         const client = c;
         let bannedUsers = []; // array for all banned users
         let logChannel; // var for action log channel(s)
-        const timezone = moment().tz(moment.tz.guess()).format(`z`); // server timezone
 
         // Find all uncompleted bans
         Models.ban.findAll({where: {completed: false},raw:true}).then((data) => {
