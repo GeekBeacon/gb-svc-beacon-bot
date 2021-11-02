@@ -191,7 +191,7 @@ module.exports = {
             ###########################################
             */
             // Ask the user for the channel the announcement should be posted to then assign the resolved promise's value to the channel of the announcement
-            announcement.scheduled_date = await message.reply(`When would you like this announcement to be posted?\n**Please use a valid ISO 8601 or RFC 2822 date time format!**`).then(() => {
+            announcement.scheduled_date = await message.reply(`When would you like this announcement to be posted?\n**Please use a valid ISO 8601 or RFC 2822 date time format and use your own timezone as this will be converted to UTC for you automatically!**`).then(() => {
                 // Listen for the response (5 min wait) and return it
                 return message.channel.awaitMessages({filter: dateFilter, max: 1, time: 300000, errors:["time"]}).then(res => {
                     // Make sure res is valid
@@ -251,11 +251,11 @@ module.exports = {
 
                 // If the user wanted to be the author set it to their display name and avatar
                 if(announcement.show_author === true) {
-                    announceEmbed.setAuthor(message.member.displayName, message.member.displayAvatarURL());
+                    announceEmbed.setAuthor(message.member.displayName, message.member.displayAvatarURL({dynamic:true}));
 
                 // If the user didn't want to be the author set to the bot's display name and avatar
                 } else {
-                    announceEmbed.setAuthor(message.guild.me.displayName, message.guild.me.displayAvatarURL());
+                    announceEmbed.setAuthor(message.guild.me.displayName, message.guild.me.displayAvatarURL({dynamic:true}));
                 }
 
             // Send the announceEmbed to the user for them to validate it
@@ -285,7 +285,28 @@ module.exports = {
                         // If the user confirms it is correct add it to the DB
                         if(res.first().content === "yes") {
                             
-                           //Add to db
+                            /* 
+                            * Sync the model to the table
+                            * Creates a new table if table doesn't exist, otherwise just inserts a new row
+                            * id, createdAt, and updatedAt are set by default; DO NOT ADD
+                            !!!!
+                                Keep force set to false otherwise it will overwrite the table instead of making a new row!
+                            !!!!
+                            */
+                            Models.announcement.sync({ force: false }).then(() => {
+                                Models.announcement.create({
+                                    title: announcement.title,
+                                    body: announcement.body,
+                                    author: announcement.author,
+                                    server: message.guildId,
+                                    show_author: announcement.show_author,
+                                    channel: announcement.channel,
+                                    post_at: announcement.scheduled_date,
+                                    reactions: announcement.reactions
+                                }).then((data) => {
+                                    message.reply(`Your announcement was successfully created!\n**Announcement id: **\`\`${data.id}\`\``);
+                                })
+                            })
 
                         // If the user confirms it is incorrect, ask them to redo the command
                         } else {

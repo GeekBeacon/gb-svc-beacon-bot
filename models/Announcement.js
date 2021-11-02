@@ -22,6 +22,11 @@ const Announcement = sequelize.define('announcement', {
         type: Sequelize.TEXT,
         allowNull: false
     },
+    // Create the required server text column
+    server: {
+        type: Sequelize.TEXT,
+        allowNull: false
+    },
     // Create the required show_author bool column
     show_author: {
         type: Sequelize.BOOLEAN,
@@ -41,6 +46,11 @@ const Announcement = sequelize.define('announcement', {
     reactions: {
         type: Sequelize.TEXT,
         allowNull: true
+    },
+    // Create the posted bool column
+    posted: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
     }
 }, {
     charset: 'utf8mb4',

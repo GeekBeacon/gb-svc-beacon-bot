@@ -1,5 +1,6 @@
 // Import the required files
 const moment = require("moment");
+const Discord = require('discord.js');
 const TriggersController = require("./TriggersController");
 const AutorolesController = require("./AutorolesController");
 const JoinableRolesController = require("./JoinableRolesController");
@@ -448,5 +449,80 @@ module.exports = {
                 return;
             }
         });
+
+
+        /*
+        #################################
+        ###### ANNOUNCEMENTS CHECK ######
+        #################################
+        */
+        // Find all unposted announcements
+        Models.announcement.findAll({where: {posted: false},raw:true}).then((data) => {
+            if(data) {
+
+                // Loop throught the data
+                data.forEach(async (announcement) => {
+                    const currentTime = new Date();
+
+                    // Make sure the mute hasn't already been completed
+                    if(moment(announcement.post_at).isSameOrBefore(moment(currentTime))) {
+                        const channel = client.channels.cache.get(announcement.channel); //get the channel
+                        const server = client.guilds.cache.get(announcement.server); //get the server
+
+                        // Create the embed
+                        let announceEmbed = new Discord.MessageEmbed()
+                            .setColor(`#551CFF`)
+                            .setTitle(announcement.title)
+                            .setDescription(announcement.body)
+                            .setTimestamp(new Date());
+
+                        // If the user wanted to be the author set it to their display name and avatar
+                        if(announcement.show_author == true) {
+                            let author;
+
+                            // Attempt to find the author
+                            try {
+                                // If able to find an author by the id, assign to author var
+                                author = await server.members.fetch(announcement.author);
+                            } catch(e) {
+                                // If unable to find author then set to bot
+                                author = server.me;
+                            }
+
+                            announceEmbed.setAuthor(author.displayName, author.displayAvatarURL({dynamic:true}));
+
+                        // If the user didn't want to be the author set to the bot's display name and avatar
+                        } else {
+                            announceEmbed.setAuthor(server.me.displayName, server.me.displayAvatarURL({dynamic:true}));
+                        }
+
+                        channel.send({embeds: [announceEmbed]}).then((msg) => {
+
+                            // If reactions were given
+                            if(announcement.reactions !== null) {
+                                // Attempt to react to announceMsg
+                                try {
+                                    // Convert the reactions string to an array
+                                    const reactionArr = announcement.reactions.split(",");
+
+                                    // Loop through the array and react with the reactions in order given
+                                    reactionArr.forEach(async (reaction) => {
+                                        await msg.react(reaction)
+                                    })
+                                // Catch and log any errors
+                                } catch(e) {
+                                    console.error("One of the emojis from the announcement builder failed to react!", e)
+                                }
+                            }
+
+                            // Update the posted field for the announcement
+                            Models.announcement.update({posted: 1}, {where: {id: announcement.id}});
+                        })
+                    }
+                })
+
+
+            }
+        })
     }
 }
