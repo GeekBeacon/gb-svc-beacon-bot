@@ -10,7 +10,6 @@ config.*
 website/build
 .env
 data
-.docusaurus/
 build
 .idea
 .history

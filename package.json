@@ -4,16 +4,10 @@
   "description": "Custom Discord bot for GeekBeacon",
   "main": "index.js",
   "scripts": {
-    "start": "docusaurus start",
-    "build": "docusaurus build",
-    "swizzle": "docusaurus swizzle",
-    "deploy": "docusaurus deploy"
   },
   "author": "Toby Horn (Kankuro)",
   "license": "ISC",
   "dependencies": {
-    "@docusaurus/core": "^2.0.0-beta.4",
-    "@docusaurus/preset-classic": "^2.0.0-beta.4",
     "classnames": "^2.2.6",
     "discord.js": "^13.1.0",
     "discord.js-pagination": "^1.0.3",

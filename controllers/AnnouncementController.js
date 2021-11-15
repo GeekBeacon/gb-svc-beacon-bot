@@ -320,6 +320,48 @@ module.exports = {
 
         // Function to handle viewing an announcement
         function viewAnnounce() {
+            let user; //user var
+
+            if(args.length === 3) {
+                // If the user is searching by author
+                if(args[1].toLowerCase() === "author" || args[1].toLowerCase() === "a" || args[1].toLowerCase() === "creator" || args[1].toLowerCase() === "c") {
+                    // Check for user by id
+                    if(!isNaN(args[2])) {
+                        // If invalid id let the user know
+                        if(message.guild.members.cache.get(args[2]) === undefined) {
+                            return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
+
+                        // If user found, assign it to the user var
+                        } else {
+                            user = message.guild.members.cache.get(args[2]);
+                        }
+                    // Check if a user mention was given
+                    } else if (args[2].startsWith("<@")) {
+                        user = message.mentions.members.first(); // get user tag
+                        if(!user) {
+                            // Let the user know they provided an invalid user mention
+                            return message.reply(`Uh oh! Looks like you gave an invalid user mention. Make sure that you are mentioning a valid user!`);
+                        }
+                    } else {
+                        // Let user know they need to provide a user mention or a valid user id
+                        return message.reply(`Uh oh! You must provide me with a user mention or id so I know the announcement(s) to look for!`);
+                    }
+                // If the user is searching by announcement id
+                } else if (args[1].toLowerCase() === "id" || args[1].toLowerCase() === "i") {
+                    // If the user provided a valid id
+                    if(!isNaN(args[2])) {
+                        
+                        // find announce by id
+                    
+                    // If the user provided an invalid id let them know
+                    } else {
+                        message.reply(`Uh oh! You provided me with an invalid id, please make sure you are using numeric characters only!`);
+                    }
+                }
+            } else {
+                // Let the user know that they must provide 
+                return message.reply(`Uh oh! It seems that you didn't tell me how you are searching for the announcement. Please let me know if you are searching by the author, the announcement id, or recent announcements!\nExamples: \n\`\`${prefix}announce view author @${message.member.displayName}\`\`\n\`\`${prefix}announce view author ${message.author.id}\`\`\n\`\`${prefix}announce view id 123\`\``)
+            }
             
         }
 
