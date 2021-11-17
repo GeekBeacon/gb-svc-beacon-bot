@@ -319,9 +319,11 @@ module.exports = {
         }
 
         // Function to handle viewing an announcement
-        function viewAnnounce() {
-            let user; //user var
+        async function viewAnnounce() {
+            let user;
+            let announcement = {};
 
+            // Ensure 3 args were given; "view", author or id, and the user/user id or announcement id
             if(args.length === 3) {
                 // If the user is searching by author
                 if(args[1].toLowerCase() === "author" || args[1].toLowerCase() === "a" || args[1].toLowerCase() === "creator" || args[1].toLowerCase() === "c") {
@@ -337,7 +339,7 @@ module.exports = {
                         }
                     // Check if a user mention was given
                     } else if (args[2].startsWith("<@")) {
-                        user = message.mentions.members.first(); // get user tag
+                        user = message.mentions.members.first(); // get user
                         if(!user) {
                             // Let the user know they provided an invalid user mention
                             return message.reply(`Uh oh! Looks like you gave an invalid user mention. Make sure that you are mentioning a valid user!`);
@@ -350,13 +352,33 @@ module.exports = {
                 } else if (args[1].toLowerCase() === "id" || args[1].toLowerCase() === "i") {
                     // If the user provided a valid id
                     if(!isNaN(args[2])) {
-                        
-                        // find announce by id
+                        //
+                        await Models.announcement.findOne({where: {id:args[2]}, raw:true}).then((announce) => {
+                            // Make sure an announcement was found
+                            if(announce) {
+                                announcement = announce;
+                            }
+                        });
                     
                     // If the user provided an invalid id let them know
                     } else {
                         message.reply(`Uh oh! You provided me with an invalid id, please make sure you are using numeric characters only!`);
                     }
+                }
+
+                // Check if there is a user or announcement that was found
+                if(user || announcement) {
+                    // VIEW ANNOUNCEMENTS
+                }
+                // Check if the user provided only 2 arguments
+            } else if(args.length === 2) {
+                // Make sure the user provided "recent" as the 2nd arg
+                if(args[1].toLowerCase() === "recent") {
+                    // RECENT ANNOUNCEMENTS
+
+                // If the user didn't provide a valid input format, let them know
+                } else {
+                    return message.reply(`Uh oh! It looks like you didn't use the command properly, please refer to \`\`${prefix}help announce\`\` for more info!`);
                 }
             } else {
                 // Let the user know that they must provide 
