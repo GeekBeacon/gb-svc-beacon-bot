@@ -103,7 +103,13 @@ module.exports = {
                 };
             // If not a trigger word/phrase, a blacklisted domain, or a bot message then call the experience controller to give experience.
             } else {
-                PointsController.givePoints(message, client);
+                
+                // Exclude PokeTwo bot commands
+                if(message.content.startsWith("p!")) {
+                    return;
+                } else {
+                    PointsController.givePoints(message, client);
+                }
             };
 
             // If the message starts with the prefix then continue

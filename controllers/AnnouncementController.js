@@ -43,6 +43,7 @@ module.exports = {
                 show_author: null,
                 channel: null,
                 scheduled_date: null,
+                poll: null,
                 reactions: null,
 
             };
@@ -236,16 +237,53 @@ module.exports = {
                 });
             })
 
+            /*
+            ####################################
+            ############### POLL ###############
+            ####################################
+            */
+            // Ask the user if they want to be the auther of the announcement or not then assign the resolved promise's value to the poll of the announcement
+            announcement.poll = await message.reply(`Is this announcement going to be used as a poll?`).then(() => {
+                // Listen for the response (30 sec wait) and return it
+                return message.channel.awaitMessages({filter: yesNoFilter, max: 1,  time: 30000, errors:["time"]}).then(res => {
+                    // Make sure res is valid
+                    if(res) {
+                        const answer = res.first().content;
+                        
+                        if(answer.toLowerCase() === "no") {
+                            return false;
+                        } else if (answer.toLowerCase() === "yes") {
+                            return true;
+                        }
+                    }
+                // If the user goes idle for 10 seconds let them know they timed out
+                }).catch(e => {
+                    message.reply(`Uh oh! It seems that you got distracted, please try again!`)
+                });
+            })
+
             announcement.author = message.author.id;
             const postChannel = await message.guild.channels.fetch(announcement.channel);
+            let poll;
+            let announcementType;
+
+            // Set type and poll based on whether the announcement is a poll or not
+            if(announcement.poll === true) { 
+                poll = "Yes"; 
+                announcementType = "poll";
+            } else { 
+                poll = "No";
+                announcementType = "announcement";
+            }
 
             // Create the announcement embed
             let announceEmbed = new Discord.MessageEmbed()
                 .setColor(`#551CFF`)
                 .setTitle(announcement.title)
                 .setDescription(announcement.body)
-                .addField("Post Date", `${Discord.Formatters.time(new Date(announcement.scheduled_date), "f")} (${Discord.Formatters.time(new Date(announcement.scheduled_date), "R")})`, true)
+                .addField("Post Date", `${Discord.Formatters.time(new Date(announcement.scheduled_date), "f")} (${Discord.Formatters.time(new Date(announcement.scheduled_date), "R")})`, false)
                 .addField("Channel", `${postChannel}`, true)
+                .addField("Poll", `${poll}`, true)
                 .setTimestamp(new Date());
 
 
@@ -259,7 +297,7 @@ module.exports = {
                 }
 
             // Send the announceEmbed to the user for them to validate it
-            message.reply({content: `Here is your announcement, is this correct?`, embeds: [announceEmbed]}).then((announceMsg) =>{
+            message.reply({content: `Here is your ${announcementType}, is this correct?`, embeds: [announceEmbed]}).then((announceMsg) =>{
 
                 // If reactions were given
                 if(announcement.reactions !== null) {
@@ -274,7 +312,7 @@ module.exports = {
                         })
                     // Catch and log any errors
                     } catch(e) {
-                        console.error("One of the emojis from the announcement builder failed to react!", e)
+                        console.error(`One of the emojis from the ${announcementType} builder failed to react!`, e)
                     }
                 }
 
@@ -302,9 +340,10 @@ module.exports = {
                                     show_author: announcement.show_author,
                                     channel: announcement.channel,
                                     post_at: announcement.scheduled_date,
-                                    reactions: announcement.reactions
+                                    reactions: announcement.reactions,
+                                    poll: announcement.poll
                                 }).then((data) => {
-                                    message.reply(`Your announcement was successfully created!\n**Announcement id: **\`\`${data.id}\`\``);
+                                    message.reply(`Your ${announcementType} was successfully created!\n**${announcementType} id: **\`\`${data.id}\`\``);
                                 })
                             })
 
@@ -368,13 +407,137 @@ module.exports = {
 
                 // Check if there is a user or announcement that was found
                 if(user || announcement) {
-                    // VIEW ANNOUNCEMENTS
+                    // If a user was found, then get the user's announcements
+                    if(user) {
+
+                        // Find all of the announcements by the user given
+                        Models.announcement.findAll({where: {author: user.user.id}, order:[["createdAt", "DESC"]], raw:true}).then(async (announcements) => {
+                            // Ensure announcements were found
+                            if(announcements) {
+                                const postChannel = await message.guild.channels.fetch(announcements[0].channel);
+                                let poll; //poll string var
+
+                                // Set the poll bool to be more reader friendly
+                                if(announcements[0].poll === 1) {
+                                    poll = "True";
+                                } else {
+                                    poll = "False";
+                                }
+
+                                // Create the announcement embed
+                                let announceEmbed = new Discord.MessageEmbed()
+                                    .setColor(`#551CFF`)
+                                    .setTitle(`${user.displayName}'s Announcements`)
+                                    .setDescription(`Newest announcement **(ID: \`\`${announcements[0].id}\`\`)**:\n*${announcements[0].title}*`)
+                                    .addField("Created", `${Discord.Formatters.time(announcements[0].createdAt, "f")} (${Discord.Formatters.time(announcements[0].createdAt, "R")})`)
+                                    .addField("Post Date", `${Discord.Formatters.time(announcements[0].post_at, "f")} (${Discord.Formatters.time(announcements[0].post_at, "R")})`, false)
+                                    .addField("Channel", `${postChannel}`, true)
+                                    .addField("Poll", `${poll}`, true)
+
+                                // If there is more than 1 announcement by this user append the ids of the other announcements
+                                if(announcements.length > 1) {
+                                    let announcementIds = []; //id array
+
+                                    // Add each announcments' id to the array
+                                    announcements.forEach((announcement) => {
+                                        // Make sure the current iteration isn't the same as the first announcement
+                                        if(announcement.id !== announcements[0].id) {
+                                            // Add the id to the id array
+                                            announcementIds.push(`\`\`${announcement.id}\`\``)
+                                        // If iteration is the same as the first announcement then skip it
+                                        } else {
+                                            return;
+                                        }
+                                    })
+
+                                    // Add the ids field to the embed
+                                    announceEmbed.addField("Other Announcements' Ids", `${announcementIds.toString()}`, false)
+                                }
+
+                                // Send the announcement embed
+                                message.channel.send({embeds: [announceEmbed]});
+                            }
+                        })
+
+                    // If an announcement was found then get the announcement
+                    } else if (announcement) {
+                        // Find the announcement in the db
+                        Models.announcement.findOne({where: {id: announcement.id}, raw: true}).then(async (data) => {
+                            // Ensure the announcement was found
+                            if(data) {
+                                const postChannel = await message.guild.channels.fetch(announcement.channel);
+                                let poll, showAuthor; //poll string var
+                                const author = message.guild.members.cache.get(announcement.author);
+
+                                // Set the poll bool to be more reader friendly
+                                if(announcement.poll === 1) {
+                                    poll = "True";
+                                } else {
+                                    poll = "False";
+                                }
+
+                                // Set the showAuthor bool to be more reader friendly
+                                if(announcement.show_author === 1) {
+                                    showAuthor = "True";
+                                } else {
+                                    showAuthor = "False";
+                                }
+
+                                // Create the announcement embed
+                                let announceEmbed = new Discord.MessageEmbed()
+                                    .setColor(`#551CFF`)
+                                    .setTitle(`${announcement.title}`)
+                                    .setDescription(`${announcement.body}`)
+                                    .addField("Author", `${author}`, true)
+                                    .addField("Channel", `${postChannel}`, true)
+                                    .addField("Poll", `${poll}`, true)
+                                    .addField(`Show Author`, `${showAuthor}`, true)
+                                    .addField(`Reactions`, `${announcement.reactions.replace(/,/g, ` `)}`, true) //replace commas in string with spaces
+                                    .addField("Created", `${Discord.Formatters.time(announcement.createdAt, "f")} (${Discord.Formatters.time(announcement.createdAt, "R")})`, false)
+                                    .addField("Updated", `${Discord.Formatters.time(announcement.updatedAt, "f")} (${Discord.Formatters.time(announcement.updatedAt, "R")})`, false)
+                                    .addField("Post Date", `${Discord.Formatters.time(announcement.post_at, "f")} (${Discord.Formatters.time(announcement.post_at, "R")})`, false)
+
+                                // Send the announcement embed
+                                message.channel.send({embeds: [announceEmbed]});
+                            }
+                        })
+                    }
                 }
                 // Check if the user provided only 2 arguments
             } else if(args.length === 2) {
                 // Make sure the user provided "recent" as the 2nd arg
                 if(args[1].toLowerCase() === "recent") {
-                    // RECENT ANNOUNCEMENTS
+                    // Find the 10 most recent announcements
+                    Models.announcement.findAll({order:[['createdAt', 'DESC']],limit:10,raw:true}).then((announcements) => {
+                        // Ensure announcements were found
+                        if(announcements) {
+                            // Create the embed
+                            let announceEmbed = new Discord.MessageEmbed()
+                                .setColor(`#551CFF`)
+                                .setTitle(`10 Most Recent Announcements/Polls Created`)
+                                .setDescription(`To see more detailed information about an announcement, view that specific announcement via \`${prefix}announcement view id <id>\`!`)
+                                .setTimestamp(new Date());
+
+                            // Loop through the announcements
+                            announcements.forEach((item) => {
+                                let poll; //poll bool var
+                                const author = message.guild.members.cache.get(item.author); //get the author
+
+                                // Set the poll bool to be more reader friendly
+                                if(item.poll === 1) {
+                                    poll = "True";
+                                } else {
+                                    poll = "False";
+                                }
+
+                                // Add the data to a new field in the embed
+                                announceEmbed.addField(`Id: ${item.id} - ${item.title}`, `Author: ${author}\nCreated: ${Discord.Formatters.time(item.createdAt, "f")} (${Discord.Formatters.time(item.createdAt, "R")})\nPost Date: ${Discord.Formatters.time(item.post_at, "f")} (${Discord.Formatters.time(item.post_at, "R")})\nPoll: ${poll}`)
+                            })
+
+                            // Send the embed
+                            message.channel.send({embeds:[announceEmbed]});
+                        }
+                    })
 
                 // If the user didn't provide a valid input format, let them know
                 } else {
@@ -384,7 +547,6 @@ module.exports = {
                 // Let the user know that they must provide 
                 return message.reply(`Uh oh! It seems that you didn't tell me how you are searching for the announcement. Please let me know if you are searching by the author, the announcement id, or recent announcements!\nExamples: \n\`\`${prefix}announce view author @${message.member.displayName}\`\`\n\`\`${prefix}announce view author ${message.author.id}\`\`\n\`\`${prefix}announce view id 123\`\``)
             }
-            
         }
 
         // Function to handle editing an announcement

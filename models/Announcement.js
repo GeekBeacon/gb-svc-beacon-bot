@@ -42,6 +42,11 @@ const Announcement = sequelize.define('announcement', {
         type: Sequelize.DATE,
         allowNull: false
     },
+    // Create the poll bool column
+    poll: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false
+    },
     // Create required reactions TEXT column
     reactions: {
         type: Sequelize.TEXT,
