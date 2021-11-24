@@ -3,8 +3,7 @@
   "version": "2.1.1",
   "description": "Custom Discord bot for GeekBeacon",
   "main": "index.js",
-  "scripts": {
-  },
+  "scripts": {},
   "author": "Toby Horn (Kankuro)",
   "license": "ISC",
   "dependencies": {
