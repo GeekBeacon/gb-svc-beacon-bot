@@ -359,8 +359,8 @@ module.exports = {
 
         // Function to handle viewing an announcement
         async function viewAnnounce() {
-            let user;
-            let announcement = {};
+            let user = null;
+            let announcement = null;
 
             // Ensure 3 args were given; "view", author or id, and the user/user id or announcement id
             if(args.length === 3) {
@@ -396,6 +396,8 @@ module.exports = {
                             // Make sure an announcement was found
                             if(announce) {
                                 announcement = announce;
+                            } else {
+                                return message.reply(`Uh oh! It seems there is no announcement with that id! Please try again.`)
                             }
                         });
                     
@@ -403,6 +405,9 @@ module.exports = {
                     } else {
                         message.reply(`Uh oh! You provided me with an invalid id, please make sure you are using numeric characters only!`);
                     }
+                // If the user gave 3 args but they weren't recognized as being valid
+                } else {
+                    return message.reply(`Uh oh! It looks like you didn't use the command properly, please refer to \`\`${prefix}help announce\`\` for more info!`);
                 }
 
                 // Check if there is a user or announcement that was found
@@ -413,7 +418,7 @@ module.exports = {
                         // Find all of the announcements by the user given
                         Models.announcement.findAll({where: {author: user.user.id}, order:[["createdAt", "DESC"]], raw:true}).then(async (announcements) => {
                             // Ensure announcements were found
-                            if(announcements) {
+                            if(announcements.length) {
                                 const postChannel = await message.guild.channels.fetch(announcements[0].channel);
                                 let poll; //poll string var
 
@@ -456,11 +461,15 @@ module.exports = {
 
                                 // Send the announcement embed
                                 message.channel.send({embeds: [announceEmbed]});
+                            // If the author wasn't found in the db let the user know
+                            } else {
+                                return message.reply(`It seems that the user you provided hasn't created any announcements!`)
                             }
                         })
 
                     // If an announcement was found then get the announcement
                     } else if (announcement) {
+
                         // Find the announcement in the db
                         Models.announcement.findOne({where: {id: announcement.id}, raw: true}).then(async (data) => {
                             // Ensure the announcement was found
@@ -503,14 +512,14 @@ module.exports = {
                         })
                     }
                 }
-                // Check if the user provided only 2 arguments
+                // Check if the user provided 2 arguments
             } else if(args.length === 2) {
                 // Make sure the user provided "recent" as the 2nd arg
                 if(args[1].toLowerCase() === "recent") {
                     // Find the 10 most recent announcements
                     Models.announcement.findAll({order:[['createdAt', 'DESC']],limit:10,raw:true}).then((announcements) => {
                         // Ensure announcements were found
-                        if(announcements) {
+                        if(announcements.length) {
                             // Create the embed
                             let announceEmbed = new Discord.MessageEmbed()
                                 .setColor(`#551CFF`)
@@ -536,6 +545,9 @@ module.exports = {
 
                             // Send the embed
                             message.channel.send({embeds:[announceEmbed]});
+                        // If no announcements were found let the user know
+                        } else {
+                            message.reply(`It seems there are no announcements currently!`)
                         }
                     })
 
@@ -556,8 +568,110 @@ module.exports = {
 
         // Function to handle deleting an announcement
         function deleteAnnounce() {
-            
-        }
+            // Ensure the user provided at least 2 args
+            if(args.length > 1) {
+                // Ensure the id is a numeric value
+                if(!isNaN(args[1])) {
 
+                // Search for the announcement in the db
+                Models.announcement.findOne({where: {id:args[1]}, raw:true}).then(async (item) => {
+                    // Ensure data was found
+                    if(item) {
+
+                        // Create a filter for the confirmation question
+                        const yesNoFilter = m => {
+                            // If user says "yes" or "no" then return true
+                            if(m.author.id === message.author.id && (m.content.toLowerCase() === "yes" || m.content.toLowerCase() === "no")) {
+                                return true;
+                            }
+                        }
+
+                        const postChannel = await message.guild.channels.fetch(item.channel);
+                        let poll, showAuthor; //poll string var
+                        const author = message.guild.members.cache.get(item.author);
+
+                        // Set the poll bool to be more reader friendly
+                        if(item.poll === 1) {
+                            poll = "True";
+                        } else {
+                            poll = "False";
+                        }
+
+                        // Set the showAuthor bool to be more reader friendly
+                        if(item.show_author === 1) {
+                            showAuthor = "True";
+                        } else {
+                            showAuthor = "False";
+                        }
+
+                        let reactions;
+                        
+                        if(item.reactions) {
+                            reactions = item.reactions.replace(/,/g, ` `);
+                        } else {
+                            reactions = "None";
+                        }
+
+                        // Create the announcement embed
+                        let announceEmbed = new Discord.MessageEmbed()
+                            .setColor(`#551CFF`)
+                            .setTitle(`${item.title}`)
+                            .setDescription(`${item.body}`)
+                            .addField("Author", `${author}`, true)
+                            .addField("Channel", `${postChannel}`, true)
+                            .addField("Poll", `${poll}`, true)
+                            .addField(`Show Author`, `${showAuthor}`, true)
+                            .addField(`Reactions`, `${reactions}`, true) //replace commas in string with spaces
+                            .addField("Created", `${Discord.Formatters.time(item.createdAt, "f")} (${Discord.Formatters.time(item.createdAt, "R")})`, false)
+                            .addField("Updated", `${Discord.Formatters.time(item.updatedAt, "f")} (${Discord.Formatters.time(item.updatedAt, "R")})`, false)
+                            .addField("Post Date", `${Discord.Formatters.time(item.post_at, "f")} (${Discord.Formatters.time(item.post_at, "R")})`, false)
+
+
+                        // Show the user the announcement and verify that they wish to delete it
+                        message.reply({content: `Here is your announcement, are you sure you wish to delete it?\n**IMPORTANT: THIS CANNOT BE UNDONE!**`, embeds: [announceEmbed]}).then(() => {
+                            // Listen for the response (30 sec wait) and return it
+                            return message.channel.awaitMessages({filter: yesNoFilter, max: 1,  time: 30000, errors:["time"]}).then(res => {
+                                // Make sure res is valid
+                                if(res) {
+                                    const answer = res.first().content; //response
+                                    // If the user deicded not to delete the announcement let them know it was canceled
+                                    if(answer.toLowerCase() === "no") {
+                                        return message.reply(`Okay! I have not removed this announcement!`);
+
+                                    // If the user still wants to proceed with deleting the announcement
+                                    } else if (answer.toLowerCase() === "yes") {
+
+                                        // Delete the announcement from the db
+                                        Models.announcement.destroy({
+                                            where: {
+                                                id: item.id
+                                            }
+                                        // Let the user know it was removed
+                                        }).then(() => {
+                                            message.reply(`I have successfully removed the above announcement!`);
+                                        });
+                                    }
+                                }
+                            // If the user goes idle for 30 seconds let them know they timed out
+                            }).catch(e => {
+                                message.reply(`Uh oh! It seems that you got distracted, please try again!`)
+                            });
+                        })
+
+                    // If no announcement was found let the user know
+                    } else {
+                        return message.reply(`Uh oh! It seems there is no announcement in the database with that id, please try again or use the view subcommand of the announcement command to find the announcement!`)
+                    }
+                })
+
+                // If the id isn't a numeric value let the user know
+                } else {
+                    return message.reply(`Uh oh! It seems that you provided me with an invalid id type. Ids are numeric only, please try again or use the view subcommand of the announcement command to find the id.`)
+                }
+            // If not enough args were provided let the user know
+            } else {
+                return message.reply(`Uh oh! It seems that you didn't provide me with the id of the announcement you wish to delete. Please use the view subcommend of announcement if you aren't sure of the id.`);
+            }
+        }
     },
 }
