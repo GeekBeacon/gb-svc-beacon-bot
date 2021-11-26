@@ -6,6 +6,7 @@ const Command = require("./Command");
 const JoinableRole = require("./JoinableRole");
 const Kick = require("./Kick");
 const Mute = require("./Mute");
+const ReactionRole = require("./ReactionRole");
 const Setting = require("./Setting");
 const TempChannel = require("./TempChannel");
 const Trigger = require("./Trigger");
@@ -23,6 +24,7 @@ module.exports = {
     joineableRole : JoinableRole,
     kick : Kick,
     mute : Mute,
+    reactionrole : ReactionRole,
     setting : Setting,
     tempchannel : TempChannel,
     trigger : Trigger,
