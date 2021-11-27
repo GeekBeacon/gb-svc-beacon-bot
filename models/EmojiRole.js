@@ -6,9 +6,14 @@ const {db_name, db_host, db_port, db_user, db_pass} = require("../config");
 const sequelize = new Sequelize(`mysql://${db_user}:${db_pass}@${db_host}:${db_port}/${db_name}`, {logging: false});
 
 // Create a reactionrole model/table
-const ReactionRole = sequelize.define('reactionrole', {
-    // Create required role string column
-    role: {
+const EmojiRole = sequelize.define('emojirole', {
+    // Create required post_id string column
+    post_id: {
+        type: Sequelize.STRING,
+        allowNull: false
+    },
+    // Create required role_id string column
+    role_id: {
         type: Sequelize.STRING,
         allowNull: false
     },
@@ -23,4 +28,4 @@ const ReactionRole = sequelize.define('reactionrole', {
     collate: 'utf8mb4_bin',
 });
 
-module.exports = ReactionRole;
+module.exports = EmojiRole;

@@ -3,7 +3,7 @@ const EmojiRoleController = require("../../controllers/EmojiRoleController");
 
 module.exports = {
     name: 'emojirole',
-    description: 'Add or remove a role to the role reaction post.\nIf there is no reaction role post type ``{prefix}announcement create emojirole`` **(requires admin permissions)**.',
+    description: 'Create the initial post for emoji roles or add/remove a role to the existing emoji roles post.',
     aliases: ['reactionrole', `reactrole`],
     cooldown: 5,
     enabled: true,
@@ -12,7 +12,7 @@ module.exports = {
     admin: true,
     usage: "<add | remove>",
     execute(message, args, client) { 
-        const subcommands = ['add', 'remove']; //list of accepted subcommands
+        const subcommands = ['create', 'add', 'remove']; //list of accepted subcommands
         const prefix = client.settings.get("prefix");
         
         // If the user provided a valid subcommand call the emojiRoleHandler function from the EmojiRoleController

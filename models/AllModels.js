@@ -3,10 +3,10 @@ const AutoRole = require("./AutoRole");
 const Ban = require("./Ban");
 const BannedUrl = require("./BannedUrl");
 const Command = require("./Command");
+const EmojiRole = require("./EmojiRole");
 const JoinableRole = require("./JoinableRole");
 const Kick = require("./Kick");
 const Mute = require("./Mute");
-const ReactionRole = require("./ReactionRole");
 const Setting = require("./Setting");
 const TempChannel = require("./TempChannel");
 const Trigger = require("./Trigger");
@@ -20,11 +20,11 @@ module.exports = {
     autorole : AutoRole,
     ban : Ban,
     bannedurl : BannedUrl,
-    command: Command,
+    command : Command,
+    emojirole : EmojiRole,
     joineableRole : JoinableRole,
     kick : Kick,
     mute : Mute,
-    reactionrole : ReactionRole,
     setting : Setting,
     tempchannel : TempChannel,
     trigger : Trigger,
