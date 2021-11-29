@@ -7,6 +7,11 @@ const sequelize = new Sequelize(`mysql://${db_user}:${db_pass}@${db_host}:${db_p
 
 // Create a reactionrole model/table
 const EmojiRole = sequelize.define('emojirole', {
+    // Create required channel_id string column
+    channel_id: {
+        type: Sequelize.STRING,
+        allowNull: false
+    },
     // Create required post_id string column
     post_id: {
         type: Sequelize.STRING,

@@ -23,10 +23,37 @@ module.exports = {
         }
 
         // Function to create the initial post for emoji roles
-        function createPost() {
+        async function createPost() {
             // Make sure the user is an admin
             if(message.member.roles.cache.some(role => role.id === client.settings.get("admin_role_id")) || message.author.id === message.member.guild.ownerId) {
                 let roleEmojiArr = []; //array for all the roleEmojiObjs
+                let channelId;
+
+                const channelFilter = m => {
+                    // Ensure the user replied with ONLY a channel mention
+                    if(m.author.id === message.author.id && m.content.match(/(^<#[0-9]+>$)/)) {
+                        return true;
+                    // If the response wasn't just a channel mention let them know.
+                    } else if(m.author.id === message.author.id) {
+                        message.reply(`Uh oh! It seems that you didn't provide me with a channel to post to.\nPlease tag the channel you wish to post this announcement to.\nMake sure you are **only** replying with the channel object (\`\`#channel\`\`)!`)
+                    }
+                }
+
+
+                // Ask the user for the channel the announcement should be posted to then assign the resolved promise's value to the channel of the announcement
+                channelId = await message.reply(`Which channel would you like this post to be posted in?\nPlease be sure to tag it using \`\`#channel-name\`\`!`).then(() => {
+                    // Listen for the response (30 sec wait) and return it
+                    return message.channel.awaitMessages({filter: channelFilter, max: 1, time: 30000, errors:["time"]}).then(res => {
+                        // Make sure res is valid
+                        if(res) {
+                            // Return just the channel id from the channel object
+                            return res.first().content.replace(/[<#>]/g, ``)
+                        }
+                    // If the user goes idle for 30 seconds let them know they timed out
+                    }).catch(e => {
+                        message.reply(`Uh oh! It seems that you got distracted, please try again!`)
+                    });
+                })
 
                 // Get all roles from the joinables table in the db
                 Models.joineableRole.findAll({raw:true}).then(async (roles) => {
@@ -40,17 +67,17 @@ module.exports = {
                             const role = message.guild.roles.cache.find(role => role.name.toLowerCase().includes(item.role.toLowerCase()));
 
                             // Reaction filter
-                            const reactionFilter = m => {
-                                // Make sure the author is the same as the command user then continue when the user types "done"
-                                if(m.author.id === message.author.id && m.content.toLowerCase() === "done") {
+                            const reactionFilter = (r,u) => {
+                                // Make sure the author is the same as the command user
+                                if(r && u.id === message.author.id) {
                                     return true;
                                 }
                             }
 
                             // Ask the user for the channel the announcement should be posted to then assign the resolved promise's value to the channel of the announcement
-                            await message.reply(`Please tell me the reaction you wish to use for ${role.name}. Type \`\`done\`\` when completed!`).then(async (botMsg) => {
+                            await message.reply(`Please tell me the reaction you wish to use for ${role.name}. Type \`\`done\`\` when completed!\nNote: Only one emoji is accepted, the one in the first position!`).then(async (botMsg) => {
                                 // Listen for the response (5 min wait) and return it
-                                await message.channel.awaitMessages({filter: reactionFilter, max: 1, time: 300000, errors:["time"]}).then(res => {
+                                await botMsg.awaitReactions({filter: reactionFilter, max: 1, time: 300000, errors:["time"]}).then(() => {
 
                                     // Check if a user added any reactions
                                     if(botMsg.reactions.cache.size > 0) {
@@ -71,13 +98,94 @@ module.exports = {
                             })
                         }
 
+                        // Get the channel
+                        const channel = message.guild.channels.cache.get(channelId);
+
                         // Create the Embed
+                        let emojiRoleEmbed = new Discord.MessageEmbed()
+                            .setColor(`#551CFF`) //purple
+                            .setTitle(`Joinable Roles`)
+                            .setDescription(`Below are all of the roles that are currently joinable. Simply click on the corresponding reaction/emoji to join the role.\nAlternatively, you can click on it again to leave the role.\n\n*Note: If joined a role via the command, you can simply click on the emoji to add yourself to it and then click again to leave the role.*`)
+                            .addField(`Channel (this field won't be on the public post)`, `${channel}`, false)
+                        // Loop through each item in the roleEmojiArr
+                        roleEmojiArr.forEach((item) => {
+                            // Get the role object
+                            const role = message.guild.roles.cache.get(item.role_id);
+                            // Add a new field with the role and emoji
+                            emojiRoleEmbed.addField(`\u200B`, `**${role} - ${item.emoji}**`, false);
+                        });
+
+
+                        const yesNoFilter = m => {
+                            // If user says "yes" or "no" then return true
+                            if(m.author.id === message.author.id && (m.content.toLowerCase() === "yes" || m.content.toLowerCase() === "no")) {
+                                return true;
+                            }
+                        }
 
                         // Ask the user if the post looks correct
+                        message.channel.send({content: `Does this look correct to you? (Wait for the reactions to be added)`, embeds:[emojiRoleEmbed]}).then(async (msg) => {
 
-                        // If yes, add to DB
-                            // Then create the post
-                        // If no then cancel
+                            // Loop through the roleEmojiArr and add each reaction to the message
+                            roleEmojiArr.forEach((reaction) => {
+                                msg.react(`${reaction.emoji}`);
+                            });
+
+                             // Listen for the response (5 min wait) and return it
+                             await message.channel.awaitMessages({filter: yesNoFilter, max: 1, time: 300000, errors:["time"]}).then((res) => {
+                                
+                                // Get the user's response
+                                const answer = res.first().content;
+                        
+                                // If the user said it was incorrect, let them know to fix the problem(s)
+                                if(answer.toLowerCase() === "no") {
+                                    return res.first().reply(`Uh oh! Don't worry, I've not saved it, but please run the command again and correct the emojis that were incorrect.`);
+
+                                // If the user confirmed it was correct
+                                } else if (answer.toLowerCase() === "yes") {
+                                    let dbItems = []; //array for the ids of the newly created db rows
+                                    /* 
+                                    * Sync the model to the table
+                                    * Creates a new table if table doesn't exist, otherwise just inserts a new row
+                                    * id, createdAt, and updatedAt are set by default; DO NOT ADD
+                                    !!!!
+                                        Keep force set to false otherwise it will overwrite the table instead of making a new row!
+                                    !!!!
+                                    */
+                                    Models.emojirole.sync({ force: false }).then(() => {
+
+                                        // Loop through the roles array
+                                        roleEmojiArr.forEach((item) => {
+
+                                            // Create a new row for each role
+                                            Models.emojirole.create({
+                                                channel_id: channelId,
+                                                post_id: "temp",
+                                                role_id: item.role_id,
+                                                emoji: item.emoji,
+                                            }).then((dbItem) =>{
+                                                // Add the item of each new row to the dbItems array
+                                                dbItems.push(dbItem.id);
+                                            })
+                                        })
+                                    })
+                                    // Post the message
+                                    channel.send({embeds:[emojiRoleEmbed]}).then((postedMsg) => {
+                                        // Loop through the roleEmojiArr
+                                        roleEmojiArr.forEach((reaction) => {
+                                            // Add each reation to the message
+                                            postedMsg.react(`${reaction.emoji}`);
+
+                                            // Add the post id to each role added to the db; making sure all the data matches
+                                            Models.emojirole.update({post_id: postedMsg.id}, {where: {channel_id: channelId, role_id: reaction.role_id, emoji: reaction.emoji}});
+                                        });
+                                    })
+                                }
+                            // If the user goes idle for 5 mins let them know they timed out
+                            }).catch(e => {
+                                message.reply(`Uh oh! It seems that you got distracted, please try again!`)
+                            });
+                        })
                     }
                 })
             }

@@ -322,7 +322,6 @@ module.exports = {
                 .addField("Poll", `${poll}`, true)
                 .setTimestamp(new Date());
 
-
                 // If the user wanted to be the author set it to their display name and avatar
                 if(announcement.show_author === true) {
                     announceEmbed.setAuthor(message.member.displayName, message.member.displayAvatarURL({dynamic:true}));
