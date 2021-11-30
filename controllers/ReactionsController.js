@@ -1,11 +1,10 @@
 // Import required files
 const Models = require("../models/AllModels");
-const AnnouncementController = require("./AnnouncementController");
 
 // Create a new module export
 module.exports = {
 
-    reactionAdd: function(reaction, user) {
+    reactionAdd: function(reaction, user, emojiRolePosts) {
         const thxRegex = /\b([A-Za-z]*?thx*|thanks|ty*|thank\s*you*)\b/; //regex to look for different forms of thanks
         const uid = reaction.message.author.id; //get the id of the message's author
 
@@ -68,11 +67,38 @@ module.exports = {
                     })
                 })
             }
-        }
+        // If not a "thanks" emoji then check if it is an emojirole post
+        } else if(emojiRolePosts._posts.includes(reaction.message.id)){
 
+            if(user.bot === true) return; //if bot then ignore
+
+            // If a new reaction was added
+            if(reaction.count === 1) {
+                reaction.remove(); //remove the new reaction
+            // If the reaction exists
+            } else {
+                // Find the role in the db
+                Models.emojirole.findOne({where:{emoji: reaction.emoji.toString()}, raw:true}).then(async (item) => {
+                    // Ensure a role was found
+                    if(item) {
+                        const role = reaction.message.guild.roles.cache.get(item.role_id); //get the role
+                        const member = await reaction.message.guild.members.fetch(user.id); //get the member version of the user
+                        
+                        if(!role || !member) {
+                            return console.error(`There was a problem giving a user a role when they clicked the ${reaction.emoji.toString()} reaction on the following message: ${reaction.message.url}`); // If no role was found then trigger an error
+                        
+                        // If the role and member was found
+                        } else {
+                            // Give the role to the member
+                            member.roles.add(role);
+                        }
+                    }
+                })
+            }
+        }
     },
 
-    reactionRemove: function(reaction, user) {
+    reactionRemove: function(reaction, user, emojiRolePosts) {
         const thxRegex = /\b([A-Za-z]*?thx*|thanks|ty*|thank\s*you*)\b/; //regex to look for different forms of thanks
         const uid = reaction.message.author.id; //get the id of the message's author
 
@@ -126,6 +152,29 @@ module.exports = {
                     })
                 })
             }
+            
+        // If not a "thanks" emoji then check if it is an emojirole post
+        } else if(emojiRolePosts._posts.includes(reaction.message.id)){
+
+            if(user.bot === true) return; //if bot then ignore
+
+            // Find the role in the db
+            Models.emojirole.findOne({where:{emoji: reaction.emoji.toString()}, raw:true}).then(async (item) => {
+                // Ensure a role was found
+                if(item) {
+                    const role = reaction.message.guild.roles.cache.get(item.role_id); //get the role
+                    const member = await reaction.message.guild.members.fetch(user.id); //get the member version of the user
+                    
+                    if(!role || !member) {
+                        return console.error(`There was a problem removing a user a role when they clicked the ${reaction.emoji.toString()} reaction on the following message: ${reaction.message.url}`); // If no role was found then trigger an error
+                    
+                    // If the role and member was found
+                    } else {
+                        // Give the role to the member
+                        member.roles.remove(role);
+                    }
+                }
+            })
         }
     }
 }

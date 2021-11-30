@@ -193,8 +193,8 @@ module.exports = {
     },
 
     // Function for when bot starts up
-    botReconnect: function(tl, bu) {
-        let triggerList = tl, bannedUrls = bu;
+    botReconnect: function(tl, bu, erp) {
+        let triggerList = tl, bannedUrls = bu, emojiRolePosts = erp;
 
         /*
         ##################################
@@ -241,7 +241,7 @@ module.exports = {
         ######## populate blacklist ########
         ####################################
         */
-        // Get all rows of blacklisted urls and add them to the urlWhitelist list
+        // Get all rows of blacklisted urls and add them to the blacklistedDomains list
         Models.bannedurl.findAll().then((data) => {
             let blacklistedDomains = []; //array for blacklisted urls
 
@@ -254,6 +254,34 @@ module.exports = {
             bannedUrls.list = blacklistedDomains;
         }).catch((e) => {
              console.error("Error: "+e);
+        });
+
+        /*
+        ############################################
+        ######## populate emojirole post_id ########
+        ############################################
+        */
+        // Get all rows of emojiroles and add their post ids to the postIds arr
+        Models.emojirole.findAll().then((data) => {
+            let postIds = []; //array for post ids
+
+            // Loop through each item found and add it to the postsIds array
+            data.forEach((item) => {
+
+                // Check if the post_id was already added to the array
+                if(postIds.includes(item.get("post_id"))) {
+                    return; //ignore if so
+
+                // Add to the array if the id doesn't exist in it already
+                } else {
+                    postIds.push(item.get('post_id'));
+                }
+            });
+
+            // Add the list of postIds to the local copy
+            emojiRolePosts.posts = postIds;
+        }).catch((e) => {
+            console.error("Error: "+e);
         });
     },
 

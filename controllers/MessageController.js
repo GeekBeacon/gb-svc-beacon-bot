@@ -12,7 +12,7 @@ module.exports = {
     messageHandler: async function(m, c, tl, bu, ds, dbc) {
         // Create vars
         const message = m, client = c, triggerList = tl, bannedUrls = bu, deleteSet = ds, dbCmds = dbc;
-        let inModRole, inSuperRole, inAdminRole, isOwner;
+        let inModTraineeRole, inModRole, inSuperRole, inAdminRole, isOwner;
         let triggerArr = [];
         let bannedUrlArr = [];
         const prefix = client.settings.get("prefix"); //assign the prefix

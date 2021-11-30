@@ -46,10 +46,23 @@ class BannedDomainList {
         this._list = domains;
     }
 }
+// Create a class for emojirole post
+class EmojiRolePosts {
+    constructor() {
+        this._posts = [];
+    }
+    get posts() {
+        return this._data;
+    }
+    set posts(ids) {
+        this._posts = ids;
+    }
+}
 
 // Instantiate classes
 const triggerList = new TriggerList();
 const bannedUrls = new BannedDomainList();
+const emojiRolePosts = new EmojiRolePosts();
 
 // Create a new Set for deleted messages
 let deleteSet = new Set();
@@ -112,9 +125,9 @@ client.once('ready', async () => {
     // Set the status of the bot
     client.user.setPresence({activities: [{name: `${client.settings.get("prefix")}help`}], status: 'online'});
 
-    // Populate the triggerList and check for unbans/unmutes
+    // Populate the triggerList, bannedUrls, and emojiRolePosts and check for unbans/unmutes
     try {
-        databaseController.botReconnect(triggerList, bannedUrls);
+        databaseController.botReconnect(triggerList, bannedUrls, emojiRolePosts);
     } catch(e) {
         console.error("Error: ", e);
     }
@@ -270,17 +283,17 @@ client.on("messageReactionAdd", async (reaction, user) => {
         try {
             await reaction.fetch().then(() => {
                 // Call the reaction add handler from the reactions controller
-                reactionsController.reactionAdd(reaction, user);
+                reactionsController.reactionAdd(reaction, user, emojiRolePosts);
             });
         // Catch the error
         } catch(e) {
-            console.error("There was an error fetching the message from this reaction", error);
+            console.error("There was an error fetching the message from this reaction", e);
             return;
         }
     // If not a partial continue as normal
     } else {
         // Call the reaction add handler from the reactions controller
-        reactionsController.reactionAdd(reaction, user);
+        reactionsController.reactionAdd(reaction, user, emojiRolePosts);
     }
 });
 
@@ -292,7 +305,7 @@ client.on("messageReactionRemove", async (reaction, user) => {
         try {
             await reaction.fetch().then(() => {
                 // Call the reaction remove handler from the reactions controller
-                reactionsController.reactionRemove(reaction, user);
+                reactionsController.reactionRemove(reaction, user, emojiRolePosts);
             });
         // Catch the error
         } catch(e) {
@@ -302,7 +315,7 @@ client.on("messageReactionRemove", async (reaction, user) => {
     // If not a partial continue as normal
     } else {
         // Call the reaction remove handler from the reactions controller
-        reactionsController.reactionRemove(reaction, user);
+        reactionsController.reactionRemove(reaction, user, emojiRolePosts);
     }
 });
 

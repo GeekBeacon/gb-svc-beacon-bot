@@ -68,9 +68,17 @@ module.exports = {
 
                             // Reaction filter
                             const reactionFilter = (r,u) => {
+                                const thxRegex = /\b([A-Za-z]*?thx*|thanks|ty*|thank\s*you*)\b/; //regex to look for different forms of thanks
+
                                 // Make sure the author is the same as the command user
                                 if(r && u.id === message.author.id) {
-                                    return true;
+
+                                    // If a "thanks" emojis was used, reject it and let them know
+                                    if(r.emoji.name.toLowerCase().match(thxRegex) && r.emoji.guild.id === r.message.guildId) {
+                                        message.reply(`Uh oh! Looks like you tried to use an emoji reserved for the point system, please choose a different one!`);
+                                    } else {
+                                        return true;
+                                    }
                                 }
                             }
 
