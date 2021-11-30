@@ -110,7 +110,7 @@ module.exports = {
                         const channel = message.guild.channels.cache.get(channelId);
 
                         // Create the Embed
-                        let emojiRoleEmbed = new Discord.MessageEmbed()
+                        let confirmEmbed = new Discord.MessageEmbed()
                             .setColor(`#551CFF`) //purple
                             .setTitle(`Joinable Roles`)
                             .setDescription(`Below are all of the roles that are currently joinable. Simply click on the corresponding reaction/emoji to join the role.\nAlternatively, you can click on it again to leave the role.\n\n*Note: If joined a role via the command, you can simply click on the emoji to add yourself to it and then click again to leave the role.*`)
@@ -120,7 +120,7 @@ module.exports = {
                             // Get the role object
                             const role = message.guild.roles.cache.get(item.role_id);
                             // Add a new field with the role and emoji
-                            emojiRoleEmbed.addField(`\u200B`, `**${role} - ${item.emoji}**`, false);
+                            confirmEmbed.addField(`\u200B`, `**${role} - ${item.emoji}**`, false);
                         });
 
 
@@ -132,7 +132,7 @@ module.exports = {
                         }
 
                         // Ask the user if the post looks correct
-                        message.channel.send({content: `Does this look correct to you? (Wait for the reactions to be added)`, embeds:[emojiRoleEmbed]}).then(async (msg) => {
+                        message.channel.send({content: `Does this look correct to you? (Wait for the reactions to be added)`, embeds:[confirmEmbed]}).then(async (msg) => {
 
                             // Loop through the roleEmojiArr and add each reaction to the message
                             roleEmojiArr.forEach((reaction) => {
@@ -177,6 +177,22 @@ module.exports = {
                                             })
                                         })
                                     })
+
+                                    // Create the Embed
+                                    let emojiRoleEmbed = new Discord.MessageEmbed()
+                                        .setColor(`#551CFF`) //purple
+                                        .setTitle(`Joinable Roles`)
+                                        .setDescription(`Below are all of the roles that are currently joinable. Simply click on the corresponding reaction/emoji to join the role.\nAlternatively, you can click on it again to leave the role.\n\n*Note: If joined a role via the command, you can simply click on the emoji to add yourself to it and then click again to leave the role.*`)
+
+                                    // Loop through each item in the roleEmojiArr
+                                    roleEmojiArr.forEach((item) => {
+                                        // Get the role object
+                                        const role = message.guild.roles.cache.get(item.role_id);
+                                        // Add a new field with the role and emoji
+                                        emojiRoleEmbed.addField(`\u200B`, `**${role} - ${item.emoji}**`, false);
+                                    });
+
+
                                     // Post the message
                                     channel.send({embeds:[emojiRoleEmbed]}).then((postedMsg) => {
                                         // Loop through the roleEmojiArr
