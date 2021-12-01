@@ -9,9 +9,9 @@ const cooldowns = new Discord.Collection();
 module.exports = {
 
     // Create a function to be called
-    messageHandler: async function(m, c, tl, bu, ds, dbc) {
+    messageHandler: async function(m, c, tl, bu, ds, dbCmds, erp) {
         // Create vars
-        const message = m, client = c, triggerList = tl, bannedUrls = bu, deleteSet = ds, dbCmds = dbc;
+        const message = m, client = c, triggerList = tl, bannedUrls = bu, deleteSet = ds, emojiRoles = erp;
         let inModTraineeRole, inModRole, inSuperRole, inAdminRole, isOwner;
         let triggerArr = [];
         let bannedUrlArr = [];
@@ -186,7 +186,7 @@ module.exports = {
 
         // Attempt to execute the command
         try {
-            command.execute(message, args, client, triggerList, bannedUrls);
+            command.execute(message, args, client, triggerList, bannedUrls, emojiRoles);
         } catch (error) {
             console.error(error);
             message.reply('There was an error trying to execute that command, please try again!')

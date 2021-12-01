@@ -147,7 +147,7 @@ client.once('ready', async () => {
 client.on('messageCreate', async message => {
     // Call the function from /controllers/MessageController to handle the message
     try {
-        messageController.messageHandler(message, client, triggerList, bannedUrls, deleteSet, dbCmds, settings);
+        messageController.messageHandler(message, client, triggerList, bannedUrls, deleteSet, dbCmds, emojiRolePosts);
     } catch (e) {
         console.error(e);
     };

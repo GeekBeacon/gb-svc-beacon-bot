@@ -75,7 +75,7 @@ module.exports = {
 
                                     // If a "thanks" emojis was used, reject it and let them know
                                     if(r.emoji.name.toLowerCase().match(thxRegex) && r.emoji.guild.id === r.message.guildId) {
-                                        message.reply(`Uh oh! Looks like you tried to use an emoji reserved for the point system, please choose a different one!`);
+                                        message.reply(`Uh oh! Looks like you tried to use an emoji that is reserved for the point system, please choose a different one!`);
                                     } else {
                                         return true;
                                     }
@@ -83,7 +83,7 @@ module.exports = {
                             }
 
                             // Ask the user for the channel the announcement should be posted to then assign the resolved promise's value to the channel of the announcement
-                            await message.reply(`Please tell me the reaction you wish to use for ${role.name}. Type \`\`done\`\` when completed!\nNote: Only one emoji is accepted, the one in the first position!`).then(async (botMsg) => {
+                            await message.reply(`Please tell me the reaction you wish to use for ${role.name}. Type \`\`done\`\` when completed!\nNote: Only one reaction is accepted, so make sure you choose the correct emoji!`).then(async (botMsg) => {
                                 // Listen for the response (5 min wait) and return it
                                 await botMsg.awaitReactions({filter: reactionFilter, max: 1, time: 300000, errors:["time"]}).then(() => {
 
@@ -215,14 +215,111 @@ module.exports = {
             }
         }
 
-        // Function to add a role to the post to be joinable
-        function addRole() {
+        // Function to add a role to the post to be joinable via reaction role post
+        async function addRole() {
+
+            // Find the fintPost function to get the post back
+            let post = await findPost();
 
         }
 
-        // Function to remove a role from the post to become unjoinable
-        function removeRole() {
+        // Function to remove a role from the post to become unjoinable via reaction role post
+        async function removeRole() {
 
+            // Find the fintPost function to get the post back
+            let post = findPost();
+
+        }  
+        
+        // Function to find the emojiRole post
+        async function findPost() {
+            let channelId, postId, validPost;
+
+            const channelFilter = m => {
+                // Ensure the user replied with ONLY a channel mention
+                if(m.author.id === message.author.id && m.content.match(/(^<#[0-9]+>$)/)) {
+                    return true;
+                // If the response wasn't just a channel mention let them know.
+                } else if(m.author.id === message.author.id) {
+                    message.reply(`Uh oh! It seems that you didn't provide me with a channel to post to.\nPlease tag the channel you wish to post this announcement to.\nMake sure you are **only** replying with the channel object (\`\`#channel\`\`)!`)
+                }
+            }
+
+            // Ask the user for the channel the post is in
+            channelId = await message.reply(`Which channel would you like this announcement to be posted to?\nPlease be sure to tag it using \`\`#channel-name\`\`!`).then(() => {
+                // Listen for the response (30 sec wait) and return it
+                return message.channel.awaitMessages({filter: channelFilter, max: 1, time: 30000, errors:["time"]}).then(res => {
+                    // Make sure res is valid
+                    if(res) {
+                        // Return just the channel id from the channel object
+                        return res.first().content.replace(/[<#>]/g, ``)
+                    }
+                // If the user goes idle for 30 seconds let them know they timed out
+                }).catch(e => {
+                    message.reply(`Uh oh! It seems that you got distracted, please try again!`)
+                });
+            })
+
+            // Get the channel
+            const channel = message.guild.channels.cache.get(channelId);
+
+            const postIdFilter = async (m) => {
+                // Ensure the reply is from the same user
+                if(m.author.id === message.author.id) {
+
+                    // Make sure the user only provided a numeric value
+                    if(!isNaN(m.content)) {
+
+                        // Attempt to find the post
+                        try {
+                            const post = await channel.messages.fetch(m.content);
+
+                            // Return true if the post is found
+                            if(post !== undefined) {
+                                return true;
+                            }
+
+                        // If the post wasn't found let the user know
+                        } catch(e) {
+                            message.reply(`Uh oh! I wasn't able to find a message with that id, please try again!`)
+                        }
+                    }
+                // If the response wasn't numeric, let them know
+                } else if(m.author.id === message.author.id) {
+                    message.reply(`Uh oh! It seems that you provided me with an invalid post id!`);
+                }
+            }
+
+            // Ask the user for the post id
+            postId = await message.reply(`What is the id of the post within ${channel}?`).then(() => {
+                // Listen for the response (30 sec wait) and return it
+                return message.channel.awaitMessages({filter: postIdFilter, max: 1, time: 30000, errors:["time"]}).then(res => {
+                    // Make sure res is valid
+                    if(res) {
+                        // Return the post id provided
+                        return res.first().content;
+                    }
+                // If the user goes idle for 30 seconds let them know they timed out
+                }).catch(e => {
+                    message.reply(`Uh oh! It seems that you got distracted, please try again!`)
+                });
+            })
+
+            // Find the emojirole post
+            const post = await channel.messages.fetch(postId);
+
+            // Make sure the post id is within the db
+            validPost = await Models.emojirole.findOne({where:{post_id:postId}, raw:true}).then((post) => {
+                // If a post was found, return true
+                if(post) {
+                    return true;
+                }
+            });
+
+            // If the user provided info is valid, return the message object
+            if(validPost === true) {
+                return post;
+            }
         }
     }
 }

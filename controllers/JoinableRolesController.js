@@ -169,7 +169,7 @@ module.exports = {
                                         })
                                         // Let the user know it was added
                                         .then(() => {
-                                            message.channel.send(`I have successfully added \`${role.name}\` to the joinable roles!`);
+                                            message.channel.send(`I have successfully added \`${role.name}\` to the joinable roles!\nNote: If you wish to add this role to an reaction role post then please run ${prefix}emojirole add!`);
                                         });
                                     // If there was a role, let user know it exists already
                                     } else {
@@ -212,7 +212,7 @@ module.exports = {
                         }
                     // Let the user know it was removed
                     }).then(() => {
-                        message.channel.send(`I have successfully removed \`${jrole.get('role')}\` from the joinable roles!`);
+                        message.channel.send(`I have successfully removed \`${jrole.get('role')}\` from the joinable roles!\nNote: If you wish to remove this role to an reaction role post then please run ${prefix}emojirole remove!`);
                     });
                 // If the joinable role wasn't found let the user know
                 } else {
