@@ -9,10 +9,10 @@ const cooldowns = new Discord.Collection();
 module.exports = {
 
     // Create a function to be called
-    messageHandler: async function(m, c, tl, bu, ds, dbc) {
+    messageHandler: async function(m, c, tl, bu, ds, dbCmds, erp) {
         // Create vars
-        const message = m, client = c, triggerList = tl, bannedUrls = bu, deleteSet = ds, dbCmds = dbc;
-        let inModRole, inSuperRole, inAdminRole, isOwner;
+        const message = m, client = c, triggerList = tl, bannedUrls = bu, deleteSet = ds, emojiRoles = erp;
+        let inModTraineeRole, inModRole, inSuperRole, inAdminRole, isOwner;
         let triggerArr = [];
         let bannedUrlArr = [];
         const prefix = client.settings.get("prefix"); //assign the prefix
@@ -103,7 +103,13 @@ module.exports = {
                 };
             // If not a trigger word/phrase, a blacklisted domain, or a bot message then call the experience controller to give experience.
             } else {
-                PointsController.givePoints(message, client);
+                
+                // Exclude PokeTwo bot commands
+                if(message.content.startsWith("p!")) {
+                    return;
+                } else {
+                    PointsController.givePoints(message, client);
+                }
             };
 
             // If the message starts with the prefix then continue
@@ -146,11 +152,11 @@ module.exports = {
         };
 
         // Check if the user has the proper permissions for the command if not let them know
-        if (command.admin === true && !(inAdminRole || message.member === isOwner)) {
+        if (command.admin == true && !(inAdminRole || message.member === isOwner)) {
             return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${adminRole.name} group!`);
-        } else if (command.super === true && !(inSuperRole || inAdminRole || message.member === isOwner)) {
+        } else if (command.super == true && !(inSuperRole || inAdminRole || message.member === isOwner)) {
             return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${superRole.name} group!`);
-        } else if (command.mod === true && !(inModTraineeRole || inModRole || inSuperRole || inAdminRole || message.member === isOwner)) {
+        } else if (command.mod == true && !(inModTraineeRole || inModRole || inSuperRole || inAdminRole || message.member === isOwner)) {
             return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${modRole.name} group!`);
         }
 
@@ -180,7 +186,7 @@ module.exports = {
 
         // Attempt to execute the command
         try {
-            command.execute(message, args, client, triggerList, bannedUrls);
+            command.execute(message, args, client, triggerList, bannedUrls, emojiRoles);
         } catch (error) {
             console.error(error);
             message.reply('There was an error trying to execute that command, please try again!')

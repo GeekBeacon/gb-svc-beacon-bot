@@ -1,6 +1,7 @@
 // Import required files
 const moment = require("moment");
 const momentDuration = require("moment-duration-format");
+const Discord = require("discord.js")
 
 // Create a new module export
 module.exports = {
@@ -11,7 +12,7 @@ module.exports = {
 
         const member = m, client = c;
         const modLog = member.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        const joinedDate = moment(member.joinedAt).format("MMM DD, YYYY HH:mm:ss"); // joined date
+        const joinedDate = member.joinedAt; // joined date
         const joinedTimeStamp = moment(member.joinedTimestamp); // timestamp user joined
         const currentTime = moment(); // create a new moment obj with current time
         const memberLength = moment.duration(currentTime.diff(joinedTimeStamp)).format("Y[y] D[d] H[h] m[m] s[s]"); //get the duration of the membership and format it
@@ -29,7 +30,7 @@ module.exports = {
                 },
                 {
                     name: `Joined`,
-                    value: `${joinedDate}`,
+                    value: `${Discord.Formatters.time(joinedDate, "f")} (${Discord.Formatters.time(joinedDate, "R")})`,
                     inline: true,
                 },
                 {

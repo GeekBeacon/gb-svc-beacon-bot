@@ -1,7 +1,9 @@
+const Announcement = require("./Announcement");
 const AutoRole = require("./AutoRole");
 const Ban = require("./Ban");
 const BannedUrl = require("./BannedUrl");
 const Command = require("./Command");
+const EmojiRole = require("./EmojiRole");
 const JoinableRole = require("./JoinableRole");
 const Kick = require("./Kick");
 const Mute = require("./Mute");
@@ -14,10 +16,12 @@ const User = require("./User");
 const Warning = require("./Warning");
 
 module.exports = {
+    announcement : Announcement,
     autorole : AutoRole,
     ban : Ban,
     bannedurl : BannedUrl,
-    command: Command,
+    command : Command,
+    emojirole : EmojiRole,
     joineableRole : JoinableRole,
     kick : Kick,
     mute : Mute,

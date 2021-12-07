@@ -33,11 +33,11 @@ module.exports = {
             // Loop through all the commands
             commands.forEach((cmd) => {
                 // Assign to proper array based on permissions
-                if(cmd.admin === true) {
+                if(cmd.admin == true) {
                     adminCmds.push(cmd.name); //admin
-                } else if (cmd.super === true) {
+                } else if (cmd.super == true) {
                     superCmds.push(cmd.name); //super
-                } else if (cmd.mod === true) {
+                } else if (cmd.mod == true) {
                     modCmds.push(cmd.name); //mod
                 } else {
                     userCmds.push(cmd.name); //user
@@ -130,9 +130,12 @@ module.exports = {
             
         }
 
-        if(command.aliases && Array.isArray(command.aliases)) {
+        // Check if there are any aliases for the command
+        if(Array.isArray(command.aliases) && command.aliases.length) {
+            // Convert the aliases to a command seperated string
             aliases = command.aliases.join(", ");
         } else {
+            // If no aliases
             aliases = "None";
         }
 

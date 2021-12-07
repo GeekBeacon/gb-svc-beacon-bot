@@ -1,6 +1,7 @@
 // Import the required files
 const moment = require('moment');
 const JoinableRole = require("../models/JoinableRole");
+const Discord = require("discord.js");
 
 // Create a new module export
 module.exports = {
@@ -159,7 +160,7 @@ module.exports = {
                             */
                             JoinableRole.sync({ force: false }).then(() => {
                                 // Query the database for the joinable role
-                                JoinableRole.findOne({where:{role: joinableRole}}).then((jrole) => {
+                                JoinableRole.findOne({where:{role: role.name}}).then((jrole) => {
                                     // If there is no joinable role add it
                                     if (!jrole) {
                                         JoinableRole.create({
@@ -168,7 +169,7 @@ module.exports = {
                                         })
                                         // Let the user know it was added
                                         .then(() => {
-                                            message.channel.send(`I have successfully added \`${role.name}\` to the joinable roles!`);
+                                            message.channel.send(`I have successfully added \`${role.name}\` to the joinable roles!\nNote: If you wish to add this role to an reaction role post then please run ${prefix}emojirole add!`);
                                         });
                                     // If there was a role, let user know it exists already
                                     } else {
@@ -211,7 +212,7 @@ module.exports = {
                         }
                     // Let the user know it was removed
                     }).then(() => {
-                        message.channel.send(`I have successfully removed \`${jrole.get('role')}\` from the joinable roles!`);
+                        message.channel.send(`I have successfully removed \`${jrole.get('role')}\` from the joinable roles!\nNote: If you wish to remove this role to an reaction role post then please run ${prefix}emojirole remove!`);
                     });
                 // If the joinable role wasn't found let the user know
                 } else {
@@ -234,8 +235,8 @@ module.exports = {
                     joinableRoleData.id = data.get('id'); //get id
                     joinableRoleData.role = data.get('role'); //get role
                     joinableRoleData.creator = client.users.cache.get(data.get('user_id')); //get user id
-                    joinableRoleData.created = moment(data.get('createdAt')).format('MMM DD, YYYY HH:mm:ss'); //get created date in YYYY-MM-DD HH:mm:ss format
-                    joinableRoleData.updated = moment(data.get('updatedAt')).format('MMM DD, YYYY HH:mm:ss'); //get updated date in YYYY-MM-DD HH:mm:ss format
+                    joinableRoleData.created = data.get('createdAt'); //get created date
+                    joinableRoleData.updated = data.get('updatedAt'); //get updated date
 
                 // Send the joinable role to the user in a DM
                 }).then(() => {
@@ -251,29 +252,46 @@ module.exports = {
                         fields: [
                             {
                                 name: 'Role',
-                                value: joinableRoleData.role,
+                                value: `${joinableRoleData.role}`,
+                                inline: true,
+                            },
+                            {
+                                name: '\u200b',
+                                value: '\u200b',
                                 inline: true,
                             },
                             {
                                 name: `Added By`,
-                                value: joinableRoleData.creator,
+                                value: `${joinableRoleData.creator}`,
+                                inline: true,
+                            },
+                            {
+                                name: `Created`,
+                                value: `${Discord.Formatters.time(joinableRoleData.created, "D")} (${Discord.Formatters.time(joinableRoleData.created, "R")})`,
+                                inline: true,
+                            },
+                            {
+                                name: `Updated`,
+                                value: `${Discord.Formatters.time(joinableRoleData.updated, "D")} (${Discord.Formatters.time(joinableRoleData.updated, "R")})`,
                                 inline: true,
                             }
                         ],
-                        footer: {
-                            text: `Created: ${joinableRoleData.created} | Updated: ${joinableRoleData.updated}`
-                        },
+                        timestamp: new Date(),
 
                     };
 
                     // Send the information to the Super channel
-                    superChannel.send({embed: joinableRoleEmbed})
+                    superChannel.send({embeds: [joinableRoleEmbed]})
                     // Let user know to check the super channel for more information
                     .then(() => {
-                        message.reply(`I've sent you the information on \`${joinableRoleData.role}\` to ${superChannel}!`);
+                        // If not in the super channel let the user know it was sent there
+                        if(message.channel !== superChannel) {
+                            message.reply(`I've sent the information on \`${joinableRoleData.role}\` to the ${superChannel}!`);
+                        }
                     });
                 }).catch((e) => {
                     message.reply(`It looks like \`${joinableRole}\` doesn't exist!`);
+                    console.error(e)
                 });
                 
             // If user isn't a super mod and passed in args let them know they can't use that command

@@ -67,8 +67,8 @@ module.exports = {
                     triggerData.creator = client.users.cache.get(data.get('user_id'));
                     triggerData.severity = data.get('severity'); //get severity level
                     triggerData.enabled = data.get('enabled'); //get enabled
-                    triggerData.created = moment(data.get('createdAt')).format('MMM DD, YYYY HH:mm:ss'); //get created date
-                    triggerData.updated = moment(data.get('updatedAt')).format('MMM DD, YYYY HH:mm:ss'); //get updated date
+                    triggerData.created =data.get('createdAt'); //get created date
+                    triggerData.updated = data.get('updatedAt'); //get updated date
 
                 // Send the trigger to the user in a DM
                 }).then(() => {
@@ -112,7 +112,7 @@ module.exports = {
                             }
                         ],
                         footer: {
-                            text: `Created: ${triggerData.created} | Updated: ${triggerData.updated}`
+                            text: `Created: ${Discord.Formatters.time(triggerData.created, "D")} (${Discord.Formatters.time(triggerData.created, "R")}) | Updated: ${Discord.Formatters.time(triggerData.updated, "D")} (${Discord.Formatters.time(triggerData.updated, "R")})`
                         },
 
                     };

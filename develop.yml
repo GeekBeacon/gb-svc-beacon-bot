@@ -23,7 +23,6 @@ services:
 #    restart: always
 #    ports:
 #      - 8080:8080
-#  docusaurus:
 #    image: geekbeacon/beacon_bot:latest_docs
 #    build:
 #        context: . 

@@ -444,7 +444,9 @@ module.exports = {
         let warnId = shortid.generate(); //generate a short id for the warning
         const prefix = client.settings.get("prefix");
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        let user, bans;
+        let user, bans; //vars
+        let msgDel = 0; //number of days to clear messages
+        let msgCleared = "No"; //bool for cleared messages
         // Get the mod+ roles
         const modTraineeRole = message.guild.roles.cache.find(role => role.id === client.settings.get("trainee_role_id"));
         const modRole = message.guild.roles.cache.find(role => role.id === client.settings.get("mod_role_id"));
@@ -454,6 +456,23 @@ module.exports = {
         let argsStr = args.join(" "); //create a string out of the args
         argsStr = argsStr.replace(/,/g, ", "); // replace
         const newArgs = argsStr.split(",").map(i => i.trim()); //create a new args array and trim the whitespace from the items
+
+        // Check if an argument for days of messages to remove was given
+        if(newArgs[3]) {
+            // Ensure a number was given
+            if(isNaN(newArgs[3])) {
+                return message.reply(`You must either give me a number (0-7) for the amount of days to clear the user's messages or leave blank.\nExample: \`${prefix}ban @user, Reason, Perma, 7\``)
+            } else {
+                // Ensure the number is between 0 and 7
+                if(newArgs[3] < 0 || newArgs[3] > 7) {
+                    return message.reply(`The maximum number of days I can clear messages for is 7, please enter a number between 0 and 7.\`${prefix}ban @user, Reason, Perma, 3\``)
+                } else {
+                    // If the number is between 0 and 7 assign the value to msgDel and set the msgCleared bool to "Yes"
+                    msgDel = newArgs[3];
+                    msgCleared = "Yes";
+                }
+            }
+        }
 
         // Make sure the first arg was a user mention or a user id
         if(isNaN(newArgs[0]) && !newArgs[0].startsWith("<@")) {
@@ -530,7 +549,6 @@ module.exports = {
                     let banValue = banLength.replace(/\D+/, '').trim(); //assign the ban value
                     let banUnit = banLength.replace(/\d+/, '').trim(); //assign the ban unit
                     const now = moment();
-                    const timezone = moment().tz(moment.tz.guess()).format(`z`); // server timezone
                     const banLengthRegex = /(\d+\s*\D+$|^permanent$|^perma$|^perm$|^p{1}$){1}/; //regex for ban time format
 
                     // Check if the user input for a perma ban
@@ -554,7 +572,7 @@ module.exports = {
                         return message.reply("Uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
                     }
 
-                    unbanDate = unbanDate.format(`MMM DD, YYYY HH:mm:ss`); //format
+                    
 
                     /* 
                     * Sync the model to the table
@@ -591,13 +609,18 @@ module.exports = {
                                         inline: true,
                                     },
                                     {
-                                        name: `Unban Date`,
-                                        value: `${unbanDate} (${timezone})`,
+                                        name: `Banned By`,
+                                        value: `${message.author}`,
                                         inline: true,
                                     },
                                     {
-                                        name: `Banned By`,
-                                        value: `${message.author}`,
+                                        name: `Unban Date`,
+                                        value: `${Discord.Formatters.time(unbanDate.toDate(), "f")} (${Discord.Formatters.time(unbanDate.toDate(), "R")})`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `Messages Cleared`,
+                                        value: `${msgCleared}`,
                                         inline: true,
                                     },
                                     {
@@ -636,7 +659,7 @@ module.exports = {
                                     }).then(() => {
 
                                         // Ban the user from the server
-                                        message.guild.members.ban(user.id, {reason: reason}).then(() => {
+                                        message.guild.members.ban(user.id, {days: msgDel, reason: reason}).then(() => {
                                             // Send the embed to the action log channel
                                             actionLog.send({embeds: [banEmbed]});
                                             message.channel.send(`${user.username} was successfully banned for ${banLength}!`)
@@ -703,7 +726,7 @@ module.exports = {
 
                             // Make sure data was retrieved
                             if(data) {
-                                const banDate = moment(data.createdAt).format(`MMM DD, YYYY HH:mm:ss`); //assign ban date
+                                const banDate = moment(data.createdAt); //assign ban date
                                 const banReason = data.reason; //assign ban reason
                                 /* 
                                 * Sync the model to the table
@@ -752,7 +775,7 @@ module.exports = {
                                                 },
                                                 {
                                                     name: `Ban Date`,
-                                                    value: `${banDate}`,
+                                                    value: `${Discord.Formatters.time(banDate.toDate(), "f")} (${Discord.Formatters.time(banDate.toDate(), "R")})`,
                                                     inline: false,
                                                 },
                                                 {
@@ -1011,7 +1034,6 @@ module.exports = {
                         // If not after the current time, let the user know how to fix the problem
                         return message.reply("Uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
                     }
-                    unmuteDate = unmuteDate.format(`MMM DD, YYYY HH:mm:ss`); //format
 
                     // Check if user is in the muted role
                     const inMutedRole = user.roles.cache.some(role => role.name.toLowerCase().includes(`muted - ${muteType}`));
@@ -1082,7 +1104,7 @@ module.exports = {
                                         },
                                         {
                                             name: `Unmute Date`,
-                                            value: `${unmuteDate} (${timezone})`,
+                                            value: `${Discord.Formatters.time(unmuteDate.toDate(), "f")} (${Discord.Formatters.time(unmuteDate.toDate(), "R")})`,
                                             inline: false,
                                         },
                                         {
@@ -1171,16 +1193,9 @@ module.exports = {
         // Muted role
         let mutedRole = user.roles.cache.find(r => r.name.toLowerCase().includes("muted")); //muted role
 
-        // Make sure a muted role exists
+        // Make sure the user is muted
         if(!mutedRole) {
-            // Check if user is a super or higher role
-            if(inSuperRole || inAdminRole || isOwner) {
-                return message.reply(`Uh oh! It seems there isn't a muted role, please use \`${prefix}createmute\` to make the role!`);
-            // If not a super or higher let them know to ask a super or higher
-            } else {
-                // If no muted role let user know to create it
-                return message.reply(`Uh oh! It seems there isn't a muted role, please ask a ${superRole} or ${adminRole} to make the role with \`${prefix}createmute\`!`);
-            }
+            return message.reply(`You silly! You can't unmute a user that isn't muted!`);
         }
 
         // If a reason was given then unban the user and log the action to the database
@@ -1203,7 +1218,7 @@ module.exports = {
             Models.mute.findOne({where: {user_id: userId, completed: 0}, raw: true}).then((data) => {
                 // Make sure data was retrieved
                 if(data) {
-                    const muteDate = moment(data.createdAt).format(`MMM DD, YYYY HH:mm:ss`); //assign mute date
+                    const muteDate = data.createdAt; //assign mute date
                     const muteReason = data.reason; //assign mute reason
                     /* 
                     * Sync the model to the table
@@ -1253,7 +1268,7 @@ module.exports = {
                                         },
                                         {
                                             name: `Mute Date`,
-                                            value: `${muteDate}`,
+                                            value: `${Discord.Formatters.time(muteDate, "f")} (${Discord.Formatters.time(muteDate, "R")})`,
                                             inline: false,
                                         },
                                         {
@@ -1913,12 +1928,12 @@ module.exports = {
                                 },
                                 {
                                     name: `Date Banned`,
-                                    value: moment(ban.createdAt).format(`MMM DD, YYYY HH:mm:ss`),
+                                    value: `${Discord.Formatters.time(ban.createdAt, "f")} (${Discord.Formatters.time(ban.createdAt, "R")})`,
                                     inline: true
                                 },
                                 {
                                     name: `Unban Date`,
-                                    value: moment(ban.unban_date).format(`MMM DD, YYYY HH:mm:ss`),
+                                    value: `${Discord.Formatters.time(ban.unban_date, "f")} (${Discord.Formatters.time(ban.unban_date, "R")})`,
                                     inline: true
                                 },
                                 {
@@ -1945,7 +1960,6 @@ module.exports = {
         const isSuper = message.member.roles.cache.some(role => role.id === client.settings.get("super_role_id"));
         const isAdmin = message.member.roles.cache.some(role => role.id === client.settings.get("admin_role_id"));
         const isElder = message.member.roles.cache.some(role => role.name.toLowerCase().includes("elder squirrel"));
-        const squirrelRole = message.guild.roles.cache.find(role => role.name.toLowerCase().includes("squirrel army"));
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
         let isOwner;
         let user;
@@ -1953,7 +1967,7 @@ module.exports = {
         let argsCopy = [...args];
 
          // Check if user is the server owner
-         if(message.author.id === message.member.guild.owner) isOwner = true;
+         if(message.author.id === message.member.guild.ownerId) isOwner = true;
 
         // If the user arg given is a mention assign it
         if(args[1].startsWith("<@")) {
@@ -1990,109 +2004,14 @@ module.exports = {
             if(role === undefined) return message.reply(`Uh oh! Looks like I wasn't able to find a role with the name \`${roleStr}\`, please try again!`);
         }
 
+        // If the bot isn't able to assign a role
+        if(message.guild.me.roles.highest.position <= role.position) {
+            return message.reply(`Uh oh, I'm not able to assign that role to users!`)
+        }
 
-
-        // Check if the role is Squirrel Army and the author is able to give that role
-        if(role.name.toLowerCase().includes("squirrel army") && (isElder || isAdmin || isOwner)) {
-            
-            // If author isn't able to edit the user, deny editing the user
-            if(message.member.roles.highest.position <= user.roles.highest.position) {
-                return message.reply(`Uh oh! You don't have permission to edit this user!`);
-            // If author is able to edit the user, proceed
-            } else {
-                // If add subcommand was used
-                if(args[0].toLowerCase() === "add") {
-                    // Check if the user already has the role
-                    if(user.roles.cache.some(r => r === role)) {
-                        // If user already has the role then let author know
-                        return message.reply(`Uh oh! This user is already in that role!`)
-                    }
-
-                    // Add the role to the user
-                    user.roles.add(role).then(() => {
-                        // Create embed
-                        const addEmbed = {
-                            color: 0x886CE4,
-                            title: `Role Added To User`,
-                            author: {
-                                name: `${message.member.displayName}`,
-                                icon_url: `${message.author.displayAvatarURL()}`
-                            },
-                            description: `${message.member.displayName} has given ${user.displayName} a new role.`,
-                            fields: [
-                                {
-                                    name: `User Edited`,
-                                    value: `${user}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Role Given`,
-                                    value: `${role}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Given By`,
-                                    value: `${message.author}`,
-                                    inline: true,
-                                }
-                            ],
-                            timestamp: new Date(),
-                        };
-
-                        // Send log
-                        actionLog.send({embeds: [addEmbed]}).then(() => {
-                            // Send feedback
-                            message.channel.send(`${user.displayName} was successfully added to the ${role.name} role!`);
-                        });
-                    });
-
-                // If remove subcommand was used
-                } else if(args[0].toLowerCase() === "remove") {
-                    // Check if the user already has the role
-                    if(!user.roles.cache.some(r => r === role)) {
-                        // If user already has the role then let author know
-                        return message.reply(`Uh oh! This user isn't in that role!`)
-                    }
-
-                    // Remove the role from the user
-                    user.roles.remove(role).then(() => {
-                        // Create embed
-                        const removeEmbed = {
-                            color: 0x886CE4,
-                            title: `Role Removed From User`,
-                            author: {
-                                name: `${message.member.displayName}`,
-                                icon_url: `${message.author.displayAvatarURL()}`
-                            },
-                            description: `${message.member.displayName} has removed a role from ${user.displayName}.`,
-                            fields: [
-                                {
-                                    name: `User Edited`,
-                                    value: `${user}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Role Removed`,
-                                    value: `${role}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Removed By`,
-                                    value: `${message.author}`,
-                                    inline: true,
-                                }
-                            ],
-                            timestamp: new Date(),
-                        };
-
-                        // Send log
-                        actionLog.send({embeds: [removeEmbed]}).then(() => {
-                            // Send feedback
-                            message.channel.send(`${user.displayName} was successfully removed from the ${role.name} role!`);
-                        });
-                    });
-                }
-            }
+        // If author isn't able to edit the user, deny editing the user
+        if((message.member.roles.highest.position <= user.roles.highest.position && !isOwner) || (message.member.roles.highest.position <= role.position && !isOwner) ) {
+            return message.reply(`Uh oh! You don't have permission to edit this user!`);
         } else {
             // If add subcommand was used
             if(args[0].toLowerCase() === "add") {
@@ -2101,6 +2020,7 @@ module.exports = {
                     // If user already has the role then let author know
                     return message.reply(`Uh oh! This user is already in that role!`)
                 }
+                
 
                 // Add the role to the user
                 user.roles.add(role).then(() => {
@@ -2547,8 +2467,8 @@ module.exports = {
                     let fieldCounter = 0; //field counter
 
                     settings.forEach((setting) => {
-                        // Format the last updated time
-                        const lastUpdated = moment(setting.updatedAt).format(`MMM DD, YYYY HH:mm:ss`);
+                        // Assign the last updated time
+                        const lastUpdated = setting.updatedAt;
 
                         // Add the setting info fields
                         settingsEmbed.addFields(
@@ -2564,7 +2484,7 @@ module.exports = {
                             },
                             {
                                 name: `Last Update`,
-                                value: `${lastUpdated}`,
+                                value: `${Discord.Formatters.time(lastUpdated, "f")} (${Discord.Formatters.time(lastUpdated, "R")})`,
                                 inline: true,
                             }
                         );
@@ -2607,8 +2527,8 @@ module.exports = {
                     // If the user is wanting to view a setting
                     if(args[1].toLowerCase() === "view") {
 
-                        // Format the last updated time
-                        const lastUpdated = moment(setting.updatedAt).format(`MMM DD, YYYY HH:mm:ss`);
+                        // Assign the last updated time
+                        const lastUpdated = setting.updatedAt;
 
                         // Set the fields for the setting
                         viewEmbed.addFields(
@@ -2624,7 +2544,7 @@ module.exports = {
                             },
                             {
                                 name: "Last Update",
-                                value: lastUpdated,
+                                value: `${Discord.Formatters.time(lastUpdated, "f")} (${Discord.Formatters.time(lastUpdated, "R")})`,
                                 inline: false,
                             }
                         );

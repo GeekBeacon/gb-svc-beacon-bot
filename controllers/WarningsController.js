@@ -1,5 +1,4 @@
 // Import the required files
-const moment = require('moment-timezone');
 const Discord = require("discord.js");
 const Warning = require("../models/Warning");
 
@@ -51,25 +50,25 @@ module.exports = {
                     // Add a new field for each warning
                     data.forEach(warning => {
                         warnedUser = client.users.cache.get(warning.user_id.toString()); //get the user
-                        let date = moment(warning.createdAt).format("MMM DD, YYYY HH:mm:ss"); //format date
+                        let date = warning.createdAt; //set date
 
                         // Create a new field depending on the type of warning
                         if(warning.type === "Trigger") {
                             // Warning from a Trigger
                             recentEmbed.addField(
                                 `Warning #${i}`, // title
-                                `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${date}**\rSeverity: **${warning.severity}**\rTrigger(s): **${warning.triggers}**`); //value
+                                `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.Formatters.time(date, "D")} (${Discord.Formatters.time(date, "R")})**\rSeverity: **${warning.severity}**\rTrigger(s): **${warning.triggers}**`); //value
                         } else if(warning.type === "Note") {
                             // Warning from a mod note
                             recentEmbed.addField(
                                 `Warning #${i}`, //title
-                                `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${date}**` //value
+                                `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.Formatters.time(date, "D")} (${Discord.Formatters.time(date, "R")})**` //value
                             );
                         } else {
                             // Warning for all other types
                             recentEmbed.addField(
                                 `Warning #${i}`, //title
-                                `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${date}**` //value
+                                `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.Formatters.time(date, "D")} (${Discord.Formatters.time(date, "R")})**` //value
                             );
 
                         }
@@ -186,7 +185,7 @@ module.exports = {
                                 specificEmbed.addField(`Trigger(s) Hit`, warning.triggers, false);
                                 specificEmbed.addField(`Severity`, warning.severity, false);
                                 specificEmbed.addField(`Channel`, warnedChannel.toString(), false);
-                                specificEmbed.addField(`Time Trigger Was Hit`, moment(warning.createdAt).tz(moment.tz.guess()).format('MMM DD, YYYY HH:mm:ss'), false);
+                                specificEmbed.addField(`Time Trigger Was Hit`, `${Discord.Formatters.time(warning.createdAt, "f")} (${Discord.Formatters.time(warning.createdAt, "R")})`, false);
                                 specificEmbed.addField(`Full Message`, fullMessage, false);
                                 specificEmbed.addField(`Message URL`, warning.message_link, false)
                             } else if(warning.type === "Note") {

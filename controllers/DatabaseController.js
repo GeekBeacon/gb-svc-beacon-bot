@@ -1,10 +1,12 @@
 // Import the required files
 const moment = require("moment");
+const Discord = require('discord.js');
 const TriggersController = require("./TriggersController");
 const AutorolesController = require("./AutorolesController");
 const JoinableRolesController = require("./JoinableRolesController");
 const WarningsController = require("./WarningsController");
 const ModerationController = require("./ModerationController");
+const AnnouncementController = require("./AnnouncementController");
 const Models = require("../models/AllModels");
 
 // Create a new module export
@@ -133,6 +135,15 @@ module.exports = {
         } else if(command.name === "unmute") {
             // Call the mute handler function from the ModerationController file
             ModerationController.unmuteHandler(message, args, client);
+
+        /*
+        ###################################
+        ########  announce command ########
+        ###################################
+        */
+        } else if(command.name === "announce") {
+            // Call the mute handler function from the ModerationController file
+            AnnouncementController.crudHandler(message, args, client);
             
         /*
         ##################################
@@ -182,8 +193,8 @@ module.exports = {
     },
 
     // Function for when bot starts up
-    botReconnect: function(tl, bu) {
-        let triggerList = tl, bannedUrls = bu;
+    botReconnect: function(tl, bu, erp) {
+        let triggerList = tl, bannedUrls = bu, emojiRolePosts = erp;
 
         /*
         ##################################
@@ -230,7 +241,7 @@ module.exports = {
         ######## populate blacklist ########
         ####################################
         */
-        // Get all rows of blacklisted urls and add them to the urlWhitelist list
+        // Get all rows of blacklisted urls and add them to the blacklistedDomains list
         Models.bannedurl.findAll().then((data) => {
             let blacklistedDomains = []; //array for blacklisted urls
 
@@ -244,6 +255,34 @@ module.exports = {
         }).catch((e) => {
              console.error("Error: "+e);
         });
+
+        /*
+        ############################################
+        ######## populate emojirole post_id ########
+        ############################################
+        */
+        // Get all rows of emojiroles and add their post ids to the postIds arr
+        Models.emojirole.findAll().then((data) => {
+            let postIds = []; //array for post ids
+
+            // Loop through each item found and add it to the postsIds array
+            data.forEach((item) => {
+
+                // Check if the post_id was already added to the array
+                if(postIds.includes(item.get("post_id"))) {
+                    return; //ignore if so
+
+                // Add to the array if the id doesn't exist in it already
+                } else {
+                    postIds.push(item.get('post_id'));
+                }
+            });
+
+            // Add the list of postIds to the local copy
+            emojiRolePosts.posts = postIds;
+        }).catch((e) => {
+            console.error("Error: "+e);
+        });
     },
 
 
@@ -252,7 +291,6 @@ module.exports = {
         const client = c;
         let bannedUsers = []; // array for all banned users
         let logChannel; // var for action log channel(s)
-        const timezone = moment().tz(moment.tz.guess()).format(`z`); // server timezone
 
         // Find all uncompleted bans
         Models.ban.findAll({where: {completed: false},raw:true}).then((data) => {
@@ -296,7 +334,7 @@ module.exports = {
                 guild.members.unban(item.userId, "Ban Expiration").then(() => {
                     const user = client.users.cache.get(item.userId); //get the user that was banned
                     const moderator = client.users.cache.get(item.modId); //get the moderator that performed the ban
-                    let banDate = moment(item.created).format(`MMM DD, YYYY HH:mm:ss`);
+                    let banDate = item.created;
 
                     // Update the completed field
                     Models.ban.update({completed: true}, {where: {id: item.id}});
@@ -318,7 +356,7 @@ module.exports = {
                             },
                             {
                                 name: `Date Banned`,
-                                value: `${banDate} (${timezone})`,
+                                value: `${Discord.Formatters.time(banDate, "f")} (${Discord.Formatters.time(banDate, "R")})`,
                                 inline: true,
                             },
                             {
@@ -377,7 +415,7 @@ module.exports = {
                         // Unmute the user
                         member.roles.remove(mutedRole).then(() => {
                             const moderator = client.users.cache.get(mute.moderator_id); //get the moderator that performed the mute
-                            let muteDate = moment(mute.created).format(`MMM DD, YYYY HH:mm:ss`);
+                            let muteDate = mute.created;
 
                             // Update the completed field
                             Models.mute.update({completed: true}, {where: {id: mute.id}});
@@ -409,7 +447,7 @@ module.exports = {
                                     },
                                     {
                                         name: `Date Muted`,
-                                        value: `${muteDate} (${timezone})`,
+                                        value: `${Discord.Formatters.time(muteDate, "f")} (${Discord.Formatters.time(muteDate, "R")})`,
                                         inline: true,
                                     },
                                     {
@@ -439,5 +477,80 @@ module.exports = {
                 return;
             }
         });
+
+
+        /*
+        #################################
+        ###### ANNOUNCEMENTS CHECK ######
+        #################################
+        */
+        // Find all unposted announcements
+        Models.announcement.findAll({where: {posted: false},raw:true}).then((data) => {
+            if(data) {
+
+                // Loop throught the data
+                data.forEach(async (announcement) => {
+                    const currentTime = new Date();
+
+                    // Make sure the mute hasn't already been completed
+                    if(moment(announcement.post_at).isSameOrBefore(moment(currentTime))) {
+                        const channel = client.channels.cache.get(announcement.channel); //get the channel
+                        const server = client.guilds.cache.get(announcement.server); //get the server
+
+                        // Create the embed
+                        let announceEmbed = new Discord.MessageEmbed()
+                            .setColor(`#551CFF`)
+                            .setTitle(announcement.title)
+                            .setDescription(announcement.body)
+                            .setTimestamp(new Date());
+
+                        // If the user wanted to be the author set it to their display name and avatar
+                        if(announcement.show_author == true) {
+                            let author;
+
+                            // Attempt to find the author
+                            try {
+                                // If able to find an author by the id, assign to author var
+                                author = await server.members.fetch(announcement.author);
+                            } catch(e) {
+                                // If unable to find author then set to bot
+                                author = server.me;
+                            }
+
+                            announceEmbed.setAuthor(author.displayName, author.displayAvatarURL({dynamic:true}));
+
+                        // If the user didn't want to be the author set to the bot's display name and avatar
+                        } else {
+                            announceEmbed.setAuthor(server.me.displayName, server.me.displayAvatarURL({dynamic:true}));
+                        }
+
+                        channel.send({embeds: [announceEmbed]}).then((msg) => {
+
+                            // If reactions were given
+                            if(announcement.reactions !== null) {
+                                // Attempt to react to announceMsg
+                                try {
+                                    // Convert the reactions string to an array
+                                    const reactionArr = announcement.reactions.split(",");
+
+                                    // Loop through the array and react with the reactions in order given
+                                    reactionArr.forEach(async (reaction) => {
+                                        await msg.react(reaction)
+                                    })
+                                // Catch and log any errors
+                                } catch(e) {
+                                    console.error("One of the emojis from the announcement builder failed to react!", e)
+                                }
+                            }
+
+                            // Update the posted field for the announcement
+                            Models.announcement.update({posted: 1}, {where: {id: announcement.id}});
+                        })
+                    }
+                })
+
+
+            }
+        })
     }
 }
