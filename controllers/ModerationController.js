@@ -60,10 +60,10 @@ module.exports = {
             // Send to master control logs
             if(message.channel.name.includes("master-control") || message.channel.name.includes("employees")) {
                 superLog.send({embeds: [delEmbed]});
+            } else {
+                // Send the embed to the action log channel
+                actionLog.send({embeds: [delEmbed]});
             }
-
-            // Send the embed to the action log channel
-            actionLog.send({embeds: [delEmbed]});
 
             /* POINT REMOVAL */
             const thxRegex = /\b(thanks*|thx*|ty*|thank\s*you*)\b/
