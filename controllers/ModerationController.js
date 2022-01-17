@@ -250,36 +250,35 @@ module.exports = {
         // If the edit was made in the super channel send to super logs
         if(newMsg.channel.name.includes("master-control") || newMsg.channel.name.includes("employees")) {
             superLog.send({embeds: [editEmbed]});
-        }
+        } else {
+            // Send the edit embed to the mod log channel
+            modLog.send({embeds: [editEmbed]}).then(() => {
+                // Loop through the bannedUrl list
+                bannedUrls.list.forEach((domain) => {
+                    // Add each domain to the bannedUrlArr var
+                    bannedUrlArr.push(domain);
+                });
 
+                if (newMsg.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/)) {
+                    const url_role_whitelist = client.settings.get("url_role_whitelist").split(",");
+                    // If user has an excluded role then ignore
+                    if(newMsg.member.roles.cache.some(r => url_role_whitelist.includes(r.id))) {
+                        return;
+                    }
 
-        // Send the edit embed to the mod log channel
-        modLog.send({embeds: [editEmbed]}).then(() => {
-            // Loop through the bannedUrl list
-            bannedUrls.list.forEach((domain) => {
-                // Add each domain to the bannedUrlArr var
-                bannedUrlArr.push(domain);
-            });
-
-            if (newMsg.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/)) {
-                const url_role_whitelist = client.settings.get("url_role_whitelist").split(",");
-                // If user has an excluded role then ignore
-                if(newMsg.member.roles.cache.some(r => url_role_whitelist.includes(r.id))) {
-                    return;
+                    // If not blacklisted then ignore
+                    if(!newMsg.content.toLowerCase().match(bannedUrlArr.map(domain => `\\b${domain}\\b`).join("|"))) {
+                        return;
+                        
+                    // If blacklisted url then handle it
+                    } else {
+                        const regexMatch = newMsg.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/);
+                        // If not then call the handleUrl function from the ModerationController file
+                        this.handleUrl(newMsg, regexMatch, deleteSet);
+                    };
                 }
-
-                // If not blacklisted then ignore
-                if(!newMsg.content.toLowerCase().match(bannedUrlArr.map(domain => `\\b${domain}\\b`).join("|"))) {
-                    return;
-                    
-                // If blacklisted url then handle it
-                } else {
-                    const regexMatch = newMsg.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/);
-                    // If not then call the handleUrl function from the ModerationController file
-                    this.handleUrl(newMsg, regexMatch, deleteSet);
-                };
-            }
-        });
+            });
+        }
     },
     kickHandler: function(a, m, c) {
         const args = a, message = m, client = c;
