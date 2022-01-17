@@ -8,10 +8,8 @@ module.exports = {
     deleteHandler: function(m, c, tl, deleteSet) {
         const message = m, client = c, triggerList = tl;
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
+        const superLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("super_log_channel_name")))); //super log channel
         let triggerArr = [];
-
-        // Exclude master control channels
-        if(message.channel.name.includes("master-control")) return;
 
         // If deleted due to an unapproved url then ignore
         if(deleteSet.has(message.id)) {
@@ -57,6 +55,11 @@ module.exports = {
                     }
                 ],
                 timestamp: new Date()
+            }
+
+            // Send to master control logs
+            if(message.channel.name.includes("master-control") || message.channel.name.includes("employees")) {
+                superLog.send({embeds: [delEmbed]});
             }
 
             // Send the embed to the action log channel
@@ -245,7 +248,7 @@ module.exports = {
             );
         }
         // If the edit was made in the super channel send to super logs
-        if(newMsg.channel.name.includes("master-control")) {
+        if(newMsg.channel.name.includes("master-control") || newMsg.channel.name.includes("employees")) {
             superLog.send({embeds: [editEmbed]});
         }
 
