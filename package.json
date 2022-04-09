@@ -13,7 +13,7 @@
     "dotenv": "^16.0.0",
     "glob-parent": "^6.0.1",
     "lodash": "^4.17.21",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "moment-duration-format": "^2.3.2",
     "moment-timezone": "^0.5.27",
     "mysql2": "^2.1.0",
