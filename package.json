@@ -8,7 +8,7 @@
   "license": "ISC",
   "dependencies": {
     "classnames": "^2.2.6",
-    "discord.js": "^13.1.0",
+    "discord.js": "^14.0.0",
     "discord.js-pagination": "^1.0.3",
     "dotenv": "^16.0.0",
     "glob-parent": "^6.0.1",
