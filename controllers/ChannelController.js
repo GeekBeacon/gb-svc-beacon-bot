@@ -8,30 +8,30 @@ module.exports = {
 
         // Set the permissions for the newly created channel for the Muted - Server role
         await channel.permissionOverwrites.edit(mutedServer, {
-            SEND_MESSAGES: false,
-            SPEAK: false,
-            ADD_REACTIONS: false,
-            USE_VAD: false,
-            USE_PUBLIC_THREADS: false,
-            USE_PRIVATE_THREADS: false
+            SendMessages: false,
+            Speak: false,
+            AddReactions: false,
+            UseVAD: false,
+            CreatePublicThreads: false,
+            CreatePrivateThreads: false
         });
 
         // Set the permissions for the newly created channel for the Muted - Voice role
         await channel.permissionOverwrites.edit(mutedVoice, {
-            SPEAK: false,
-            USE_VAD: false
+            Speak: false,
+            UseVAD: false
         });
 
         // Set the permissions for the newly created channel for the Muted - Text role
         await channel.permissionOverwrites.edit(mutedText, {
-            SEND_MESSAGES: false,
-            USE_PUBLIC_THREADS: false,
-            USE_PRIVATE_THREADS: false
+            SendMessages: false,
+            CreatePublicThreads: false,
+            CreatePrivateThreads: false
         });
 
         // Set the permissions for the newly created channel for the Muted - Reactions role
         await channel.permissionOverwrites.edit(mutedReactions, {
-            ADD_REACTIONS: false,
+            AddReactions: false,
         });
     }
 }

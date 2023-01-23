@@ -12,54 +12,39 @@ const Models = require("../models/AllModels");
 // Create a new module export
 module.exports = {
     // Create a function with required args
-    queryHandler: function(m, a, c, tl) {
+    queryHandler: function(i, tl) {
         // Create vars
-        const message = m, client = c, triggerList = tl;
-        const prefix = client.settings.get("prefix");
-        let args = a;
-        let commandName;
-
-        // Check if the command has args
-        if (!args.length) {
-            // If no args, remove the prefix
-            commandName = message.content.replace(`${prefix}`, '');
-        } else {
-            // If args, pull the command name and remove the prefix
-            commandName = message.content.split(" ")[0].replace(`${prefix}`, '');
-        };
-
-        // Check if command has any aliases
-        const command = client.commands.get(commandName.toLowerCase()) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName.toLowerCase()));
+         const triggerList = tl;
 
         /*
         ######################################
         ########## trigger commands ##########
         ######################################
         */
-        if (command.name.includes("trigger")) {
+        if (i.commandName.includes("trigger")) {
 
             // Call the trigger handler function from the TriggersController file
-            TriggersController.triggerHandler(command, client, args, message, triggerList);
+            TriggersController.triggerHandler(i, triggerList);
 
         /*
         #######################################
         ########## autorole commands ##########
         #######################################
         */
-        } else if (command.name.includes("autorole")) {
+        } else if (i.commandName.includes("autorole")) {
             
             // Call the autoroles handler function from the AutorolesController file
-            AutorolesController.autoroleHandler(command, client, args, message);
+            AutorolesController.autoroleHandler(i);
         
         /*
         ###########################################
         ########## joinableroles command ##########
         ###########################################
         */
-        } else if (command.name.includes("joinablerole") || command.name.includes("joinrole") || command.name.includes("leaverole")) {
+        } else if (i.commandName.includes("joinablerole") || i.commandName.includes("joinrole") || i.commandName.includes("leaverole")) {
 
             // Call the joinable roles handler function from the JoinableRolesController file
-            JoinableRolesController.joinableRolesHandler(command, client, args, message);
+            JoinableRolesController.joinableRolesHandler(i);
 
 
         /*
@@ -67,10 +52,10 @@ module.exports = {
         ########## purge command ##########
         ###################################
         */
-        } else if (command.name === "purge") {
+        } else if (i.commandName === "purge") {
             
             // Call the purge handler function from the ModeratorController file
-            ModerationController.purgeHandler(args, message, client);
+            ModerationController.purgeHandler(i);
 
 
         /*
@@ -78,116 +63,116 @@ module.exports = {
         ########## warnings command ##########
         ######################################
         */
-        } else if (command.name === "warnings") {
+        } else if (i.commandName === "warnings") {
             // Call the warning handler function from the JoinableRolesController file
-            WarningsController.warningHandler(client, args, message);
+            WarningsController.warningHandler(i);
 
         /*
         ##################################
         ########## kick command ##########
         ##################################
         */
-        } else if(command.name === "kick") {
+        } else if(i.commandName === "kick") {
             // Call the kick handler function from the ModerationController file
-            ModerationController.kickHandler(args, message, client);
+            ModerationController.kickHandler(i);
 
         /*
         #################################
         ########## ban command ##########
         #################################
         */
-        } else if(command.name === "ban") {
+        } else if(i.commandName === "ban") {
             // Call the ban handler function from the ModerationController file
-            ModerationController.banHandler(args, message, client);
+            ModerationController.banHandler(i);
 
         /*
         #################################
         ######## unban command ##########
         #################################
         */
-        } else if(command.name === "unban") {
+        } else if(i.commandName === "unban") {
             // Call the unban handler function from the ModerationController file
-            ModerationController.unbanHandler(args, message, client);
+            ModerationController.unbanHandler(i);
             
         /*
         ##################################
         ########## warn command ##########
         ##################################
         */
-        } else if(command.name === "warn") {
+        } else if(i.commandName === "warn") {
             // Call the warn handler function from the ModerationController file
-            ModerationController.warnHandler(args, message, client);
+            ModerationController.warnHandler(i);
             
         /*
         ##################################
         ########## mute command ##########
         ##################################
         */
-        } else if(command.name === "mute") {
+        } else if(i.commandName === "mute") {
             // Call the mute handler function from the ModerationController file
-            ModerationController.muteHandler(args, message, client);
+            ModerationController.muteHandler(i);
             
         /*
         ##################################
         ######### unmute command #########
         ##################################
         */
-        } else if(command.name === "unmute") {
+        } else if(i.commandName === "unmute") {
             // Call the mute handler function from the ModerationController file
-            ModerationController.unmuteHandler(message, args, client);
+            ModerationController.unmuteHandler(i);
 
         /*
         ###################################
         ########  announce command ########
         ###################################
         */
-        } else if(command.name === "announce") {
+        } else if(i.commandName === "announce") {
             // Call the mute handler function from the ModerationController file
-            AnnouncementController.crudHandler(message, args, client);
+            AnnouncementController.crudHandler(i);
             
         /*
         ##################################
         ####### createmute command #######
         ##################################
         */
-        } else if(command.name === "createmute") {
+        } else if(i.commandName === "createmute") {
             // Call the mute handler function from the ModerationController file
-            ModerationController.createMuteHandler(message, client);
+            ModerationController.createMuteHandler(i);
             
         /*
         ##############################
         ####### config command #######
         ##############################
         */
-        } else if(command.name === "configure") {
+        } else if(i.commandName === "configure") {
             // Call the config handler function from the ModerationController file
-            ModerationController.configHandler(args, message, client);
+            ModerationController.configHandler(i);
 
         /*
         ######################################
         ########## settings command ##########
         ######################################
         */
-        } else if(command.name === "settings") {
+        } else if(i.commandName === "settings") {
             // Call the settings handler function from the ModerationController file
-            ModerationController.settingsHandler(args, message, client);
+            ModerationController.settingsHandler(i);
 
         /*
         ####################################
         ########## testdb command ##########
         ####################################
         */
-        } else if (command.name === 'testdb') {
+        } else if (i.commandName === 'testdb') {
 
             // Authenticate the sequelize object from within a model
             Models.setting.sequelize.authenticate()
             .then(() => {
                 // If valid then let user know
-                message.channel.send("Connection Successful!");
+                i.reply("Connection Successful!");
             })
             .catch(() => {
                 // If inalid then let user know
-                message.channel.send("Connection Failed!");
+                i.reply("Connection Failed!");
             });
         };
     },
@@ -285,6 +270,19 @@ module.exports = {
         });
     },
 
+    // // Function for checking the database connection
+    // dbCheck: async function(i) {
+    //     // Authenticate the sequelize object from within a model
+    //     Models.setting.sequelize.authenticate()
+    //     .then(() => {
+    //         // If valid then let user know
+    //         i.reply("Connection Successful!");
+    //     })
+    //     .catch(() => {
+    //         // If inalid then let user know
+    //         i.reply("Connection Failed!");
+    //     });
+    // },
 
     // Function to check db on startup
     databaseCheck: async function(c) {

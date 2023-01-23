@@ -1385,9 +1385,9 @@ module.exports = {
                     if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
                         // Deny the ability to send messages for each channel for the Muted - Text role
                         await channel.permissionOverwrites.edit(mutedText, {
-                            SEND_MESSAGES: false,
-                            USE_PUBLIC_THREADS: false,
-                            USE_PRIVATE_THREADS: false
+                            SendMessages: false,
+                            UsePublicThreads: false,
+                            UsePrivateThreads: false
                         });
                     };
                 });
@@ -1413,7 +1413,7 @@ module.exports = {
                     if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
                         // Deny the ability to add reactions for each channel for the Muted - Reactions role
                         await channel.permissionOverwrites.edit(mutedReactions, {
-                            ADD_REACTIONS: false
+                            AddReactions: false
                         });
                     }
                 });
@@ -2216,9 +2216,9 @@ module.exports = {
         // If the user only gave one argument assign it as the channel name
         } else if(newArgs.length === 1) {
             // Create the temporary voice channel in the same category the server's afk channel is in
-            message.guild.channels.create(`⏱️ ${name}`, {type: 'GUILD_VOICE', parent: message.guild.afkChannel.parent}).then((channel) => {
+            message.guild.channels.create({name: `⏱️ ${name}`, type: Discord.ChannelType.GuildVoice, parent: message.guild.afkChannel.parent}).then((channel) => {
                 // Move the newly created channel above the afk channel
-                channel.setPosition(message.guild.afkChannel.position - 1, {relative: true}).then(() => {
+                channel.setPosition(message.guild.afkChannel.position).then(() => {
                     
                     /* 
                     * Sync the model to the table
@@ -2267,7 +2267,7 @@ module.exports = {
                         });
                     });
                 });
-            });
+            }).catch(console.error);
 
         // If the user gave two arguments then assign the first as the channel name and the second as the channel limit
         } else if (newArgs.length === 2) {

@@ -40,11 +40,11 @@ module.exports = {
 
                     let i = 1; // counter
                     // Create the embed
-                    let recentEmbed = new Discord.MessageEmbed()
+                    let recentEmbed = new Discord.EmbedBuilder()
                     .setColor('#FF0000')
                     .setTitle('Most Recent Warnings')
                     .setDescription(`These are the ${data.length} most recent warnings given.`)
-                    .addField(`**To get more info on a warning use ${prefix}warnings specific {Warning Id}**`, '\u200b')
+                    .addFields({name: `**To get more info on a warning use ${prefix}warnings specific {Warning Id}**`, value:'\u200b'})
                     .setTimestamp();
 
                     // Add a new field for each warning
@@ -55,21 +55,22 @@ module.exports = {
                         // Create a new field depending on the type of warning
                         if(warning.type === "Trigger") {
                             // Warning from a Trigger
-                            recentEmbed.addField(
-                                `Warning #${i}`, // title
-                                `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.Formatters.time(date, "D")} (${Discord.Formatters.time(date, "R")})**\rSeverity: **${warning.severity}**\rTrigger(s): **${warning.triggers}**`); //value
+                            recentEmbed.addFields({
+                                name: `Warning #${i}`,
+                                value: `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.Formatters.time(date, "D")} (${Discord.Formatters.time(date, "R")})**\rSeverity: **${warning.severity}**\rTrigger(s): **${warning.triggers}**`
+                            });
                         } else if(warning.type === "Note") {
                             // Warning from a mod note
-                            recentEmbed.addField(
-                                `Warning #${i}`, //title
-                                `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.Formatters.time(date, "D")} (${Discord.Formatters.time(date, "R")})**` //value
-                            );
+                            recentEmbed.addFields({
+                                name:`Warning #${i}`,
+                                value: `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.Formatters.time(date, "D")} (${Discord.Formatters.time(date, "R")})**`
+                        });
                         } else {
                             // Warning for all other types
-                            recentEmbed.addField(
-                                `Warning #${i}`, //title
-                                `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.Formatters.time(date, "D")} (${Discord.Formatters.time(date, "R")})**` //value
-                            );
+                            recentEmbed.addFields({
+                                name: `Warning #${i}`,
+                                value: `Warning Id: **${warning.warning_id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.Formatters.time(date, "D")} (${Discord.Formatters.time(date, "R")})**`
+                        });
 
                         }
                         i++; // increment counter
@@ -95,18 +96,20 @@ module.exports = {
                     if (warning) {
                         guildUser = client.guilds.cache.get(message.guild.id).members.cache.get(warning.user_id.toString()); //get the guild member
                         let embedColor = 0xff5500; // embed color; default to orange
-                        let specificEmbed = new Discord.MessageEmbed(); //create the embed
+                        let specificEmbed = new Discord.EmbedBuilder(); //create the embed
 
                         // If user IS in the guild
                         if(guildUser) {
                             // Assign values to the embed
                             specificEmbed.setTitle(`Warning for ${args[1]}`)
-                            .setAuthor(guildUser.user.username, guildUser.user.displayAvatarURL({dynamic:true}))
-                            .addField(`User Id`, guildUser.user.tag, false)
-                            .addField(`User`, guildUser.toString(), true)
-                            .addField(`Server Nickname`, `${guildUser.nickname || "None"}`, true)
-                            .addField(`Warning Type`, warning.type, true)
-                            .addField(`User Roles`, guildUser.roles.cache.map(role => role.name).join(", "))
+                            .setAuthor({name: guildUser.user.username, iconURL: guildUser.user.displayAvatarURL({dynamic:true})})
+                            .addFields(
+                                {name: `User Id`, value: guildUser.user.tag, inline: false},
+                                {name: `User`, value: guildUser.toString(), inline: true},
+                                {name: `Server Nickname`, value: `${guildUser.nickname || "None"}`, inline: true},
+                                {name: `Warning Type`, value: warning.type, inline: true},
+                                {name: `User Roles`, value: guildUser.roles.cache.map(role => role.name).join(", ")}
+                            )
                             .setTimestamp();
 
                             // Call the fuction to define the type of warning
@@ -126,10 +129,12 @@ module.exports = {
                             client.users.fetch(warning.user_id.toString()).then((usr) => {
                                 // Assign values to the embed
                                 specificEmbed.setTitle(`Warning for ${args[1]}`)
-                                .setAuthor(usr.username, usr.displayAvatarURL({dynamic:true}))
-                                .addField(`User Id`, usr.id, true)
-                                .addField(`User`, usr, true)
-                                .addField(`Warning Type`, warning.type, true)
+                                .setAuthor({name: usr.username, iconURL: usr.displayAvatarURL({dynamic:true})})
+                                .addFields(
+                                    {name: `User Id`, value: usr.id, inline: true},
+                                    {name: `User`, value: usr, inline: true},
+                                    {name: `Warning Type`, value: warning.type, inline: true}
+                                )
                                 .setTimestamp();
 
                                 // Call the fuction to define the type of warning
@@ -182,12 +187,14 @@ module.exports = {
                                 specificEmbed.setColor(embedColor);
 
                                 // Add the remaining fields
-                                specificEmbed.addField(`Trigger(s) Hit`, warning.triggers, false);
-                                specificEmbed.addField(`Severity`, warning.severity, false);
-                                specificEmbed.addField(`Channel`, warnedChannel.toString(), false);
-                                specificEmbed.addField(`Time Trigger Was Hit`, `${Discord.Formatters.time(warning.createdAt, "f")} (${Discord.Formatters.time(warning.createdAt, "R")})`, false);
-                                specificEmbed.addField(`Full Message`, fullMessage, false);
-                                specificEmbed.addField(`Message URL`, warning.message_link, false)
+                                specificEmbed.addFields(
+                                    {name: `Trigger(s) Hit`, value: warning.triggers, inline: false},
+                                    {name: `Severity`, value: warning.severity, inline: false},
+                                    {name: `Channel`, value: warnedChannel.toString(), inline: false},
+                                    {name: `Time Trigger Was Hit`, value: `${Discord.Formatters.time(warning.createdAt, "f")} (${Discord.Formatters.time(warning.createdAt, "R")})`, inline: false},
+                                    {name: `Full Message`, value: fullMessage, inline: false},
+                                    {name: `Message URL`, value: warning.message_link, inline: false}
+                                    );
                             } else if(warning.type === "Note") {
                                 // Find the moderator
                                 moderator = client.guilds.cache.get(message.guild.id).members.cache.get(warning.mod_id.toString());
@@ -196,8 +203,10 @@ module.exports = {
                                 specificEmbed.setColor(embedColor);
 
                                 // Add the remaining fields
-                                specificEmbed.addField(`Created By`, moderator, false);
-                                specificEmbed.addField(`Warning Reason`, warning.reason, false);
+                                specificEmbed.addFields(
+                                    {name: `Created By`, value: moderator, inline: false},
+                                    {name: `Warning Reason`, value: warning.reason, inline: false}
+                                    );
 
                             }
 
@@ -263,14 +272,16 @@ module.exports = {
             let i = 0;
 
             // Create the embed
-            const userWarningsEmbed = new Discord.MessageEmbed() 
+            const userWarningsEmbed = new Discord.EmbedBuilder() 
                 .setColor('#FF0000')
                 .setTitle(`${warnedUser.user.username} has a total of ${Object.keys(warnings).length} warnings`)
-                .setAuthor(`${warnedUser.user.username}`, `${warnedUser.user.displayAvatarURL({dynamic:true})}`)
-                .addField(`User Id`, `${warnedUser.id}`)
-                .addField(`User`, `${warnedUser}`, true)
-                .addField(`Server Nickname`, `${warnedUser.nickname || "None"}`, true)
-                .addField(`User Roles`, `${warnedUser.roles.cache.map(role => role.name).join(", ")}`)
+                .setAuthor({name:`${warnedUser.user.username}`, iconURL: `${warnedUser.user.displayAvatarURL({dynamic:true})}`})
+                .addFields(
+                    {name: `User Id`, value:`${warnedUser.id}`},
+                    {name: `User`, value: `${warnedUser}`, inline: true},
+                    {name: `Server Nickname`, value: `${warnedUser.nickname || "None"}`, inline: true},
+                    {name: `User Roles`, value: `${warnedUser.roles.cache.map(role => role.name).join(", ")}`}
+                    )
                 .setTimestamp()
 
                 // If 21 or less warnings loop through them and add a field for each (Discord embeds are limited to 25 fields and we used 4 above)
@@ -278,7 +289,7 @@ module.exports = {
 
                     // Loop through the warnings adding a new field for each one with the warning's id
                     warnings.forEach((warning) => {
-                        userWarningsEmbed.addField(`Warning`, `Warning Id: **${warning.warning_id}**`);
+                        userWarningsEmbed.addFields({name: `Warning`, value: `Warning Id: **${warning.warning_id}**`});
                     });
 
                 // If more than 20 loop 20 times and then let user know there is more warnings
@@ -289,7 +300,7 @@ module.exports = {
 
                         // Add up to 20 fields
                         if (i < 20) {
-                            userWarningsEmbed.addField(`Warning #${i+1}`, `${warning.warning_id}`);
+                            userWarningsEmbed.addFields({name: `Warning #${i+1}`, value: `${warning.warning_id}`});
                             i++; // increment counter
 
                         // If there are more than 21 let user know the remaining amount

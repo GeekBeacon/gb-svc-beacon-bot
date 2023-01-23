@@ -48,13 +48,11 @@ module.exports = {
             inAdminRole = message.member.roles.cache.some(role => role.id === admin_role);
             isOwner = message.member.guild.owner;
 
+            console.log(inModRole)
+
         // If not a bot and not in a text channel
         } else if(!message.author.bot && message.channel.type === "DM") {
             return message.channel.send(`Oh hello, ${message.author.username}!\n\nIt seems you tried to message me within a dm, I appreciate you sliding up into my dms, but at this time I do not support any dm-based commands!`);
-
-        // If a bot then just ignore
-        } else {
-            return;
         }
 
         // If the message doesn't start with the prefix...
@@ -104,92 +102,99 @@ module.exports = {
             // If not a trigger word/phrase, a blacklisted domain, or a bot message then call the experience controller to give experience.
             } else {
                 
-                // Exclude PokeTwo bot commands
-                if(message.content.startsWith("p!")) {
-                    return;
-                } else {
+                // Exclude commands
+                if(!message.content.startsWith("!")) {
                     PointsController.givePoints(message, client);
                 }
+            } 
+
+            // If the prefix is used
+            } else {
+
+                inModTraineeRole = message.member.roles.cache.some(role => role.id === mod_trainee_role);
+                inModRole = message.member.roles.cache.some(role => role.id === mod_role);
+                inSuperRole = message.member.roles.cache.some(role => role.id === super_role);
+                inAdminRole = message.member.roles.cache.some(role => role.id === admin_role);
+                isOwner = message.member.guild.owner;
+
+                // If the message starts with the prefix then continue
+                // Store the arguments and command name in a variable
+                const args = message.content.slice(prefix.length).split(/ +/);
+                const commandName = args.shift().toLowerCase();
+
+                // Store the command in a variable
+                const command = client.commands.get(commandName) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
+
+                // If the command doesn't exist, then ignore the message
+                if (!command) {
+                    return;
+                };
+
+                // Check if the command is enabled
+                if(!command.enabled) {
+                    // If not enabled, let the user know
+                    return message.reply("Sorry, this command has been disabled!");
+                }
+
+                // Check if the channel is a text channel and the command is for guild only
+                if (command.guildOnly && message.channel.type !== "GUILD_TEXT") {
+                    return message.reply("I can't execute that command inside DMs!");
+                };
+
+                // Check if the command requires arguments and if it has any
+                if (command.args && !args.length) {
+                    let reply = `You didn't provide any arguments, ${message.author}!`;
+
+                    // Check if the command was used properly with the arguments
+                    if (command.usage) {
+                        reply += `\nThe proper usage would be: \`${prefix}${command.name} ${command.usage} \``;
+                    };
+
+                    return message.channel.send(reply);
+                };
+
+                // Check if the user has the proper permissions for the command if not let them know
+                if (command.admin === true && !(inAdminRole || message.member === isOwner)) {
+                    return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${adminRole.name} group!`);
+                } else if (command.super === true && !(inSuperRole || inAdminRole || message.member === isOwner)) {
+                    return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${superRole.name} group!`);
+                } else if (command.mod === true && !(inModTraineeRole || inModRole || inSuperRole || inAdminRole || message.member === isOwner)) {
+                    console.log(inModRole)
+                    return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${modRole.name} group!`);
+                    
+                }
+
+                // Check if the command has a cooldown time and set it if so
+                if (!cooldowns.has(command.name)) {
+                    cooldowns.set(command.name, new Discord.Collection());
+                };
+
+                // Declare variables for cooldowns
+                const now = Date.now();
+                const timestamps = cooldowns.get(command.name);
+                const cooldownAmount = (command.cooldown || 3) * 1000;
+
+                // Check if the cooldown is active for the user
+                if (timestamps.has(message.author.id)) {
+                    const expirationTime = timestamps.get(message.author.id) + cooldownAmount;
+
+                    if (now < expirationTime) {
+                        const timeLeft = (expirationTime - now) / 1000;
+                        return message.reply(`Please wait ${timeLeft.toFixed(1)} more second(s) before trying to use the \`${command.name}\` command again!`)
+                    };
+                };
+
+                // Set the cooldown to now
+                timestamps.set(message.author.id, now);
+                setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
+
+                // Attempt to execute the command
+                try {
+                    command.execute(message, args, client, triggerList, bannedUrls, emojiRoles);
+                } catch (error) {
+                    console.error(error);
+                    message.reply('There was an error trying to execute that command, please try again!')
+                };
             };
-
-            // If the message starts with the prefix then continue
-            return;
-        };
-
-        // Store the arguments and command name in a variable
-        const args = message.content.slice(prefix.length).split(/ +/);
-        const commandName = args.shift().toLowerCase();
-
-        // Store the command in a variable
-        const command = client.commands.get(commandName) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
-
-        // If the command doesn't exist, then ignore the message
-        if (!command) {
-            return;
-        };
-
-        // Check if the command is enabled
-        if(!command.enabled) {
-            // If not enabled, let the user know
-            return message.reply("Sorry, this command has been disabled!");
-        }
-
-        // Check if the channel is a text channel and the command is for guild only
-        if (command.guildOnly && message.channel.type !== "GUILD_TEXT") {
-            return message.reply("I can't execute that command inside DMs!");
-        };
-
-        // Check if the command requires arguments and if it has any
-        if (command.args && !args.length) {
-            let reply = `You didn't provide any arguments, ${message.author}!`;
-
-            // Check if the command was used properly with the arguments
-            if (command.usage) {
-                reply += `\nThe proper usage would be: \`${prefix}${command.name} ${command.usage} \``;
-            };
-
-            return message.channel.send(reply);
-        };
-
-        // Check if the user has the proper permissions for the command if not let them know
-        if (command.admin == true && !(inAdminRole || message.member === isOwner)) {
-            return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${adminRole.name} group!`);
-        } else if (command.super == true && !(inSuperRole || inAdminRole || message.member === isOwner)) {
-            return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${superRole.name} group!`);
-        } else if (command.mod == true && !(inModTraineeRole || inModRole || inSuperRole || inAdminRole || message.member === isOwner)) {
-            return message.reply(`Uh oh! Looks like you tried to use a command that is only for users in the ${modRole.name} group!`);
-        }
-
-        // Check if the command has a cooldown time and set it if so
-        if (!cooldowns.has(command.name)) {
-            cooldowns.set(command.name, new Discord.Collection());
-        };
-
-        // Declare variables for cooldowns
-        const now = Date.now();
-        const timestamps = cooldowns.get(command.name);
-        const cooldownAmount = (command.cooldown || 3) * 1000;
-
-        // Check if the cooldown is active for the user
-        if (timestamps.has(message.author.id)) {
-            const expirationTime = timestamps.get(message.author.id) + cooldownAmount;
-
-            if (now < expirationTime) {
-                const timeLeft = (expirationTime - now) / 1000;
-                return message.reply(`Please wait ${timeLeft.toFixed(1)} more second(s) before trying to use the \`${command.name}\` command again!`)
-            };
-        };
-
-        // Set the cooldown to now
-        timestamps.set(message.author.id, now);
-        setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
-
-        // Attempt to execute the command
-        try {
-            command.execute(message, args, client, triggerList, bannedUrls, emojiRoles);
-        } catch (error) {
-            console.error(error);
-            message.reply('There was an error trying to execute that command, please try again!')
-        };
     }
 }

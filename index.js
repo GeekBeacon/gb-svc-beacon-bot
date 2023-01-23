@@ -3,8 +3,8 @@ require('dotenv').config()
 // Import required files
 const Discord = require("discord.js");
 const config = require("./config");
-const { readdirSync, statSync } = require("fs");
-const { join } = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 const messageController = require("./controllers/MessageController");
 const joinController = require("./controllers/JoinController");
 const leaveController = require("./controllers/LeaveController");
@@ -17,10 +17,27 @@ const Models = require("./models/AllModels");
 
 // Instantiate a new Discord client and collection
 const client = new Discord.Client({
-    intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MEMBERS, Discord.Intents.FLAGS.GUILD_BANS, Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_PRESENCES, Discord.Intents.FLAGS.GUILD_MESSAGES, Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Discord.Intents.FLAGS.GUILD_VOICE_STATES],
-    partials: ["MESSAGE", "CHANNEL", "REACTION"]});
-client.commands = new Discord.Collection(); //create a new collection for commands
+    intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMembers, Discord.GatewayIntentBits.GuildBans, Discord.GatewayIntentBits.MessageContent, Discord.GatewayIntentBits.GuildPresences, Discord.GatewayIntentBits.GuildMessages, Discord.GatewayIntentBits.GuildMessageReactions, Discord.GatewayIntentBits.GuildVoiceStates],
+    partials: [Discord.Partials.Message, Discord.Partials.Channel, Discord.Partials.Reaction]});
 client.settings = new Discord.Collection(); //create a new collection for the settings from the db
+client.commands = new Discord.Collection(); //create a new collection for commands
+
+const commandsPath = path.join(__dirname, 'commands'); //get the commands dir
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js')); //get all the command files
+
+// Loop through the command files
+for (const file of commandFiles) {
+	const filePath = path.join(commandsPath, file);
+	const command = require(filePath);
+	// Set a new item in the Collection with the key as the command name and the value as the exported module
+	if ('data' in command && 'execute' in command) {
+		client.commands.set(command.data.name, command);
+	} else {
+		console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+	}
+}
+
+
 
 // Create a class for Triggers
 class TriggerList {
@@ -98,19 +115,6 @@ process.on('unhandledRejection', error => console.error('Uncaught Promise Reject
 
 // Trigger once when the bot comes online
 client.once('ready', async () => {
-
-    // Query the database for all the commands
-    dbCmds = await Models.command.findAll({raw:true});
-    // Create the path for the commands directory
-    const absolutePath = join(__dirname, "./", "commands");
-    // Read command files
-    const commandFiles = readdirRecursive(absolutePath).filter(file => file.endsWith(".js"));
-    // Loop through commands and assign them to the client
-    for (const file of commandFiles) {
-        const cmd = require(file);
-        const extraInfo = dbCmds.find(command => command.name === cmd.name);
-        client.commands.set(cmd.name, {...cmd, ...extraInfo});
-    };
 
     // Create the settings table if it doesn't exist
     Models.setting.sync();
@@ -319,34 +323,25 @@ client.on("messageReactionRemove", async (reaction, user) => {
     }
 });
 
-// Function to read the given directory recursively
-function readdirRecursive(directory) {
-    const cmds = []; //cmds arr
-  
-    // Nested function to read the files within the directory given
-    (function read(dir) {
-        // Gather the contents of the directory
-        const files = readdirSync(dir);
-  
-        // Loop through the files
-        for (const file of files) {
+client.on("interactionCreate", async interaction => {
+    if(!interaction.isChatInputCommand()) return; //ignore chat commands
 
-            // Join the directory and file to create the path
-            const path = join(dir, file);
+    // Create the command object with the command name given
+    const command = interaction.client.commands.get(interaction.commandName);
 
-            // If the path is a directory then look inside of it
-            if (statSync(path).isDirectory()) {
-                // Read the contents of the path
-                read(path);
-            } else {
-                // Add the file to the commands arr
-                cmds.push(path);
-            }
-        }
-    })(directory);
-    // Return the cmds found
-    return cmds;
-}
+    // Ignore if the command wasn't found
+    if(!command) {
+        return;
+    }
+
+    // Attempt to execute the command
+    try {
+        await command.execute(interaction);
+    } catch(e) {
+        console.error(e);
+        await interaction.reply({content: `There was an error trying to execute that command, please try again!`, ephemeral: true})
+    }
+});
 
 // Log the client in
 client.login(config.token);
