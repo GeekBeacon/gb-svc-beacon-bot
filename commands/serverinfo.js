@@ -1,17 +1,13 @@
 const Discord = require("discord.js");
 
 module.exports = {
-    name: 'serverinfo',
-    description: 'Get information about the server.',
-    aliases: ['serverstats'],
-    cooldown: 5,
-    enabled: true,
-    mod: false,
-    super: false,
-    admin: false,
-    usage: " ",
-    async execute(message, args, client) {
-        const server = message.guild;
+
+    // Build the command
+    data: new Discord.SlashCommandBuilder()
+    .setName(`serverinfo`)
+    .setDescription(`Gets information about the server!`),
+    async execute(interaction) {
+        const server = interaction.guild;
         // Make sure the server is available
         if(server.available) {
             const createDate = server.createdAt; // created date
@@ -23,24 +19,29 @@ module.exports = {
             let textChannelCount = 0;
             let voiceChannelCount = 0;
             let threadChannelCount = 0;
+            let forumChannelCount = 0;
             let serverURL;
 
+            // Loop through all the channels and increment the proper channel type's count
             channels.forEach((channel) => {
                 switch(channel.type) {
-                    case "GUILD_CATEGORY":
+                    case Discord.ChannelType.GuildCategory:
                         categoryCount++;
                         break;
-                    case "GUILD_NEWS":
+                    case Discord.ChannelType.GuildAnnouncement:
                         newsChannelCount++;
                         break;
-                    case "GUILD_VOICE":
+                    case Discord.ChannelType.GuildVoice:
                         voiceChannelCount++;
                         break;
-                    case "GUILD_TEXT":
+                    case Discord.ChannelType.GuildText:
                         textChannelCount++;
                         break;
-                    case "GUILD_PUBLIC_THREAD":
+                    case Discord.ChannelType.PublicThread:
                         threadChannelCount++;
+                        break;
+                    case Discord.ChannelType.GuildForum:
+                        forumChannelCount++;
                         break;
                     default:
                         break;
@@ -80,7 +81,7 @@ module.exports = {
                     },
                     {
                         name: `Created`,
-                        value: `${Discord.Formatters.time(createDate, "D")} (${Discord.Formatters.time(createDate, "R")})`,
+                        value: `${Discord.time(createDate, "D")} (${Discord.time(createDate, "R")})`,
                         inline: true,
                     },
                     {
@@ -90,7 +91,7 @@ module.exports = {
                     },
                     {
                         name: `Boosts`,
-                        value: `${server.premiumSubscriptionCount}/30`,
+                        value: `${server.premiumSubscriptionCount}`,
                         inline: true,
                     },
                     {
@@ -125,7 +126,7 @@ module.exports = {
                     },
                     {
                         name: `Channels`,
-                        value: `Categories: ${categoryCount} | News: ${newsChannelCount} | Text: ${textChannelCount} | Threads: ${threadChannelCount} | Voice: ${voiceChannelCount}`,
+                        value: `Categories: ${categoryCount} | News: ${newsChannelCount} | Text: ${textChannelCount} \n Threads: ${threadChannelCount} | Forums: ${forumChannelCount} | Voice: ${voiceChannelCount}`,
                         inline: false,
                     },
                 ],
@@ -135,7 +136,7 @@ module.exports = {
                 }
             };
 
-            message.channel.send({embeds: [serverEmbed]});
+            interaction.reply({embeds: [serverEmbed]});
         }
-    },
+    }
 };

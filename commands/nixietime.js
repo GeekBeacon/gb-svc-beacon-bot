@@ -1,24 +1,29 @@
 // Import required files
-const { duration } = require("moment");
 const moment = require("moment");
+const Discord = require("discord.js");
 
 module.exports = {
-    name: 'nixietime',
-    description: 'Get information on or convert a time from normal human time to NixieTime',
-    aliases: ['nt', 'nixtime'],
-    cooldown: 5,
-    enabled: true,
-    mod: false,
-    super: false,
-    admin: false,
-    usage: "[amount of time]",
-    async execute(message, args) {
 
-        // If an argument was given perform a "nixietime" calculation
-        if(args.length) {
+    // Build the command
+    data: new Discord.SlashCommandBuilder()
+    .setName(`nixietime`)
+    .setDescription(`Get information on or convert a time from normal human time to NixieTime!`)
+    .addStringOption(option =>
+        option.setName(`duration`)
+        .setDescription(`The duration to calculate`)
+        .setRequired(false)
+    ),
+
+    // Execute the command
+    async execute(interaction) {
+        // If no option was given
+        if(!interaction.options.getString(`duration`)) {
+            // Define NixieTime
+            interaction.reply(`NixieTime is defined as a function of NixieTime that represents the current time plus a nondeterministic random value denoting a temporal period. The exact value of the delta is unknown and changes constantly based on fluctuation in the space time continuum and doctor who paradoxes.`);
+        } else {
             const regex = /^((\d+)\s?(weeks|week|w|month|months|M|year|years|y|hours|hour|h|minutes|minute|min|mins|m|seconds|second|secs|sec|s|days|day|d)){1}$/;
-            let newArgs = args.join();
-            newArgs = newArgs.replace(",", "").trim();
+            let newArgs = interaction.options.getString(`duration`); //gets the duration provided
+            newArgs = newArgs.replace(" ", "").trim();
 
             // Make sure the user input an accepted time duration
             if(newArgs.match(regex)) {
@@ -34,7 +39,7 @@ module.exports = {
                 // Decide the max for the random function based on the duration type
                 if([`s`, `sec`, `secs`, `second`, `seconds`, `m`, `min`, `mins`, `minute`, `minutes`].includes(durArg)) {
 
-                    randomNum = Math.floor(Math.random() * (59 - 1) + 1); //secs and mins
+                    randomNum = Math.floor(Math.random() * (59 - numArg + 1) + numArg); //secs and mins
                 } else if([`h`, `hour`, `hours`].includes(durArg)) {
 
                     randomNum = Math.floor(Math.random() * (23 - 1) + 1); //hours
@@ -70,16 +75,12 @@ module.exports = {
                 finalTime = finalTime.replace(/[,]+/g, " ");
 
                 // Send the message
-                message.channel.send(`If Nixie said it will be about *${newArgs}*, then it will really be about **${finalTime}**!`);
+               interaction.reply(`If Nixie said it will be about *${newArgs}*, then it will really be about **${finalTime}**!`);
 
             // If user didn't provide an accepted time duration let them know
             } else {
-                message.reply(`Uh oh! Looks like you provided me with an invalid time duration. Please only use a number followed by the duration.\n\nAccepted durations:\n\`s, sec, secs, second, seconds, m, min, mins, minute, minutes, h, hour, hours, d, day, days, w, week, weeks, M, month, months, y, year, years\``);
+                interaction.reply(`Uh oh! Looks like you provided me with an invalid time duration. Please only use a number followed by a single duration.\n\nAccepted durations:\n\`s, sec, secs, second, seconds, m, min, mins, minute, minutes, h, hour, hours, d, day, days, w, week, weeks, M, month, months, y, year, years\`\n\nExamples: \`15m\` for 15 minutes, \`3d\` for 3 days, \`1M\` for 1 month!`);
             }
-        // If no argument was given just provide the quote
-        } else {
-            message.channel.send(`NixieTime is defined as a function of NixieTime that represents the current time plus a nondeterministic random value denoting a temporal period.  The exact value of the delta is unknown and changes constantly based on fluctuation in the space time continuum and doctor who paradoxes`)
         }
-        
-    },
+    }
 };
