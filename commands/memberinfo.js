@@ -3,6 +3,13 @@ const Models = require("../models/AllModels");
 
 module.exports = {
 
+    // Set config values
+    name: 'memberinfo',
+    enabled: true,
+    mod: false,
+    super: false,
+    admin: false,
+    
     // Build the command
     data: new Discord.SlashCommandBuilder()
     .setName(`memberinfo`)

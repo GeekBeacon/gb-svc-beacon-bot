@@ -131,7 +131,7 @@ client.once('ready', async () => {
 
     // Populate the triggerList, bannedUrls, and emojiRolePosts and check for unbans/unmutes
     try {
-        databaseController.botReconnect(triggerList, bannedUrls, emojiRolePosts);
+        databaseController.botReconnect(triggerList, bannedUrls, emojiRolePosts, client);
     } catch(e) {
         console.error("Error: ", e);
     }

@@ -6,6 +6,13 @@ const fs = require('node:fs');
 
 module.exports = {
 
+    // Set config values
+    name: 'cmdrefresh',
+    enabled: true,
+    mod: false,
+    super: false,
+    admin: true,
+    
     data: new Discord.SlashCommandBuilder()
     .setName(`cmdrefresh`)
     .setDescription(`Runs a copy of the deploy-commands.js file to refresh the bot's slash command collection!`)

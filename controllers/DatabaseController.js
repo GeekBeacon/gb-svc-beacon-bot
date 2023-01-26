@@ -140,13 +140,13 @@ module.exports = {
             ModerationController.createMuteHandler(i);
             
         /*
-        ##############################
-        ####### config command #######
-        ##############################
+        #################################
+        ####### cmdtoggle command #######
+        #################################
         */
-        } else if(i.commandName === "configure") {
-            // Call the config handler function from the ModerationController file
-            ModerationController.configHandler(i);
+        } else if(i.commandName === "cmdtoggle") {
+            // Call the cmdToggle handler function from the ModerationController file
+            ModerationController.cmdToggleHandler(i);
 
         /*
         ######################################
@@ -178,7 +178,7 @@ module.exports = {
     },
 
     // Function for when bot starts up
-    botReconnect: function(tl, bu, erp) {
+    botReconnect: function(tl, bu, erp, client) {
         let triggerList = tl, bannedUrls = bu, emojiRolePosts = erp;
 
         /*
@@ -196,6 +196,26 @@ module.exports = {
             */
             Models[key].sync({force: false});
         };
+
+        /*
+        #####################################
+        ######## gather cmd settings ########
+        #####################################
+        */
+        // Find all the commands in the database
+        Models.command.findAll().then((cmds) =>{
+            // Loop through each command
+            cmds.forEach((cmd) =>{
+                // Find the command in the local collection
+                let localCmd = client.commands.get(cmd.get(`name`));
+
+                // Assign the values from the database to the local command's values
+                localCmd.enabled = cmd.get("enabled");
+                localCmd.mod = cmd.get("mod");
+                localCmd.super = cmd.get("super");
+                localCmd.admin = cmd.get("admin");
+            });
+        })
         
         /*
         ###################################
@@ -269,20 +289,6 @@ module.exports = {
             console.error("Error: "+e);
         });
     },
-
-    // // Function for checking the database connection
-    // dbCheck: async function(i) {
-    //     // Authenticate the sequelize object from within a model
-    //     Models.setting.sequelize.authenticate()
-    //     .then(() => {
-    //         // If valid then let user know
-    //         i.reply("Connection Successful!");
-    //     })
-    //     .catch(() => {
-    //         // If inalid then let user know
-    //         i.reply("Connection Failed!");
-    //     });
-    // },
 
     // Function to check db on startup
     databaseCheck: async function(c) {

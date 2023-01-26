@@ -2331,108 +2331,122 @@ module.exports = {
             });
         };
     },
-    configHandler: async function(args, message, client) {
-        const prefix = client.settings.get("prefix");
-        // Find the command in the local collection of the commands
-        const command = client.commands.get(args[0]) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(args[0]));
+    cmdToggleHandler: async function(interaction) {
+        const command = interaction.client.commands.get(interaction.options.getString(`command`)); //get the command from the location collection
 
-        // If the command exists proceed to update it
+        // If the command exists
         if(command) {
-            // If the user requested to disable the command
-            if (args[1] === "disable") {
+            // Create string vars
+            let currentState = ``;
+            let newState = ``;
+            let finalState = "";
 
-                // Make sure the user isn't trying to disable the config command
-                if(command.name === "configure") {
-                    return message.reply(`Well aren't you a silly one, you can't disable the configure command! 😝`);
-                }
+            // Ensure the user isn't attempting to disable the cmdtoggle command
+            if(command.name === "cmdtoggle") {
+                return interaction.reply({content: `Well aren't you a silly one, you can't disable the command toggle command! 😝`, ephemeral: true});
+            }
 
-                // If the command isn't already disabled
-                if(command.enabled !== false) {
-                    const state = false; //var for the state of the command
-
-                    // Update the command in the local collection 
-                    client.commands.set(args[0], {...command, enabled: state});
-
-                    // Search for the command in the db
-                    Models.command.findOne({where: {name:command.name}, raw:true}).then((cmd) => {
-
-                        // If the command was found
-                        if(cmd) {
-                            // Update the command to be disabled
-                            Models.command.update({enabled: state}, {where: {name: cmd.name}});
-
-                        // If the command wasn't found
-                        } else {
-                            // Add it to the db
-                            Models.command.create({
-                                name: command.name,
-                                enabled: state,
-                                mod: command.mod,
-                                super: command.super,
-                                admin: command.admin
-
-                            });
-                        }
-                    });
-
-                    // Let the user know the command has been disabled
-                    message.reply(`I have successfully disabled the ${args[0]} command!`)
-
-                // If the command is already disabled let the user know
-                } else {
-                    message.reply(`Uh oh! It seems this command is already disabled!`)
-                }
-                
-            // If the user requested to enable the command
-            } else if(args[1] === "enable") {
-
-                // If the command isn't already enabled
-                if(command.enabled !== true) {
-                    const state = true; //var for the state of the command
-
-                    // Update the command in the local collection 
-                    client.commands.set(args[0], {...command, enabled: state});
-
-                    // Search for the command in the db
-                    Models.command.findOne({where: {name:command.name}, raw:true}).then((cmd) => {
-
-                        // If the command was found
-                        if(cmd) {
-                            // Update the command to be disabled
-                            Models.command.update({enabled: state}, {where: {name: cmd.name}});
-
-                        // If the command wasn't found
-                        } else {
-                            // Add it to the db
-                            Models.command.create({
-                                name: command.name,
-                                enabled: state,
-                                mod: command.mod,
-                                super: command.super,
-                                admin: command.admin
-
-                            });
-                        }
-                    });
-
-                    // Let the user know the command has been disabled
-                    message.reply(`I have successfully enabled the ${args[0]} command!`)
-
-                // If the command is already enabled let the user know
-                } else {
-                    message.reply(`Uh oh! It seems this command is already enabled!`)
-                }
-            // If the user tried to give a config option that doesn't exist
+            // If the command is currently enabled
+            if(command.enabled === true) {
+                currentState = `enabled`; //current state of the command
+                newState = `disable`; //action to take on the current state of the command
+                finalState = "disabled"; //the state of the command once it has been changed
+                startToggle(currentState, newState, finalState); //call the function to perform the toggle
+            // If the command is currently disabled
             } else {
-                let newArgs = args; //copy the args to a new var
-                newArgs.shift(); //remove the first arg
-                newArgs = newArgs.join(" "); //join the args
-                return message.reply(`Uh oh! \`${newArgs}\` is not a configuration option!`)
+                currentState = `disabled`; //current state of the command
+                newState = `enable`; //action to take on the current state of the command
+                finalState = "enabled"; //the state of the command once it has been changed
+                startToggle(currentState, newState, finalState); //call the function to perform the toggle
+            }
+
+            // Create a function to handle the toggle regardless of the current state
+            function startToggle(c, n, f) {
+
+                // Create the row of buttons
+                const btns = new Discord.ActionRowBuilder()
+                    .addComponents(
+                        new Discord.ButtonBuilder()
+                            .setCustomId(`yes`)
+                            .setLabel(`Yes (Continue)`)
+                            .setStyle(Discord.ButtonStyle.Success),
+                        new Discord.ButtonBuilder()
+                            .setCustomId(`no`)
+                            .setLabel(`No (Abort)`)
+                            .setStyle(Discord.ButtonStyle.Danger)
+                    )
+
+                // Send the response with the buttons to only the user who initiated the command
+                interaction.reply({content: `The ${command.name} command is currently ${c}.\nAre you sure you want to ${n} this command?`, ephemeral: true, components: [btns], fetchReply: true})
+                    .then(async (msg) => {
+
+                        // Create the collector to capture the button clicks
+                        const btnCollector = await msg.createMessageComponentCollector({componentType: Discord.ComponentType.Button, max:1,  time:15000});
+
+                        // When a button is clicked
+                        btnCollector.on(`collect`, i => {
+                            // If the user agreed to continue
+                            if(i.customId === "yes") {
+                                let state = true; //the state to set it to
+
+                                // If the command is enabled set the state var to false
+                                if (c === `enabled`) {
+                                    state = false;
+                                };
+
+                                toggleState(i, state);
+
+                            // If the user wanted to abort
+                            } else {
+                                return i.channel.send(`${i.user},\nGot it! I have aborted this function. The ${command.name} is still ${c}.`);
+                            }
+                        })
+
+                        // Once the interaction times out
+                        btnCollector.on(`end`, collected => {
+
+                            // If the user didn't click on one of the buttons let them know it timed out
+                            if(collected.size === 0) {
+                                interaction.channel.send(`My apologies ${interaction.user} but your previous interaction has timed out.\nThe command remains unchanged, please try again when you're ready!`);
+                            }
+                        })
+                });
+
+                // Function to handle updating the state of the command
+                function toggleState(i, s) {
+                    // Update the command in the local collection 
+                    i.client.commands.set(command.name, {...command, enabled: s});
+
+                    // Search for the command in the db
+                    Models.command.findOne({where: {name:command.name}, raw:true}).then((cmd) => {
+
+                        // If the command was found
+                        if(cmd) {
+                            // Update the command
+                            Models.command.update({enabled: s}, {where: {name: cmd.name}});
+
+                        // If the command wasn't found
+                        } else {
+                            // Add it to the db
+                            Models.command.create({
+                                name: command.name,
+                                enabled: state,
+                                mod: command.mod,
+                                super: command.super,
+                                admin: command.admin
+
+                            });
+                        }
+                    });
+
+                    // Let the user know the command has been changed
+                    i.reply(`I have successfully ${f} the ${command.name} command!`)
+                }
             }
 
         // If the command wasn't found, let the user know
         } else {
-            return message.reply(`Uh oh! Looks like you are trying to update a command that doesn't exist, please try again!\n If you need a list of commands use \`${prefix}help\``)
+            return interaction.reply({content: `Uh oh! Looks like you are trying to update a command that doesn't exist, please try again!`, ephemeral: true})
         }
     },
     settingsHandler: async function(args, message, client) {

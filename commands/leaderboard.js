@@ -3,6 +3,14 @@ const Models = require("../models/AllModels");
 const Discord = require("discord.js");
 
 module.exports = {
+
+    // Set config values
+    name: 'leaderboard',
+    enabled: true,
+    mod: false,
+    super: false,
+    admin: false,
+
     // Build the command
     data: new Discord.SlashCommandBuilder()
     .setName(`leaderboard`)

@@ -2,6 +2,13 @@ const Discord = require("discord.js");
 
 module.exports = {
 
+    // Set config values
+    name: 'serverinfo',
+    enabled: true,
+    mod: false,
+    super: false,
+    admin: false,
+    
     // Build the command
     data: new Discord.SlashCommandBuilder()
     .setName(`serverinfo`)
