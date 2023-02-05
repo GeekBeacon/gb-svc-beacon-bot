@@ -34,18 +34,20 @@ module.exports = {
         // If the command is disabled then let the user know
         if(this.enabled === false) {
             return interaction.reply({content: `Uh oh! This commend is currently disabled!`, ephemeral: true});
-        }
 
-        const pingType = interaction.options.getString(`type`) ?? `websocket`; // get the ping type or default to websocket
+        // If the command is enabled, proceed
+        } else {
+            const pingType = interaction.options.getString(`type`) ?? `websocket`; // get the ping type or default to websocket
 
-        // If user asked for the api ping
-        if (pingType === "api") {
-            const sent = await interaction.reply({ content: `Pinging...`, fetchReply: true});
-            interaction.editReply(`Pong! API response time: ${sent.createdTimestamp - interaction.createdTimestamp}ms`);
+            // If user asked for the api ping
+            if (pingType === "api") {
+                const sent = await interaction.reply({ content: `Pinging...`, fetchReply: true});
+                interaction.editReply(`Pong! API response time: ${sent.createdTimestamp - interaction.createdTimestamp}ms`);
 
-        // If user asked for the websocket ping
-        } else if(pingType === "websocket") {
-            interaction.reply(`Pong! Websocket response time: ${Math.round( ( interaction.client.ws.ping + Number.EPSILON ) * 100 ) / 100}ms`);
+            // If user asked for the websocket ping
+            } else if(pingType === "websocket") {
+                interaction.reply(`Pong! Websocket response time: ${Math.round( ( interaction.client.ws.ping + Number.EPSILON ) * 100 ) / 100}ms`);
+            }
         }
     }
 };
