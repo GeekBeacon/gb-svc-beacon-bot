@@ -4,13 +4,6 @@ const DatabaseController = require("../controllers/DatabaseController");
 
 // Create a new module export
 module.exports = {
-
-    // Set config values
-    name: 'testdb',
-    enabled: true,
-    mod: false,
-    super: false,
-    admin: true,
     
     // Set config values
     name: `testdb`,
