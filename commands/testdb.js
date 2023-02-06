@@ -20,7 +20,6 @@ module.exports = {
     .setDefaultMemberPermissions(Discord.PermissionFlagsBits.Administrator),
     async execute(interaction) {
         if(this.enabled === true) {
-            console.log(interaction.commandName)
             DatabaseController.queryHandler(interaction);
         } else {
             return interaction.reply(`Oopsie! This command is currently disabled!`);

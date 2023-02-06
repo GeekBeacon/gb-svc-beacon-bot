@@ -7,136 +7,47 @@ const { get } = require('lodash');
 // Create a new module export
 module.exports = {
     // Create a function with required args
-    triggerHandler: function(cmd, c, a, m, tl) {
+    triggerHandler: function(interaction, triggerList) {
         // Create vars
-        const command = cmd, client = c, args = a, message = m, triggerList = tl;
         let trigger;
-        const prefix = client.settings.get("prefix");
-        const modRole = message.member.roles.cache.some(role => role.id === client.settings.get("mod_role_id"));
-        const superRole = message.member.roles.cache.some(role => role.id === client.settings.get("super_role_id"));
-        const adminRole = message.member.roles.cache.some(role => role.id === client.settings.get("admin_role_id"));
-        const ownerRole = message.member.guild.owner;
-        const modChannel = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_channel_name"))));
-            
-        // Check the length of the args
-        if (args.length > 1) {
-            // If more than 1 arg, join to create a string, make lowercase, and assign to trigger
-            trigger = args.join(" ").toLowerCase();
-        } else if (args.length === 1) {
-            // If only 1 arg then make lowercase assign it to trigger
-            trigger = args[0].toLowerCase();
-        };
+        const triggerAction = interaction.options.getSubcommand()
+        const modRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("mod_role_id"));
+        const superRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("super_role_id"));
+        const adminRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("admin_role_id"));
+        const ownerRole = interaction.member.guild.owner;
+        const modChannel = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_channel_name"))));
 
         /*********** LIST TRIGGERS ***********/
-        if (command.name === 'listtriggers') {
+        if (triggerAction === 'list') {
 
-            // If user is a mod and didn't pass in any args, list triggers
-            if ((modRole || superRole || adminRole || message.member === ownerRole) && !args.length) {
-                let triggers = [];
+            // If user is a mod+ then list triggers
+            if ((modRole || superRole || adminRole || interaction.member === ownerRole)) {
+                let enabledTriggers = [];
+                let disabledTriggers = [];
 
-                // Get all rows and add their trigger word/phrase to the triggers arr
+                // Get all rows and add their trigger word/phrase to the correct triggers array
                 Models.trigger.findAll().then((data) => {
                     data.forEach((item) => {
-                        triggers.push(item.get('trigger'));
-                    });
-                // Send the triggers to the mod channel
-                }).then(() => {
-                    if (triggers.length) {
-                        modChannel.send('**Triggers:** '+triggers.map(trigger => `\`${trigger}\``).join(', '))
-                        // Let user know to check the mod channel
-                        .then(() => {
-                            // Check if the current channel is the mod channel
-                            if(message.channel !== modChannel) {
-                                // If not let the user know the information was sent to the mod channel
-                                message.reply(`I've sent the list of triggers to ${modChannel}`);
-                            }
-                        });
-                    } else {
-                        message.channel.send("Uh oh! It seems there aren't any triggers yet!");
-                    }
-                });
-
-            // If user is a super mod and passed in args, then give all data about that trigger
-            } else if ((superRole || adminRole || message.member === ownerRole) && args.length) {
-                let triggerData = {};
-
-                // Get the data for the trigger
-                Models.trigger.findOne({where: {trigger: trigger}}).then((data) => {
-                    triggerData.id = data.get('id'); //get id
-                    triggerData.trigger = data.get('trigger'); //get trigger
-                    triggerData.creator = client.users.cache.get(data.get('user_id'));
-                    triggerData.severity = data.get('severity'); //get severity level
-                    triggerData.enabled = data.get('enabled'); //get enabled
-                    triggerData.created =data.get('createdAt'); //get created date
-                    triggerData.updated = data.get('updatedAt'); //get updated date
-
-                // Send the trigger to the user in a DM
-                }).then(() => {
-                    let color;
-                    // Set the color of the embed based on severity level
-                    switch(triggerData.severity) {
-                        case 'low':
-                            color = 0xffff00; //yellow
-                            break;
-                        case 'medium':
-                            color = 0xff5500; //orange
-                            break;
-                        case 'high':
-                            color = 0xff0000; //red
-                            break;
-                    }
-
-
-                    // Create the embed to send in a DM
-                    const triggerEmbed = {
-                        color: color,
-                        author: {
-                            name: triggerData.creator.username+'#'+triggerData.creator.discriminator,
-                            icon_url: triggerData.creator.displayAvatarURL({dynamic:true}),
-                        },
-
-                        fields: [
-                            {
-                                name: 'Word/Phrase',
-                                value: triggerData.trigger,
-                            },
-                            {
-                                name: 'Enabled',
-                                value: triggerData.enabled,
-                                inline: true,
-                            },
-                            {
-                                name: 'Severity',
-                                value: triggerData.severity,
-                                inline: true,
-                            }
-                        ],
-                        footer: {
-                            text: `Created: ${Discord.Formatters.time(triggerData.created, "D")} (${Discord.Formatters.time(triggerData.created, "R")}) | Updated: ${Discord.Formatters.time(triggerData.updated, "D")} (${Discord.Formatters.time(triggerData.updated, "R")})`
-                        },
-
-                    };
-
-                    // Send the info to the mod channel
-                    modChannel.send({embeds: [triggerEmbed]})
-                    .then(() => {
-                        // Check if the current channel is the mod channel
-                        if(message.channel !== modChannel) {
-                            // If not in the mod channel let the user know it was sent there
-                            message.reply(`I've sent you the information on \`${trigger}\` to ${modChannel}!`);
+                        // If the trigger is enabled add it to the enabledTriggers array
+                        if(item.get(`enabled`) == true) {
+                            enabledTriggers.push(item.get('trigger'));
+                        // If the trigger is disabled add it to the disabledTriggers array
+                        } else if (item.get(`enabled`) == false) {
+                            disabledTriggers.push(item.get(`trigger`))
                         }
                     });
-                }).catch((e) => {
-                    message.reply(`It looks like \`${trigger}\` doesn't exist!`);
+                // Send the triggers to the user
+                }).then(() => {
+                    if (enabledTriggers.length || disabledTriggers) {
+                        interaction.reply({content: `**Enabled triggers:** ${enabledTriggers.map(trigger => `\`${trigger}\``).join(', ') || "None"}\n\n**Disabled triggers:** ${disabledTriggers.map(trigger => `\`${trigger}\``).join(', ') || "None"}`, ephemeral: true});
+                    // If there are no triggers let the user know
+                    } else {
+                        interaction.reply({content: "Uh oh! It seems there aren't any triggers yet!", ephemeral: true});
+                    }
                 });
-
-            // If user isn't a super mod and passed in args let them know they can't use that command
-            } else if ((!superRole || !adminRole || message.member !== ownerRole) && args.length) {
-                message.channel.send(`You do not have the proper permissions to use this command!\nIf you were trying to get the trigger list, use \`${prefix}listtriggers\``);
-            };
-
+            }
         /*********** ADD TRIGGER ***********/
-        } else if (command.name === 'addtrigger') {
+        } else if (triggerAction === 'add') {
             // Split the trigger by comma so that we can seperate the trigger and severity level
             const triggerArgs = trigger.split(',');
 
@@ -188,7 +99,7 @@ module.exports = {
             }
 
         /*********** REMOVE TRIGGER ***********/
-        } else if (command.name === 'removetrigger') {
+        } else if (triggerAction === 'remove') {
             // Query the database for the trigger passed in
             Models.trigger.findOne({where: {trigger: trigger}}).then((trig) => {
                 // If the trigger was found, then remove it
@@ -212,7 +123,7 @@ module.exports = {
             });
 
         /*********** ENABLE TRIGGER ***********/
-        } else if (command.name === 'enabletrigger') {
+        } else if (triggerAction === 'enable') {
             // Find the trigger
             Models.trigger.findOne({where: {trigger: trigger}}).then((trig) => {
                 //If the trigger was found...
@@ -239,7 +150,7 @@ module.exports = {
             });
 
         /*********** DISABLE TRIGGER ***********/
-        } else if (command.name === 'disabletrigger') {
+        } else if (triggerAction === 'disable') {
             // Find the trigger
             Models.trigger.findOne({where: {trigger: trigger}}).then((trig) => {
                 //If the trigger was found...

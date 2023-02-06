@@ -66,9 +66,11 @@ module.exports = {
                     .setDescription(`The word or phrase to disable within the trigger list.`)
                     .setRequired(true)
             )
-    ),
+    )
+    .setDefaultMemberPermissions(Discord.PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
-        //Do the stuff
+        // Call the query handler from the database controller with required args
+        DatabaseController.queryHandler(interaction);
     }
 }
