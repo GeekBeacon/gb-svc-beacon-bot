@@ -21,6 +21,7 @@ const client = new Discord.Client({
     partials: [Discord.Partials.Message, Discord.Partials.Channel, Discord.Partials.Reaction]});
 client.settings = new Discord.Collection(); //create a new collection for the settings from the db
 client.commands = new Discord.Collection(); //create a new collection for commands
+client.triggers = new Discord.Collection(); //create a new collection for triggers
 
 const commandsPath = path.join(__dirname, 'commands'); //get the commands dir
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js')); //get all the command files
@@ -37,20 +38,6 @@ for (const file of commandFiles) {
 	}
 }
 
-
-
-// Create a class for Triggers
-class TriggerList {
-    constructor() {
-        this._list = {};
-    }
-    get list() {
-        return this._list;
-    }
-    set list(triggers) {
-        this._list = triggers;
-    }
-}
 // Create a class for banned domains
 class BannedDomainList {
     constructor() {
@@ -87,6 +74,7 @@ let deleteSet = new Set();
 // Create vars
 let dbCmds;
 let settings;
+let triggers;
 
 //console.log(JSON.stringify(require("./config"), null, 4)) //shows the running config
 
@@ -120,14 +108,24 @@ client.once('ready', async () => {
     Models.setting.sync();
     // Query the settings table for all settings
     settings = await Models.setting.findAll({raw:true});
-
     // Assign each setting to the settings collection
     settings.forEach((item) => {client.settings.set(item.name, item.value)});
+
+    // Create the triggers table if it doesn't exist
+    Models.trigger.sync();
+    // Query the settings table for all settings
+    triggers = await Models.trigger.findAll({raw:true});
+    // Assign each setting to the settings collection
+    triggers.forEach((item) => {
+        // Create a an object for the trigger's values
+        let triggerValues = {"severity":item.severity, "enabled": item.enabled};
+        client.triggers.set(item.trigger, triggerValues);
+    });
 
     console.log('Bot Online!');
     
     // Set the status of the bot
-    client.user.setPresence({activities: [{name: `${client.settings.get("prefix")}help`}], status: 'online'});
+    client.user.setStatus(`online`);
 
     // Populate the triggerList, bannedUrls, and emojiRolePosts and check for unbans/unmutes
     try {

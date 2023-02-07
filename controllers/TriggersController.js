@@ -9,7 +9,7 @@ module.exports = {
     // Create a function with required args
     triggerHandler: function(interaction, triggerList) {
         // Create vars
-        let trigger;
+        let trigger = interaction.options.getString(`trigger`);
         const triggerAction = interaction.options.getSubcommand()
         const modRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("mod_role_id"));
         const superRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("super_role_id"));
@@ -48,55 +48,43 @@ module.exports = {
             }
         /*********** ADD TRIGGER ***********/
         } else if (triggerAction === 'add') {
-            // Split the trigger by comma so that we can seperate the trigger and severity level
-            const triggerArgs = trigger.split(',');
+            const severity = interaction.options.getString(`severity`) //severity level
 
-            // Check if the user gave a low/medium/high severity level
-            if(triggerArgs[1]) {
-                const severity = triggerArgs[1].trim().toLowerCase(); //severity level
+            /* 
+            * Sync the model to the table
+            * Creates a new table if table doesn't exist, otherwise just inserts a new row
+            * id, createdAt, and updatedAt are set by default; DO NOT ADD
+            * Since default is set for enabled above, no need to add
+            !!!!
+                Keep force set to false otherwise it will overwrite the table instead of making a new row!
+            !!!!
+            */
+            Models.trigger.sync({ force: false }).then(() => {
+                // Query the database for the trigger
+                Models.trigger.findOne({where:{trigger: trigger}}).then((trig) => {
+                    // If there is no trigger add it
+                    if (!trig) {
+                        Models.trigger.create({
+                            trigger: trigger, // add the trigger string to the trigger column
+                            user_id: interaction.member.id, // add the creator's id
+                            severity: severity
+                        })
+                        // Let the user know it was added
+                        .then(() => {
+                            interaction.reply(`I have successfully added \`${trigger}\` to the trigger list!`);
 
-                // Make sure user gave a proper severity level
-                if (severity === 'low' || severity === 'medium' || severity === 'high') {
-                    /* 
-                    * Sync the model to the table
-                    * Creates a new table if table doesn't exist, otherwise just inserts a new row
-                    * id, createdAt, and updatedAt are set by default; DO NOT ADD
-                    * Since default is set for enabled above, no need to add
-                    !!!!
-                        Keep force set to false otherwise it will overwrite the table instead of making a new row!
-                    !!!!
-                    */
-                    Models.trigger.sync({ force: false }).then(() => {
-                        // Query the database for the trigger
-                        Models.trigger.findOne({where:{trigger: triggerArgs[0]}}).then((trig) => {
-                            // If there is no trigger add it
-                            if (!trig) {
-                                Models.trigger.create({
-                                    trigger: triggerArgs[0], // add the trigger string to the trigger column
-                                    user_id: message.author.id, // add the creator's id
-                                    severity: triggerArgs[1].trim().toLowerCase()
-                                })
-                                // Let the user know it was added
-                                .then(() => {
-                                    message.channel.send(`I have successfully added \`${triggerArgs[0]}\` to the trigger list!`);
-
-                                    // Add trigger to TriggerList
-                                    triggerList.list[triggerArgs[0]] = triggerArgs[1];
-                                });
-                            // If there was a trigger, let user know it exists already
-                            } else {
-                                message.channel.send(`It looks like \`${triggerArgs[0]}\` has already been added!`);
-                            }
+                            // Create the object for the trigger's values
+                            const triggerValues = {"severity":severity, "enabled":1};
+                            // Add trigger to the local triggers collection
+                            interaction.client.triggers.set(trigger, triggerValues);
                         });
-                    });
-                // If invalid severity level let user know
-                } else {
-                    message.reply(`You must use either **low**, **medium**, or **high** for the severity level!\nExample: \`${prefix}addtrigger ${triggerArgs[0]}, low/medium/high\``);
-                }
-            // If no severity level let the user know it is required
-            } else {
-                message.reply(`To add a trigger you must specify the severity level of that trigger.\nExample: \`${prefix}addtrigger ${triggerArgs[0]}, low/medium/high\``);
-            }
+                    // If there was a trigger, let user know it exists already
+                    } else {
+                        interaction.reply({content: `It looks like \`${trigger}\` has already been added to the trigger list!`, ephemeral: true});
+                    }
+                });
+            });
+            
 
         /*********** REMOVE TRIGGER ***********/
         } else if (triggerAction === 'remove') {
@@ -111,14 +99,15 @@ module.exports = {
                     // Let the user know it was removed
                     }).then(() => {
 
-                        // Remove the trigger from the triggerList
-                        delete triggerList.list[trigger];
+                        // Remove the trigger from the trigger collection
+                        interaction.client.triggers.delete(trigger);
+                        
 
-                        message.channel.send(`I have successfully removed \`${trigger}\` from the trigger list!`);
+                       interaction.reply(`I have successfully removed \`${trigger}\` from the trigger list!`);
                     });
                 // If the trigger wasn't found let the user know
                 } else {
-                    message.channel.send(`Unable to find \`${trigger}\`, please try again or use \`${prefix}triggers\` to view all triggers!`);
+                   interaction.reply({content: `Unable to find \`${trigger}\`, please try again or use \`/triggers list\` to view all triggers!`, ephemeral:true});
                 };
             });
 
@@ -134,18 +123,20 @@ module.exports = {
                         trig.update({
                             enabled: true
                         }).then(() => {
-                            // Add trigger to TriggerList
-                            triggerList.list[trig.trigger] = trig.severity;
+                            // Assign the trigger's local collection values
+                            const triggerValues = {"severity":trig.severity, "enabled":1}
+                            // Update the local collection trigger's values
+                            interaction.client.triggers.set(trigger,triggerValues)
 
-                            message.reply(`I have successfully enabled \`${trigger}\`!`);
+                            interaction.reply(`I have successfully enabled \`${trigger}\`!`);
                         });
                     // If already enabled let user know
                     } else {
-                        message.reply(`It looks like \`${trigger}\` is already enabled!`);
+                        interaction.reply({content:`It looks like \`${trigger}\` is already enabled!`, ephemeral:true});
                     };
                 // If the trigger wasn't found let the user know
                 } else {
-                    message.reply(`I was unable to find \`${trigger}\`!`);
+                    interaction.reply({content: `Unable to find \`${trigger}\`, please try again or use \`/triggers list\` to view all triggers!`, ephemeral:true});
                 };
             });
 
@@ -161,18 +152,20 @@ module.exports = {
                         trig.update({
                             enabled: false
                         }).then(() => {
-                            message.reply(`I have successfully disabled \`${trigger}\`!`);
+                            // Assign the trigger's local collection values
+                            const triggerValues = {"severity":trig.severity, "enabled":0}
+                            // Update the local collection trigger's values
+                            interaction.client.triggers.set(trigger,triggerValues)
 
-                            // Remove the trigger from the triggerList
-                            delete triggerList.list[trigger];
+                            interaction.reply(`I have successfully disabled \`${trigger}\`!`);
                         });
                     // If already disabled let user know
                     } else {
-                        message.reply(`It looks like \`${trigger}\` is already disabled!`);
+                        interaction.reply({content:`It looks like \`${trigger}\` is already disabled!`, ephemeral:true});
                     };
                 // If the trigger wasn't found let the user know
                 } else {
-                    message.reply(`I was unable to find \`${trigger}\`!`);
+                    interaction.reply({content: `Unable to find \`${trigger}\`, please try again or use \`/triggers list\` to view all triggers!`, ephemeral:true});
                 };
             });
         };
