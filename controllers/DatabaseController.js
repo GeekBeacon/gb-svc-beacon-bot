@@ -178,8 +178,8 @@ module.exports = {
     },
 
     // Function for when bot starts up
-    botReconnect: function(tl, bu, erp, client) {
-        let triggerList = tl, bannedUrls = bu, emojiRolePosts = erp;
+    botReconnect: function(bu, client) {
+        let bannedUrls = bu;
 
         /*
         ##################################
@@ -228,15 +228,13 @@ module.exports = {
                 enabled: 1 //make sure trigger is enabled; 0 = false 1 = true
             }
         }).then((data) => {
-            let triggers = {}; //obj for triggers
-
             // Loop through each item found and add it to the triggers obj
             data.forEach((item) => {
-                triggers[item.get('trigger')] = item.get("severity");
+                // Assign the trigger's local collection values
+                const triggerValues = {"severity":item.get(`severity`), "enabled":item.get(`enabled`)}
+                // Update the local collection trigger's values
+                client.triggers.set(item.get(`trigger`),triggerValues);
             });
-
-            // Add the list of triggers to the local copy
-            triggerList.list = triggers;
         }).catch((e) => {
              console.error("Error: "+e);
         });
@@ -259,34 +257,6 @@ module.exports = {
             bannedUrls.list = blacklistedDomains;
         }).catch((e) => {
              console.error("Error: "+e);
-        });
-
-        /*
-        ############################################
-        ######## populate emojirole post_id ########
-        ############################################
-        */
-        // Get all rows of emojiroles and add their post ids to the postIds arr
-        Models.emojirole.findAll().then((data) => {
-            let postIds = []; //array for post ids
-
-            // Loop through each item found and add it to the postsIds array
-            data.forEach((item) => {
-
-                // Check if the post_id was already added to the array
-                if(postIds.includes(item.get("post_id"))) {
-                    return; //ignore if so
-
-                // Add to the array if the id doesn't exist in it already
-                } else {
-                    postIds.push(item.get('post_id'));
-                }
-            });
-
-            // Add the list of postIds to the local copy
-            emojiRolePosts.posts = postIds;
-        }).catch((e) => {
-            console.error("Error: "+e);
         });
     },
 
@@ -384,102 +354,6 @@ module.exports = {
                     logChannel.send({embeds: [unbanEmbed]});
                 });
             });
-        });
-
-        /*
-        ###########################
-        ###### UNMUTES CHECK ######
-        ###########################
-        */
-        // Function to handle unmutes
-        mutedUsers = await Models.mute.findAll({where: {completed: 0},raw:true}).then((data) => {
-            const currentTime = new Date();
-            // If the mute(s) were found...
-            if (data) {
-                // Loop through each row from the db
-                data.forEach(async (mute) => {
-                    let umDate = moment(mute.unmute_date); // store the unmute date
-                    // Make sure the mute hasn't already been completed
-                    if(moment(umDate).isSameOrBefore(moment(currentTime))) {
-                        // Find the server the user was muted in
-                        const guild = client.guilds.cache.get(mute.guild_id);
-                        let member;
-
-                        // Attempt to find the member
-                        try {
-                            // If able to find a user by the id, assign to member var
-                            member = await guild.members.fetch(mute.user_id);
-                        } catch(e) {
-                            // If unable to find member then ignore
-                            return;
-                        }
-
-                        const mutedRole = member.roles.cache.find(r => r.name.includes("Muted")); //muted role
-                        logChannel = guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //action log channel
-                        // Unmute the user
-                        member.roles.remove(mutedRole).then(() => {
-                            const moderator = client.users.cache.get(mute.moderator_id); //get the moderator that performed the mute
-                            let muteDate = mute.created;
-
-                            // Update the completed field
-                            Models.mute.update({completed: true}, {where: {id: mute.id}});
-
-                            // Create the unmute embed
-                            const unmuteEmbed = {
-                                color: 0xFF5500,
-                                title: "User Unmuted",
-                                author: {
-                                    name: `${member.user.username}#${member.user.discriminator}`,
-                                    icon_url: member.user.displayAvatarURL({dynamic:true}),
-                                },
-                                description: `${member.user.username}'s mute has expired`,
-                                fields: [
-                                    {
-                                        name: `User`,
-                                        value: `${member}`,
-                                        inline: true,
-                                    },
-                                    {
-                                        name: `Mute Type`,
-                                        value: `${mute.type}`,
-                                        inline: true,
-                                    },
-                                    {
-                                        name: `Muted By`,
-                                        value: `${moderator}`,
-                                        inline: true,
-                                    },
-                                    {
-                                        name: `Date Muted`,
-                                        value: `${Discord.Formatters.time(muteDate, "f")} (${Discord.Formatters.time(muteDate, "R")})`,
-                                        inline: true,
-                                    },
-                                    {
-                                        name: `Reason`,
-                                        value: `${mute.reason}`,
-                                        inline: false,
-                                    },
-                                ],
-                                timestamp: new Date(),
-                                footer: {
-                                    text: `Mute Id: ${mute.id}`
-                                }
-                            };
-
-                            // Send the embed to the log channel
-                            logChannel.send({embeds: [unmuteEmbed]});
-                        // If member doesn't have a muted rule then update the db and ignore
-                        }).catch(() => {
-                            // Update the completed field
-                            Models.mute.update({completed: true}, {where: {id: mute.id}});
-                            return;
-                        })
-                    }
-                });
-            // If no mutes were found just ignore
-            } else {
-                return;
-            }
         });
 
 

@@ -9,9 +9,9 @@ const cooldowns = new Discord.Collection();
 module.exports = {
 
     // Create a function to be called
-    messageHandler: async function(m, c, tl, bu, ds, dbCmds, erp) {
+    messageHandler: async function(m, c, bu, ds) {
         // Create vars
-        const message = m, client = c, triggerList = tl, bannedUrls = bu, deleteSet = ds, emojiRoles = erp;
+        const message = m, client = c, bannedUrls = bu, deleteSet = ds;
         let inModTraineeRole, inModRole, inSuperRole, inAdminRole, isOwner;
         let triggerArr = [];
         let bannedUrlArr = [];
@@ -28,11 +28,10 @@ module.exports = {
         const superRole = message.guild.roles.cache.find(role => role.id === super_role);
         const adminRole = message.guild.roles.cache.find(role => role.id === admin_role);
 
-        // Loop through the whole trigger list
-        for(key in triggerList.list) {
-            // Add each trigger to the triggerArr var
+        // Add each trigger word/phrase to the trigger array
+        client.triggers.forEach((value, key) => {
             triggerArr.push(key);
-        }
+        });
 
         // Loop through the bannedUrl list
         bannedUrls.list.forEach((domain) => {
@@ -47,8 +46,6 @@ module.exports = {
             inSuperRole = message.member.roles.cache.some(role => role.id === super_role);
             inAdminRole = message.member.roles.cache.some(role => role.id === admin_role);
             isOwner = message.member.guild.owner;
-
-            console.log(inModRole)
 
         // If not a bot and not in a text channel
         } else if(!message.author.bot && message.channel.type === "DM") {

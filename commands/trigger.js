@@ -20,6 +20,11 @@ module.exports = {
     .addSubcommand(subcommand =>
         subcommand.setName(`list`)
             .setDescription(`Lists the currently enabled triggers.`)
+            .addStringOption(option => 
+                option.setName(`trigger`)
+                    .setDescription(`The word or phrase to look up.`)
+                    .setRequired(false)
+            )
     )
     .addSubcommand(subcommand => 
         subcommand.setName(`add`)

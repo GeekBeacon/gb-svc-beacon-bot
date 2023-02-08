@@ -1,8 +1,8 @@
 // Import the required files
-const moment = require('moment');
 const Models = require("../models/AllModels");
 const shortid = require('shortid');
-const { get } = require('lodash');
+const Discord = require(`discord.js`)
+const Lodash = require(`lodash`)
 
 // Create a new module export
 module.exports = {
@@ -15,7 +15,6 @@ module.exports = {
         const superRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("super_role_id"));
         const adminRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("admin_role_id"));
         const ownerRole = interaction.member.guild.owner;
-        const modChannel = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_channel_name"))));
 
         /*********** LIST TRIGGERS ***********/
         if (triggerAction === 'list') {
@@ -25,26 +24,73 @@ module.exports = {
                 let enabledTriggers = [];
                 let disabledTriggers = [];
 
-                // Get all rows and add their trigger word/phrase to the correct triggers array
-                Models.trigger.findAll().then((data) => {
-                    data.forEach((item) => {
-                        // If the trigger is enabled add it to the enabledTriggers array
-                        if(item.get(`enabled`) == true) {
-                            enabledTriggers.push(item.get('trigger'));
-                        // If the trigger is disabled add it to the disabledTriggers array
-                        } else if (item.get(`enabled`) == false) {
-                            disabledTriggers.push(item.get(`trigger`))
+                // If a trigger was passed in
+                if(interaction.options.get(`trigger`)) {
+                    // Attempt to find the trigger in the db
+                    Models.trigger.findOne({where: {trigger:trigger}}).then(async (trig) =>{
+                        // If a matching trigger was found
+                        if(trig) {
+                            // Get the user that added the trigger
+                            const creator = await interaction.client.users.fetch(trig.get(`user_id`));
+                            let embedColor = ""; //color for the embed
+
+                            // Set the embed color based on severify level
+                            switch(trig.get(`severity`)) {
+                                case "high":
+                                    embedColor = "#FF0000";
+                                    break;
+                                case "medium":
+                                    embedColor = "#FFA500";
+                                    break;
+                                case "low":
+                                    embedColor = "#00FF00";
+                                    break;
+                            }
+
+                            // Create embed
+                            const triggerEmbed = new Discord.EmbedBuilder()
+                                .setColor(embedColor)
+                                .setTitle(`Information for ${trig.get(`trigger`)}`)
+                                .addFields(
+                                    {name: `Word/Phrase`, value: `${trig.get("trigger")}`, inline: false},
+                                    {name: `Severity`, value: `${Lodash.startCase(trig.get("severity"))}`, inline: true},
+                                    {name: `Enabled`, value: `${trig.get("enabled") == 1 ? "True" : "False"}`, inline: true},
+                                    {name: `Created by`, value: `${creator}`, inline: true}
+                                )
+                                .setTimestamp();
+
+                            // Send the user the embed
+                            interaction.reply({embeds: [triggerEmbed], ephemeral: true});
+
+                        // If no matching trigger was found let the user know
+                        } else {
+                            interaction.reply({content:`Uh oh! Looks like ${interaction.option.getString(`trigger`)} isn't in the list of triggers!`, ephemeral:true});
+                        }
+                    })
+
+                // If no trigger was passed in
+                } else {
+                    // Get all rows and add their trigger word/phrase to the correct triggers array
+                    Models.trigger.findAll().then((data) => {
+                        data.forEach((item) => {
+                            // If the trigger is enabled add it to the enabledTriggers array
+                            if(item.get(`enabled`) == true) {
+                                enabledTriggers.push(item.get('trigger'));
+                            // If the trigger is disabled add it to the disabledTriggers array
+                            } else if (item.get(`enabled`) == false) {
+                                disabledTriggers.push(item.get(`trigger`))
+                            }
+                        });
+                    // Send the triggers to the user
+                    }).then(() => {
+                        if (enabledTriggers.length || disabledTriggers) {
+                            interaction.reply({content: `**Enabled triggers:** ${enabledTriggers.map(trigger => `\`${trigger}\``).join(', ') || "None"}\n\n**Disabled triggers:** ${disabledTriggers.map(trigger => `\`${trigger}\``).join(', ') || "None"}`, ephemeral: true});
+                        // If there are no triggers let the user know
+                        } else {
+                            interaction.reply({content: "Uh oh! It seems there aren't any triggers yet!", ephemeral: true});
                         }
                     });
-                // Send the triggers to the user
-                }).then(() => {
-                    if (enabledTriggers.length || disabledTriggers) {
-                        interaction.reply({content: `**Enabled triggers:** ${enabledTriggers.map(trigger => `\`${trigger}\``).join(', ') || "None"}\n\n**Disabled triggers:** ${disabledTriggers.map(trigger => `\`${trigger}\``).join(', ') || "None"}`, ephemeral: true});
-                    // If there are no triggers let the user know
-                    } else {
-                        interaction.reply({content: "Uh oh! It seems there aren't any triggers yet!", ephemeral: true});
-                    }
-                });
+                }
             }
         /*********** ADD TRIGGER ***********/
         } else if (triggerAction === 'add') {
@@ -124,7 +170,7 @@ module.exports = {
                             enabled: true
                         }).then(() => {
                             // Assign the trigger's local collection values
-                            const triggerValues = {"severity":trig.severity, "enabled":1}
+                            const triggerValues = {"severity":trig.severity, "enabled":true}
                             // Update the local collection trigger's values
                             interaction.client.triggers.set(trigger,triggerValues)
 
@@ -153,7 +199,7 @@ module.exports = {
                             enabled: false
                         }).then(() => {
                             // Assign the trigger's local collection values
-                            const triggerValues = {"severity":trig.severity, "enabled":0}
+                            const triggerValues = {"severity":trig.severity, "enabled":false}
                             // Update the local collection trigger's values
                             interaction.client.triggers.set(trigger,triggerValues)
 
@@ -173,7 +219,6 @@ module.exports = {
     triggerHit: function(m, t, c) {
         // Create vars
         const message = m, triggers = t, client = c;
-        const prefix = client.settings.get("prefix");
         let severity, fullMessage;
         
         let warnId = shortid.generate(); // generate a uid
@@ -257,7 +302,7 @@ module.exports = {
                                 },
                                 {
                                     name: "Get More Info",
-                                    value: `${prefix}warnings specific ${warnId}`,
+                                    value: `/warnings specific ${warnId}`,
                                 },
                                 {
                                     name: "Full Message From User",
@@ -349,7 +394,7 @@ module.exports = {
                     },
                     {
                         name: "More Info",
-                        value: `${prefix}warnings specific ${warnId}`,
+                        value: `/warnings specific ${warnId}`,
                     },
                     {
                         name: "Full Message",
@@ -435,7 +480,7 @@ module.exports = {
                             });
                         } else if (severity === "medium" || severity === "low") {
                             // Send embed to the super log
-                            superLog.send({embeds: e});
+                            superLog.send({embeds: [e]});
                         }
 
                     // If a super channel isn't found
