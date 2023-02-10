@@ -6,39 +6,36 @@ const DatabaseController = require("../controllers/DatabaseController");
 module.exports = {
     
     // Set config values
-    name: `joinable`,
+    name: `configjoinables`,
     enabled: true,
     // Set minimum staff level (available to ewverybody by default unless disabled)
     mod: false,
-    super: false,
+    super: true,
     admin: false,
 
     // Build the command
     data: new Discord.SlashCommandBuilder()
-    .setName(`joinable`)
-    .setDescription(`List, join, or leave the server's joinable roles!`)
-    .addSubcommand(subcommand =>
-        subcommand.setName(`list`)
-            .setDescription(`List all of the joinable roles.`)
-    )
-    .addSubcommand(subcommand =>
-        subcommand.setName(`join`)
-            .setDescription(`Join a joinable role.`)
+    .setName(`configjoinables`)
+    .setDescription(`Configure the server's joinable roles`)
+    .addSubcommand(subcommand => 
+        subcommand.setName(`add`)
+            .setDescription(`Adds a role to be joinable.`)
             .addRoleOption(option => 
                 option.setName(`role`)
-                    .setDescription(`The role you wish to join.`)
+                    .setDescription(`The role to add to the list of joinable roles.`)
                     .setRequired(true)
             )
     )
     .addSubcommand(subcommand => 
-        subcommand.setName(`leave`)
-            .setDescription(`Leave a joinable role.`)
+        subcommand.setName(`remove`)
+            .setDescription(`Removes a role from being joinable.`)
             .addRoleOption(option => 
                 option.setName(`role`)
-                    .setDescription(`The role you wish to leave.`)
+                    .setDescription(`The role to remove from the list of joinable roles.`)
                     .setRequired(true)
             )
-    ),
+    )
+    .setDefaultMemberPermissions(Discord.PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
         // Call the query handler from the database controller with required args
