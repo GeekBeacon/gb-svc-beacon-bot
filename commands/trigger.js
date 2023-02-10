@@ -11,7 +11,7 @@ module.exports = {
     // Set minimum staff level (available to ewverybody by default unless disabled)
     mod: true,
     super: false,
-    admin: true,
+    admin: false,
 
     // Build the command
     data: new Discord.SlashCommandBuilder()
