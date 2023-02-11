@@ -2398,7 +2398,7 @@ module.exports = {
 
                             // If the user wanted to abort
                             } else {
-                                return i.channel.send(`${i.user},\nGot it! I have aborted this function. The ${command.name} is still ${c}.`);
+                                return i.reply({content: `${i.user},\nGot it! I have aborted this function. The ${command.name} is still ${c}.`, ephemeral: true});
                             }
                         })
 

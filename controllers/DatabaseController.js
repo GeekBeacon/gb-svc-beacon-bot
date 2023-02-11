@@ -12,9 +12,7 @@ const Models = require("../models/AllModels");
 // Create a new module export
 module.exports = {
     // Create a function with required args
-    queryHandler: function(i, tl) {
-        // Create vars
-         const triggerList = tl;
+    queryHandler: function(i) {
 
         /*
         ######################################
@@ -24,7 +22,7 @@ module.exports = {
         if (i.commandName.includes("trigger")) {
 
             // Call the trigger handler function from the TriggersController file
-            TriggersController.triggerHandler(i, triggerList);
+            TriggersController.triggerHandler(i);
 
         /*
         #######################################
@@ -37,14 +35,14 @@ module.exports = {
             AutorolesController.autoroleHandler(i);
         
         /*
-        ###########################################
-        ########## joinableroles command ##########
-        ###########################################
+        #############################################
+        ######## (config)joinable(s) command ########
+        #############################################
         */
-        } else if (i.commandName.includes("joinablerole") || i.commandName.includes("joinrole") || i.commandName.includes("leaverole")) {
+        } else if (i.commandName.includes("joinable")) {
 
             // Call the joinable roles handler function from the JoinableRolesController file
-            JoinableRolesController.joinableRolesHandler(i);
+            JoinableRolesController.joinablesHandler(i);
 
 
         /*

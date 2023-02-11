@@ -7,7 +7,7 @@ const Lodash = require(`lodash`)
 // Create a new module export
 module.exports = {
     // Create a function with required args
-    triggerHandler: function(interaction, triggerList) {
+    triggerHandler: function(interaction) {
         // Create vars
         let trigger = interaction.options.getString(`trigger`);
         const triggerAction = interaction.options.getSubcommand()

@@ -42,6 +42,6 @@ module.exports = {
 
     async execute(interaction) {
         // Call the query handler from the database controller with required args
-        //DatabaseController.queryHandler(interaction);
+        DatabaseController.queryHandler(interaction);
     }
 }
