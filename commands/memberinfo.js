@@ -39,6 +39,10 @@ module.exports = {
         // If the user exists then call the userData function
         if (member) {
             userData(member);
+
+        // If the user provided a non-member of the server
+        } else {
+            interaction.reply({content: `Uh oh! I wasn't able to find that member, please make sure you are providing me with a member of this server!`, ephemeral: true})
         }
 
         async function userData(member) {
@@ -180,8 +184,6 @@ module.exports = {
                         value: `${rank}`,
                         inline: true
                     }
-
-
                 )
                 .setTimestamp()
                 .setFooter({text: `User ID: ${member.user.id}`});

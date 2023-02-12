@@ -2435,7 +2435,7 @@ module.exports = {
                             // Add it to the db
                             Models.command.create({
                                 name: command.name,
-                                enabled: state,
+                                enabled: s,
                                 mod: command.mod,
                                 super: command.super,
                                 admin: command.admin
