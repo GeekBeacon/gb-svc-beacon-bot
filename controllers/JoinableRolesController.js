@@ -71,36 +71,36 @@ module.exports = {
                                             .setStyle(Discord.ButtonStyle.Danger)
                                     )
 
-                                // Send the response with the buttons to only the user who initiated the command
-                                interaction.reply({content: `**Warning:** ${role.name} is part of our *Squirrel Army*, this section of GeekBeacon focuses on mental health and many users within this group are sensitive to certain situations.\nPlease be careful with how you approach these precious users.\n\n**Disclaimer: GeekBeacon is NOT a professional or liscensed mental health company nor do we have any on our staff team!**\n\nDo you still wish to join the ${role.name}?`, ephemeral: true, components: [btns], fetchReply: true})
-                                    .then(async (msg) => {
+                                    // Send the response with the buttons to only the user who initiated the command
+                                    interaction.reply({content: `**Warning:** ${role.name} is part of our *Squirrel Army*, this section of GeekBeacon focuses on mental health and many users within this group are sensitive to certain situations.\nPlease be careful with how you approach these precious users.\n\n**Disclaimer: GeekBeacon is NOT a professional or liscensed mental health company nor do we have any on our staff team!**\n\nDo you still wish to join the ${role.name}?`, ephemeral: true, components: [btns], fetchReply: true})
+                                        .then(async (msg) => {
 
-                                        // Create the collector to capture the button clicks
-                                        const btnCollector = await msg.createMessageComponentCollector({componentType: Discord.ComponentType.Button, max:1,  time:15000});
+                                            // Create the collector to capture the button clicks
+                                            const btnCollector = await msg.createMessageComponentCollector({componentType: Discord.ComponentType.Button, max:1,  time:60000});
 
-                                        // When a button is clicked
-                                        btnCollector.on(`collect`, i => {
-                                            // If the user agreed to continue
-                                            if(i.customId === "yes") {
+                                            // When a button is clicked
+                                            btnCollector.on(`collect`, i => {
+                                                // If the user agreed to continue
+                                                if(i.customId === "yes") {
 
-                                                i.member.roles.add(role); // add the role
-                                                return i.reply({content: `${i.user},\nYou've been successfully added to the ${role.name} role!`, ephemeral: true});
+                                                    i.member.roles.add(role); // add the role
+                                                    return i.reply({content: `$You've been successfully added to the ${role.name} role!`, ephemeral: true});
 
-                                            // If the user wanted to abort
-                                            } else {
-                                                return i.reply(`${i.user},\nGot it! I have aborted this function. You have not been added to the ${role.name} role!.`);
-                                            }
-                                        })
+                                                // If the user wanted to abort
+                                                } else {
+                                                    return i.reply(`Got it! I have aborted this function. You have not been added to the ${role.name} role!.`);
+                                                }
+                                            })
 
-                                        // Once the interaction times out
-                                        btnCollector.on(`end`, collected => {
+                                            // Once the interaction times out
+                                            btnCollector.on(`end`, collected => {
 
-                                            // If the user didn't click on one of the buttons let them know it timed out
-                                            if(collected.size === 0) {
-                                                interaction.channel.send(`My apologies ${interaction.user}, but your previous interaction has timed out.\nThe command remains unchanged, please try again when you're ready!`);
-                                            }
-                                        })
-                                });
+                                                // If the user didn't click on one of the buttons let them know it timed out
+                                                if(collected.size === 0) {
+                                                    interaction.channel.send(`My apologies ${interaction.user}, but your previous interaction has timed out.\nThe command remains unchanged, please try again when you're ready!`);
+                                                }
+                                            })
+                                    });
                                 // If the role wasn't part of the Squirrel Army
                                 } else {
                                     interaction.member.roles.add(role); // add the role

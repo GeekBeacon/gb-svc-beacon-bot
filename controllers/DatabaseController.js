@@ -120,6 +120,15 @@ module.exports = {
             ModerationController.unmuteHandler(i);
 
         /*
+        ####################################
+        ######### slowmode command #########
+        ####################################
+        */
+        } else if(i.commandName === "slow") {
+            // Call the slowmode handler function from the ModerationController file
+            ModerationController.slowmode(i);
+
+        /*
         ###################################
         ########  announce command ########
         ###################################

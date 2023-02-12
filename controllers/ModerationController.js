@@ -138,35 +138,31 @@ module.exports = {
             }
         }
     },
-    purgeHandler: function(a, m, c) {
-        const args = a, message = m, client = c; //create vars for parameter values
-        const superLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("super_log_channel_name")))); //super log channel
-        const regex = /(^\d{1,10}$)/;
+    purgeHandler: function(interaction) {
+        const superLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("super_log_channel_name")))); //super log channel
+        const count = interaction.options.getInteger(`amount`); //get the number of messages to delete
+        const channel = interaction.options.getChannel(`channel`); //get the channel the user requested to purge
 
-        // Check if the argument given was a number
-        if(!args[0].match(regex)) {
-            // Let the user know that they provided an incorrect argument type
-            return message.reply(`Uh oh! You have provided an incorrect value for the amount of messages to delete!`);
-        } else {
-            let count = parseInt(args[0]); //count var
-
-            // Ensure message limit isn't exceeded
-            if(count > 100) {
-                return message.reply(`You can only delete 100 messages at a time, please try again!`);
+            // If a channel was provided
+            if(channel) {
+                purgeMessages(channel);
+            // If no channel was provided
+            } else {
+                purgeMessages(interaction.channel);
             }
 
-            // Delete the command message itself
-            message.delete().then(() => {
-                // Perform bulk deletion; pass in true to prevent error about older messages
-                message.channel.bulkDelete(count, true).then((messages) => {
+            // Create a function to handle purging the messages
+            function purgeMessages(c) {
+                // Perform the bulk delete !! Set true to ignore messages older than 2 weeks to prevent errors !!
+                c.bulkDelete(count, true).then((messages) => {
                     bulkEmbed = {
                         color: 0xFF5500,
                         title: "Bulk Deleted Messages",
                         author: {
-                            name: `${message.author.username}#${message.author.discriminator}`,
-                            icon_url: message.author.displayAvatarURL({dynamic:true}),
+                            name: `${interaction.user.username}#${interaction.user.discriminator}`,
+                            icon_url: interaction.member.displayAvatarURL({dynamic:true}),
                         },
-                        description: `${messages.size} messages were deleted in ${message.channel.name}`,
+                        description: `${messages.size} messages were deleted in ${c}`,
                         fields: [
                             {
                                 name: "Count Given",
@@ -175,22 +171,32 @@ module.exports = {
                             },
                             {
                                 name: "Channel",
-                                value: `${message.channel}`,
+                                value: `${interaction.channel}`,
                                 inline: true,
                             },
                             {
                                 name: "Performed By",
-                                value: `${message.author}`,
+                                value: `${interaction.member}`,
                                 inline: true,
                             }
                         ],
                         timestamp: new Date(),
                     };
 
+                    // Send the embed to the super log channel
                     superLog.send({embeds: [bulkEmbed]});
+
+                    // If the requested amount of messages were deleted
+                    if(messages.size === count) {
+                        // Let the user know the messages were deleted
+                        interaction.reply({content: `I have successfully deleted the last ${count} messages within the ${c} channel!`, ephemeral: true});
+                    // If older messages weren't able to be deleted
+                    } else {
+                        // Let the user know how many messages were deleted
+                        interaction.reply({content: `It seems I was only able to delete ${messages.size} of the requested ${count} messages within the ${c} channel!\n\n**Note: Messages older than 14 days cannot be bulk deleted.**`, ephemeral: true});
+                    }
                 });
-            })
-        };
+            }
 
     },
     editHandler: function(o, n, c, tl, bu, deleteSet) {
@@ -1747,91 +1753,90 @@ module.exports = {
             });
         });
     },
-    slowmode: function(message, args, client) {
-        const prefix = client.settings.get("prefix");
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        const channel = message.mentions.channels.first(); //channel
+    slowmode: function(interaction) {
+        const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
+        const channel = interaction.options.getChannel(`channel`); //get the channel
+        const newInterval = interaction.options.getInteger(`interval`); //get the interval
+        const currentInterval = channel.rateLimitPerUser; //get the channel's current interval
 
-        // If user asked to enable slowmode
-        if(args[0].toLowerCase() === "enable") {
-            // Make sure the 3rd argument is a number and between 1 and 21600 seconds
-            if(!isNaN(args[2]) && args[2] <= 21600 && args[2] >= 1) {
-                // Set the channel to slowmode
-                channel.edit({rateLimitPerUser: args[2]}).then(() => {
-                    // Create the embed
-                    const slowmodeEmbed = {
-                        color: 0xFF0000,
-                        title: `Slowmode Enabled`,
-                        author: {
-                            name: `${message.author.tag}`,
-                            icon_url: `${message.author.displayAvatarURL({dynamic: true})}`
-                        },
-                        description: `${message.member.displayName} has enabled slowmode for ${channel}`,
-                        fields: [
-                            {
-                                name: `Channel`,
-                                value: `${channel}`,
-                                inline: true,
-                            },
-                            {
-                                name: `Slowmode Interval`,
-                                value: `${args[2]}`,
-                                inline: true,
-                            },
-                            {
-                                name: `Enabled By`,
-                                value: `${message.author}`,
-                                inline: true,
-                            }
-                        ],
-                        timestamp: new Date(),
-                    };
+        // If the user tried to change the interval to the channel's current interval
+        if(currentInterval === newInterval) return interaction.reply({content: `The ${channel}'s message interval is already set to ${newInterval} seconds!`, ephemeral: true});
 
-                    actionLog.send({embeds: [slowmodeEmbed]});
-                    return message.channel.send(`Successfully set slowmode for ${channel} to ${args[2]} seconds!`);
-                });
-            // If not a number let user know   
-            } else {
-                return message.reply(`Uh oh! Looks like you gave me an invalid slowmode interval, please give me the interval you wish to set in seconds between the value of **1** and **21600**!\nExample: \`${prefix}slow enable #${channel.name} 5\``);
-            }
-        // If user asked to disable slowmode
-        } else if (args[0].toLowerCase() === "disable") {
+        // Create the row of buttons
+        const btns = new Discord.ActionRowBuilder()
+        .addComponents(
+            new Discord.ButtonBuilder()
+                .setCustomId(`yes`)
+                .setLabel(`Yes (Continue)`)
+                .setStyle(Discord.ButtonStyle.Success),
+            new Discord.ButtonBuilder()
+                .setCustomId(`no`)
+                .setLabel(`No (Abort)`)
+                .setStyle(Discord.ButtonStyle.Danger)
+        )
 
-            // If the user tries to disable slowmode for a channel that isn't in slowmode let them know
-            if(channel.rateLimitPerUser === 0) {
-                return message.reply(`Uh oh! Looks like that channel isn't in slowmode!`)
-            }
+        // Send the response with the buttons to only the user who initiated the command
+        interaction.reply({content: `${channel}'s message interval per user is currently ${currentInterval} seconds, would you like to change it to ${newInterval} seconds?`, ephemeral: true, components: [btns], fetchReply: true})
+            .then(async (msg) => {
 
-            // Set the channel to slowmode
-            channel.edit({rateLimitPerUser: 0}).then(() => {
-                // Create the embed
-                const slowmodeEmbed = {
-                    color: 0xFFA500,
-                    title: `Slowmode Disabled`,
-                    author: {
-                        name: `${message.author.tag}`,
-                        icon_url: `${message.author.displayAvatarURL({dynamic: true})}`
-                    },
-                    description: `${message.member.displayName} has disabled slowmode for ${channel}`,
-                    fields: [
-                        {
-                            name: `Channel`,
-                            value: `${channel}`,
-                            inline: true,
-                        },
-                        {
-                            name: `Disabled By`,
-                            value: `${message.author}`,
-                            inline: true,
-                        }
-                    ],
-                    timestamp: new Date(),
-                };
+                // Create the collector to capture the button clicks
+                const btnCollector = await msg.createMessageComponentCollector({componentType: Discord.ComponentType.Button, max:1,  time:15000});
 
-                actionLog.send({embeds: [slowmodeEmbed]});
-                return message.channel.send(`Successfully disabled slowmode for ${channel}!`);
-            });
-        };
+                // When a button is clicked
+                btnCollector.on(`collect`, i => {
+                    // If the user agreed to continue
+                    if(i.customId === "yes") {
+
+                        // Set the channel to slowmode
+                        channel.edit({rateLimitPerUser: newInterval}).then(() => {
+                            // Create the embed
+                            const slowmodeEmbed = {
+                                color: 0xFF0000,
+                                title: `Slowmode Changed`,
+                                author: {
+                                    name: `${interaction.user.tag}`,
+                                    icon_url: `${interaction.member.displayAvatarURL({dynamic: true})}`
+                                },
+                                description: `${interaction.member.displayName} has changed slowmode for ${channel} from ${currentInterval} seconds to ${newInterval} seconds.`,
+                                fields: [
+                                    {
+                                        name: `Channel`,
+                                        value: `${channel}`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `Slowmode Interval`,
+                                        value: `${newInterval} seconds`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `Changed By`,
+                                        value: `${interaction.member}`,
+                                        inline: true,
+                                    }
+                                ],
+                                timestamp: new Date(),
+                            };
+
+                            actionLog.send({embeds: [slowmodeEmbed]});
+                            return i.reply({content: `I have successfully set slowmode for ${channel} to ${newInterval} seconds!`, ephemeral: true});
+                        });
+
+                    // If the user wanted to abort
+                    } else {
+                        return i.reply({content: `Got it! I have aborted this function. ${channel}'s message interval is still set to ${currentInterval} seconds!`, ephemeral: true});
+                    }
+                })
+
+                // Once the interaction times out
+                btnCollector.on(`end`, collected => {
+
+                    // If the user didn't click on one of the buttons let them know it timed out
+                    if(collected.size === 0) {
+                        interaction.channel.send(`My apologies ${interaction.user}, but your previous interaction has timed out.\nThe command remains unchanged, please try again when you're ready!`);
+                    }
+                })
+        });
     },
     listBans: function(message, args, client) {
         const prefix = client.settings.get("prefix");
