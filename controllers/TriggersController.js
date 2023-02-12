@@ -219,9 +219,7 @@ module.exports = {
     triggerHit: function(m, t, c) {
         // Create vars
         const message = m, triggers = t, client = c;
-        let severity, fullMessage;
-        
-        let warnId = shortid.generate(); // generate a uid
+        let severity, fullMessage, warnId;
         let severityArr = [];
         const modRole = message.member.roles.cache.find(role => role.id === client.settings.get("mod_role_id"));
         const modTraineeRole = message.member.roles.cache.find(role => role.id === client.settings.get("trainee_role_id"));
@@ -251,83 +249,76 @@ module.exports = {
             // Create a new table if one doesn't exist
             Models.warning.sync({ force: false }).then(() => {
 
-                Models.warning.findOne({where: {warning_id: warnId}, raw:true}).then((warning => {
-                    if(warning) {
-                        if(warning.warning_id === warnId) {
-                            warnId = shortid.generate();
-                        }
+                // Store the data
+                Models.warning.create({
+                    user_id: message.author.id, // add the user's id
+                    type: "Trigger", // assign the type of warning
+                    username: message.author.username.toLowerCase(), // add the user's username
+                    triggers: triggers.join(", "), // join the trigger array and add them
+                    message: message.content, // add the full message
+                    message_link: message.url, // add the message url
+                    severity: severity, // add the severity level
+                    channel_id: message.channel.id // add the channel's id
+                })
+                // Warn the user and let the moderators know
+                .then((item) => {
+                    // Set the id for the warning
+                    warnId = item.id;
+
+                    // Make sure full message isn't too large for embed field
+                    if(message.content.length > 1024) {
+                        fullMessage = message.content.substring(0, 1021) + "..."; // 1021 to add elipsis at end
+                    } else {
+                        fullMessage = message.content;
                     }
-                })).then(() => {
-                    // Store the data
-                    Models.warning.create({
-                        warning_id: warnId, // add the warning Id
-                        user_id: message.author.id, // add the user's id
-                        type: "Trigger", // assign the type of warning
-                        username: message.author.username.toLowerCase(), // add the user's username
-                        triggers: triggers.join(", "), // join the trigger array and add them
-                        message: message.content, // add the full message
-                        message_link: message.url, // add the message url
-                        severity: severity, // add the severity level
-                        channel_id: message.channel.id // add the channel's id
-                    })
-                    // Warn the user and let the moderators know
-                    .then(() => {
 
-                        // Make sure full message isn't too large for embed field
-                        if(message.content.length > 1024) {
-                            fullMessage = message.content.substring(0, 1021) + "..."; // 1021 to add elipsis at end
-                        } else {
-                            fullMessage = message.content;
-                        }
-
-                        // Create the embed
-                        const embedMsg = {
-                            color: 0x00FF00, // this will change based on severity
-                            title: "A User Has Hit A Trigger!",
-                            author: {
-                                name: `${message.author.username}#${message.author.discriminator}`,
-                                icon_url: message.author.displayAvatarURL({dynamic:true}),
+                    // Create the embed
+                    const embedMsg = {
+                        color: 0x00FF00, // this will change based on severity
+                        title: "A User Has Hit A Trigger!",
+                        author: {
+                            name: `${message.author.username}#${message.author.discriminator}`,
+                            icon_url: message.author.displayAvatarURL({dynamic:true}),
+                        },
+                        description: `${message.author} has been warned for saying a trigger!`,
+                        fields: [
+                            {
+                                name: "Severity",
+                                value: severity,
+                                inline: true,
                             },
-                            description: `${message.author} has been warned for saying a trigger!`,
-                            fields: [
-                                {
-                                    name: "Severity",
-                                    value: severity,
-                                    inline: true,
-                                },
-                                {
-                                    name: "Channel",
-                                    value: `${message.channel}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: "Get More Info",
-                                    value: `/warnings specific ${warnId}`,
-                                },
-                                {
-                                    name: "Full Message From User",
-                                    value: fullMessage,
-                                },
-                                {
-                                    name: "Message URL",
-                                    value: message.url,
-                                },
-                            ],
-                            timestamp: new Date(),
-                        }
+                            {
+                                name: "Channel",
+                                value: `${message.channel}`,
+                                inline: true,
+                            },
+                            {
+                                name: "Get More Info",
+                                value: `/warnings specific ${warnId}`,
+                            },
+                            {
+                                name: "Full Message From User",
+                                value: fullMessage,
+                            },
+                            {
+                                name: "Message URL",
+                                value: message.url,
+                            },
+                        ],
+                        timestamp: new Date(),
+                    }
 
-                        switch(severity) {
-                            case "high":
-                                handleHigh(triggers, embedMsg);
-                                break;
-                            case "medium":
-                                handleMedium(triggers, embedMsg);
-                                break;
-                            case "low":
-                                handlelow(triggers, embedMsg);
-                                break;
-                        }
-                    });
+                    switch(severity) {
+                        case "high":
+                            handleHigh(triggers, embedMsg);
+                            break;
+                        case "medium":
+                            handleMedium(triggers, embedMsg);
+                            break;
+                        case "low":
+                            handlelow(triggers, embedMsg);
+                            break;
+                    }
                 });
             });
         });
@@ -424,7 +415,7 @@ module.exports = {
                                 // Update the db's message link
                                 Models.warning.update({message_link: d.url}, {
                                     where: {
-                                        warning_id: warnId
+                                        id: warnId
                                     }
                                 });
                             });
@@ -461,7 +452,7 @@ module.exports = {
                                         // Update the db's message link
                                         Models.warning.update({message_link: d.url}, {
                                             where: {
-                                                warning_id: warnId
+                                                id: warnId
                                             }
                                         });
                                     });
@@ -472,7 +463,7 @@ module.exports = {
                                         // Update the db's message link
                                         Models.warning.update({message_link: d.url}, {
                                             where: {
-                                                warning_id: warnId
+                                                id: warnId
                                             }
                                         });
                                     });
@@ -512,7 +503,7 @@ module.exports = {
                                 // Update the db's message link
                                 Models.warning.update({message_link: d.url}, {
                                     where: {
-                                        warning_id: warnId
+                                        id: warnId
                                     }
                                 });
                             });

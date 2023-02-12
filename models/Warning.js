@@ -9,10 +9,6 @@ const sequelize = new Sequelize(`mysql://${db_user}:${db_pass}@${db_host}:${db_p
 const Warning = sequelize.define('warning', {
     
     /****** Fields for all warnings ******/
-    warning_id: {
-        type: Sequelize.STRING,
-        allowNull: false
-    },
     type: {
         type: Sequelize.STRING,
         allowNull: false
@@ -20,14 +16,6 @@ const Warning = sequelize.define('warning', {
     user_id: {
         type: Sequelize.TEXT,
         allowNull: false
-    },
-
-    /****** Fields for banned words warnings ******/
-    banned_words: {
-        type: Sequelize.TEXT
-    },
-    strikes: {
-        type: Sequelize.INTEGER
     },
 
     /****** Fields for manual warnings ******/

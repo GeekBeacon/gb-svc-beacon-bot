@@ -2445,7 +2445,7 @@ module.exports = {
                     });
 
                     // Let the user know the command has been changed
-                    i.reply(`I have successfully ${f} the ${command.name} command!`)
+                    i.reply(`I have successfully ${finalState} the ${command.name} command!`)
                 }
             }
 

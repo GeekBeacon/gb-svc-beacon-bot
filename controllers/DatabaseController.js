@@ -62,8 +62,17 @@ module.exports = {
         ######################################
         */
         } else if (i.commandName === "warnings") {
-            // Call the warning handler function from the JoinableRolesController file
-            WarningsController.warningHandler(i);
+
+            // If the user is assigning a new warning
+            if(i.options.getSubcommand() === `new`) {
+                // Call the warn handler function from the ModerationController file
+                ModerationController.warnHandler(i);
+                
+            // If the user is wanting to view warnings
+            } else {
+                // Call the warning handler function from the JoinableRolesController file
+                WarningsController.warningHandler(i);
+            }
 
         /*
         ##################################
@@ -91,15 +100,6 @@ module.exports = {
         } else if(i.commandName === "unban") {
             // Call the unban handler function from the ModerationController file
             ModerationController.unbanHandler(i);
-            
-        /*
-        ##################################
-        ########## warn command ##########
-        ##################################
-        */
-        } else if(i.commandName === "warn") {
-            // Call the warn handler function from the ModerationController file
-            ModerationController.warnHandler(i);
             
         /*
         ##################################

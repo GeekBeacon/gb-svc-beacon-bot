@@ -72,7 +72,7 @@ module.exports = {
                     .setRequired(true)
             )
     )
-    .setDefaultMemberPermissions(Discord.PermissionFlagsBits.Administrator),
+    .setDefaultMemberPermissions(Discord.PermissionFlagsBits.ManageMessages),
 
     async execute(interaction) {
         // Call the query handler from the database controller with required args
