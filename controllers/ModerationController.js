@@ -827,119 +827,60 @@ module.exports = {
             });
         }
     },
-    warnHandler: function(a, m, c) {
-        const args = a, message = m, client = c;
-        let warnId = shortid.generate(); //generate a short id for the warning
-        const prefix = client.settings.get("prefix");
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        let reason = args.slice(1).join(" "); //remove the user from the array then join to get the reason
-        reason = reason.replace(",", ""); //remove the comma
-        reason = reason.trim(); //remove any excess whitespace
-        let user; //var for the user
+    warnHandler: function(interaction) {
+        const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
+        const user = interaction.options.getUser(`user`); //var for the user
+        const reason = interaction.options.getString(`reason`); //var for warning reason
+        const member = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(user.id);
 
-        // Check if the first arg is a number
-        if(isNaN(args[0])) {
-            // Attempt to fix the arg for the user by removing the comma if the moderator forgot to add a space after the id and before the comma
-            args[0] = args[0].replace(",", "");
-        }
+        // Create a new table if one doesn't exist !! Add alter true to add any new columns in the model ~~
+        Models.warning.sync({ force: false, alter: true }).then(() => { 
+            // Create a new warning
+            Models.warning.create({
+                user_id: user.id, // add the user's id
+                username: user.username, // add the user's username
+                nickname: member.nickname, // add the nickname of the member
+                type: "Note", // assign the type of warning
+                reason: reason, // add the reason for the warning
+                mod_id: interaction.member.id
+            }).then((item) => {
+                // Create the warn embed
+                const warnEmbed = {
+                    color: 0xFF5500,
+                    title: `A New Warning Was Issued To ${user.username}`,
+                    author: {
+                        name: interaction.member.username,
+                        icon_url: interaction.member.displayAvatarURL({dynamic:true}),
+                    },
+                    description: `${interaction.member} has added a warning to ${user}!`,
+                    fields: [
+                        {
+                            name: `User Warned`,
+                            value: `${user}`,
+                            inline: true,
+                        },
+                        {
+                            name: `Warned By`,
+                            value: `${interaction.member}`,
+                            inline: true,
+                        },
+                        {
+                            name: `Warning`,
+                            value: `${reason}`,
+                            inline: false,
+                        },
+                    ],
+                    timestamp: new Date(),
+                    footer: {
+                        text: `Warning Id: ${item.id}`,
+                    }
+                };
 
-        // Make sure the first arg was a user mention or a user id
-        if(isNaN(args[0]) && !args[0].startsWith("<@")) {
-            // Let user know they need to provide a user mention or a valid user id
-            message.reply(`Uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
-        
-        // Make sure the reason wasn't too long for the db column
-        } else if(reason.length > 1024) {
-            // If the reason is too long let the mod know
-            return message.reply(`Uh oh! Looks like your message was too long, try shortening the reason or inserting a pastebin link instead!`);
-        } else {
-
-            // Check if a user mention was given
-            if(args[0].startsWith("<@")) {
-                user = message.mentions.members.first(); // get user tag
-            // If not, find the user by the provided id
-            } else {
-                // Get the user
-                user = message.guild.members.cache.get(args[0]);
-
-                // If user is undefined let the moderator know
-                if(user.user === undefined) {
-                    return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``)
-                }
-            }
-
-            // Check if a reason was given
-            if(args[1] && user.user !== undefined) {
-            // Create a new table if one doesn't exist
-            Models.warning.sync({ force: false }).then(() => { 
-                // See if the warning id exists already
-                Models.warning.findOne({where: {warning_id: warnId}, raw:true}).then((warning => {
-                    // If the warning id matches the newly generated one, generate a new one
-                    if(warning) {
-                        warnId = shortid.generate();
-                    };
-                })).then(() => { 
-                    // Create a new warning
-                    Models.warning.create({
-                        warning_id: warnId, // add the warning Id
-                        user_id: user.user.id, // add the user's id
-                        type: "Note", // assign the type of warning
-                        reason: reason, // add the reason for the warning
-                        mod_id: message.author.id
-                    }).then(() => {
-                        // Create the warn embed
-                        const warnEmbed = {
-                            color: 0xFF5500,
-                            title: `A New Warning Was Issued To A User`,
-                            author: {
-                                name: message.author.username,
-                                icon_url: message.author.displayAvatarURL({dynamic:true}),
-                            },
-                            description: `${message.author} has added a warning to ${user.user}!`,
-                            fields: [
-                                {
-                                    name: `User Warned`,
-                                    value: `${user.user}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Warned By`,
-                                    value: `${message.author}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Warning`,
-                                    value: `${reason}`,
-                                    inline: false,
-                                },
-                            ],
-                            timestamp: new Date(),
-                            footer: {
-                                text: `Warning Id: ${warnId}`,
-                            }
-                        };
-
-                        actionLog.send({embeds: [warnEmbed]}); //send embed
-                        message.reply(`${user.user.username} was successfully warned!`);
-                        
-                    });
-                });
+                actionLog.send({embeds: [warnEmbed]}); //send embed
+                interaction.reply({content: `${user.username} was successfully warned!`, ephemeral: true});
             });
-
-            // If no reason was given let the user know it is required
-            } else {
-                // Check if a user mention was used
-                if(message.mentions.users.first()) {
-                    // Let user know a reason is needed
-                    message.reply(`Uh oh! It seems you forgot to give a reason for warning, please be sure to provide a reason for this action!\nExample: \`${prefix}warn @${user.tag}, reason\``);
-
-                // If no user mention was given then just output the id they provided
-                } else {
-                    // Let user know a reason is needed
-                    message.reply(`Uh oh! It seems you forgot to give a reason for warning, please be sure to provide a reason for this action!\nExample: \`${prefix}warn ${user}, reason\``);
-                }
-            }
-        }
+        });
+        
     },
     muteHandler: function(a, m, c) {
         const args = a, message = m, client = c;
@@ -2115,70 +2056,45 @@ module.exports = {
             }
         }
     },
-    nicknameHandler: async function(message, args, client) {
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        let newArgs = args.join(" "); //join the args together
-        newArgs = newArgs.split(","); //split by comma
+    nicknameHandler: async function(interaction) {
+        const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
+        const member = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(interaction.options.getUser(`user`).id); //get the member
+        const oldNick = member.nickname; //old nickname var
+        const subcommand = interaction.options.getSubcommand(); //subcommand var
 
-        // See if the user added a comma, if not, tell them it is needed
-        if(!newArgs[1]) {
-            return message.reply(`Uh oh! Looks like you forgot the comma after the user, please try again!`);
-        }
+        // Set the new nickname based on the nickname's subcommand
+        const newNick = subcommand === "reset" ? null : interaction.options.getString(`nickname`);
 
-        newArgs[1] = newArgs[1].trim(); //remove spaces from new nickname
-        let user; //user var
-        let oldNick; //old nickname var
+        // Determind the response based on the nickname's subcommand
+        const sameNameReply = subcommand === "reset" ? "Uh oh!\nThis member doesn't have a nickname currently!" : "Uh oh!\nThat is the member's current nickname!";
 
-        // Check if a user id was provided
-        if(!isNaN(newArgs[0])) {
-            // Attempt to fetch the user
-            try {
-                user = await message.guild.members.fetch(newArgs[0]);
-            // If unable to fetch the user let the moderator know
-            } catch(e) {
-                return message.reply(`Uh oh! It seems you provided me with an invalid user id or that user isn't part of this server!`)
-            }
-        // If a user mention was provided
-        } else if(newArgs[0].startsWith("<@")) {
-            user = message.mentions.users.first(); //get the mentioned user
+        // If the member has the same nickname currently let the moderator know
+        if (oldNick === newNick) return interaction.reply({content: `${sameNameReply}`, ephemeral: true})
 
-            // Attempt to fetch the user
-            try {
-                user = await message.guild.members.fetch(user);
-            // If unable to fetch the user let the moderator know
-            } catch(e) {
-                return message.reply(`Uh oh! It seems something went wrong, please try again or contact an Administrator!`)
-            }
-        // If a mention or id wasn't provided let the moderator know
-        } else {
-            return message.reply("Uh oh! It seems you didn't provide me with a user mention or id!")
-        }
-        // Get the current nickname of the user
-        oldNick = user.nickname;
+        // Change the member's nickname to the one the moderator gave
+        member.setNickname(newNick).then(() => {
 
-        // Change the user's nickname to the 2nd arg provided
-        user.setNickname(newArgs[1]).then(() => {
-            // Let the mod know the user's nickname was changed
-            message.reply(`Done! ${user.user.username}'s nickname is now \`${newArgs[1]}\`!`);
+            // Let the mod know the member's nickname was changed
+            interaction.reply({content: `Done! ${member.user.username}'s nickname is now \`${newNick}\`!`, ephemeral: true});
 
             // Create the embed
             const nickEmbed = {
                 color: 0x886ce4, //purple
                 title: `Nickname Changed`,
                 author: {
-                    name: `${user.user.tag}`,
-                    icon_url: user.user.displayAvatarURL({dynamic:true})
+                    name: `${member.user.tag}`,
+                    icon_url: member.user.displayAvatarURL({dynamic:true})
                 },
-                description: `${user.user.username} has had their nickname changed.`,
+                description: `${member.user.username} has had their nickname changed.`,
                 fields: [
                     {
-                        name: `User Edited`,
-                        value: `${user}`,
+                        name: `Member Edited`,
+                        value: `${member}`,
                         inline: true
                     },
                     {
                         name: `Edited By`,
-                        value: `${message.author}`,
+                        value: `${interaction.member}`,
                         inline: true
                     },
                     {
@@ -2193,7 +2109,7 @@ module.exports = {
                     },
                     {
                         name: `New Nickname`,
-                        value: `${newArgs[1]}`,
+                        value: `${newNick || "None"}`,
                         inline: true
                     }
                 ],
@@ -2202,10 +2118,11 @@ module.exports = {
             // Send the embed to the action log channel
             actionLog.send({embeds: [nickEmbed]});
 
-        // If unable to change the user's nickname let the moderator know
+        // If unable to change the member's nickname let the moderator know
         }).catch(e => {
-            message.reply(`Uh oh! It seems I'm not able to change that user's nickname, most likely due to permissions!`)
-        })
+            interaction.reply({content: `Uh oh! It seems I'm not able to change that member's nickname, most likely due to permissions!`, ephemeral: true})
+        });
+        
     },
     tempVoiceHandler: function(message, args, client) {
         const prefix = client.settings.get("prefix");

@@ -17,6 +17,12 @@ const Warning = sequelize.define('warning', {
         type: Sequelize.TEXT,
         allowNull: false
     },
+    username: {
+        type: Sequelize.TEXT
+    },
+    nickname: {
+        type: Sequelize.TEXT
+    },
 
     /****** Fields for manual warnings ******/
     reason: {
@@ -27,9 +33,6 @@ const Warning = sequelize.define('warning', {
     },
 
     /****** Fields for triggers warnings ******/
-    username: {
-        type: Sequelize.TEXT
-    },
     triggers: {
         type: Sequelize.TEXT
     },

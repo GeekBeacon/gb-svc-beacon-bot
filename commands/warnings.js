@@ -54,6 +54,7 @@ module.exports = {
             .addStringOption(option => 
                 option.setName(`reason`)
                 .setDescription(`The reason you are warning the user.`)
+                .setMaxLength(1024)
                 .setRequired(true)
             )
         )

@@ -94,9 +94,9 @@ module.exports = {
                         specificEmbed.setTitle(`Information for warning #${warnId}`)
                         .setAuthor({name: guildUser.user.username, iconURL: guildUser.user.displayAvatarURL({dynamic:true})})
                         .addFields(
-                            {name: `User Id`, value: guildUser.user.tag, inline: false},
+                            {name: `User Id`, value: guildUser.user.id, inline: false},
                             {name: `User`, value: guildUser.toString(), inline: true},
-                            {name: `Server Nickname`, value: `${guildUser.nickname || "None"}`, inline: true},
+                            {name: `Nickname When Warned`, value: `${warning.nickname || "None"}`, inline: true},
                             {name: `Warning Type`, value: warning.type, inline: true},
                             {name: `User Roles`, value: guildUser.roles.cache.map(role => role.name).join(", ")}
                         )
@@ -128,11 +128,10 @@ module.exports = {
                             .setAuthor({name: usr.username, iconURL: usr.displayAvatarURL({dynamic:true})})
                             .addFields(
                                 {name: `User Id`, value: `${usr.id}`, inline: true},
-                                {name: '\u200B', value: '\u200B', inline: true},
                                 {name: `User`, value: `${usr}`, inline: true},
-                                {name: `Username (at time warned)`, value: `${warning.username || "Unknown"}`, inline: true},
-                                {name: '\u200B', value: '\u200B', inline: true},
-                                {name: `Warning Type`, value: `${warning.type}`, inline: true}
+                                {name: `Warning Type`, value: `${warning.type}`, inline: true},
+                                {name: `Username When Warned`, value: `${warning.username || "Unknown"}`, inline: true},
+                                {name: `Nickname When Warned`, value: `${warning.nickname || "None"}`, inline: true},
                             )
                             .setTimestamp();
 
@@ -163,7 +162,7 @@ module.exports = {
 
                             // If the channel was deleted
                             if(!warnedChannel) {
-                                warnedChannel = "`Deleted Channel`";
+                                warnedChannel = "`Unknown Channel`";
                             };
 
                             // Set the color of the embed based on severity level
@@ -191,10 +190,10 @@ module.exports = {
 
                             // Add the remaining fields
                             specificEmbed.addFields(
+                                {name: `Severity`, value: `${warning.severity}`, inline: true},
+                                {name: `Channel`, value: `${warnedChannel.toString()}`, inline: true},
+                                {name: `Time Triggered`, value: `${Discord.time(warning.createdAt, "R")}`, inline: true},
                                 {name: `Trigger(s) Hit`, value: `${warning.triggers}`, inline: false},
-                                {name: `Severity`, value: `${warning.severity}`, inline: false},
-                                {name: `Channel`, value: `${warnedChannel.toString()}`, inline: false},
-                                {name: `Time Trigger Was Hit`, value: `${Discord.time(warning.createdAt, "f")} (${Discord.time(warning.createdAt, "R")})`, inline: false},
                                 {name: `Full Message`, value: `${fullMessage}`, inline: false},
                                 {name: `Message URL`, value: `${warning.message_link}`, inline: false}
                                 );
@@ -222,104 +221,86 @@ module.exports = {
                 // If unable to find warning/user
                 return interaction.reply({content: `Uh oh! I wasn't able to find the a warning with that warning id!\r If you think the warning exists, please check your warning id and try again!`, ephemeral: true});
             });
-        } else if (args[0].toLowerCase() === "user") {
+        // If the user asked to find warnings for a specific user
+        } else if (subcommand === "user") {
+            const user = interaction.options.getUser(`user`);
 
-            if (args[1]) {
-                // If the second argument is numeric only query the db based on user id
-                if(args[1].match("^[0-9]+$")) {
+            Warning.findAll({where: {user_id: user.id}, order: [['createdAt', 'DESC']], raw: true}).then((warnings) => {
 
-                    Warning.findAll({where: {user_id: args[1]}, order: [['createdAt', 'DESC']], raw: true}).then((warnings) => {
-
-                        // If a warning was found
-                        if (warnings) {
-                            // Call the sendUserWarnings function
-                            sendUserWarnings(message, client, warnings);
-                        }
-
-                    }).catch((e) => {
-                        return message.reply(`Uh oh! I either wasn't able to find the user with that id or that user has no warnings!\r If you think the user has warnings, please check your id and try again!`);
-                    });
-
-                // If the second argument starts with a tag query based on user mention
-                } else if(args[1].startsWith("<@")) {
-                    let userId = message.mentions.users.first().id;
-
-                    // Find all warnings for the user's id
-                    Warning.findAll({where: {user_id: userId}, order: [['createdAt', 'DESC']], raw: true}).then((warnings) => {
-                        
-                        // If a warning was found
-                        if (warnings) {
-                            // Call the sendUserWarnings function
-                            sendUserWarnings(message, client, warnings);
-                        }
-                    }).catch((e) => {
-                        return message.reply(`Uh oh! I either wasn't able to find the user with that id or that user has no warnings!\r If you think the user has warnings, please check your id and try again!`);
-                    });
-                } else {
-                    return message.reply(`Uh oh! You seem to have provided an unacceptable user search method. Please ensure that you're searching by either user mention or id!`);
+                // If a warning was found
+                if (warnings) {
+                    // Call the sendUserWarnings function
+                    sendUserWarnings(warnings);
                 }
-            // If user forgot to give a username or id
-            } else {
-                return message.reply(`Uh oh! Looks like you forgot to tell me the user's id!\rExample: \`${prefix}warnings user {user_id}\``);
-            }
-        } else {
-            return message.reply(`Uh oh! Looks like you didn't use that command properly, please check its' usage with \`${prefix}help warnings\``);
-        }
 
-        function sendUserWarnings(message, client, warnings) {
-            // Find the warned user
-            warnedUser = client.guilds.cache.get(message.guild.id).members.cache.get(warnings[0].user_id.toString());
-            let i = 0;
+            }).catch((e) => {
+                console.log(e)
+                return interaction.reply({content: `Uh oh! I either wasn't able to find the user with that id or that user has no warnings!\r If you think the user has warnings, please check your id and try again!`, ephemeral: true});
+            });
 
-            // Create the embed
-            const userWarningsEmbed = new Discord.EmbedBuilder() 
-                .setColor('#FF0000')
-                .setTitle(`${warnedUser.user.username} has a total of ${Object.keys(warnings).length} warnings`)
-                .setAuthor({name:`${warnedUser.user.username}`, iconURL: `${warnedUser.user.displayAvatarURL({dynamic:true})}`})
-                .addFields(
-                    {name: `User Id`, value:`${warnedUser.id}`},
-                    {name: `User`, value: `${warnedUser}`, inline: true},
-                    {name: `Server Nickname`, value: `${warnedUser.nickname || "None"}`, inline: true},
-                    {name: `User Roles`, value: `${warnedUser.roles.cache.map(role => role.name).join(", ")}`}
-                    )
-                .setTimestamp()
 
-                // If 21 or less warnings loop through them and add a field for each (Discord embeds are limited to 25 fields and we used 4 above)
-                if (Object.keys(warnings).length < 21) {
-
-                    // Loop through the warnings adding a new field for each one with the warning's id
-                    warnings.forEach((warning) => {
-                        userWarningsEmbed.addFields({name: `Warning`, value: `Warning Id: **${warning.warning_id}**`});
-                    });
-
-                // If more than 20 loop 20 times and then let user know there is more warnings
-                } else {
-                    
-                    // Loop through the warnings
-                    for (let warning of warnings) {
-
-                        // Add up to 20 fields
-                        if (i < 20) {
-                            userWarningsEmbed.addFields({name: `Warning #${i+1}`, value: `${warning.warning_id}`});
-                            i++; // increment counter
-
-                        // If there are more than 21 let user know the remaining amount
-                        } else {
-                            //actionLog.send(`There are ${Object.keys(warnings).length - i} older warnings for this user!`);
-                            userWarningsEmbed.setFooter(`There are ${Object.keys(warnings).length - i} older warnings for this user`);
-                            break; // break the loop
+            function sendUserWarnings(warnings) {
+                // Find the warned user
+                warnedUser = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(warnings[0].user_id.toString());
+                let i = 0;
+    
+                // Create the embed
+                const userWarningsEmbed = new Discord.EmbedBuilder() 
+                    .setColor('#FF0000')
+                    .setTitle(`${warnedUser.user.username} has a total of ${Object.keys(warnings).length} warnings`)
+                    .setAuthor({name:`${warnedUser.user.username}`, iconURL: `${warnedUser.user.displayAvatarURL({dynamic:true})}`})
+                    .addFields(
+                        {name: `User Id`, value:`${warnedUser.id}`},
+                        {name: `User`, value: `${warnedUser}`, inline: true},
+                        {name: `Server Nickname`, value: `${warnedUser.nickname || "None"}`, inline: true},
+                        {name: `User Roles`, value: `${warnedUser.roles.cache.map(role => role.name).join(", ")}`}
+                        )
+                    .setTimestamp()
+    
+                    // If 21 or less warnings loop through them and add a field for each (Discord embeds are limited to 25 fields and we used 4 above)
+                    if (Object.keys(warnings).length < 21) {
+    
+                        // Loop through the warnings adding a new field for each one with the warning's id
+                        warnings.forEach((warning) => {
+                            userWarningsEmbed.addFields({name: `Warning`, value: `Warning Id: **${warning.id}**`});
+                        });
+    
+                    // If more than 20 loop 20 times and then let user know there is more warnings
+                    } else {
+                        
+                        // Loop through the warnings
+                        for (let warning of warnings) {
+    
+                            // Add up to 20 fields
+                            if (i < 20) {
+                                userWarningsEmbed.addFields({name: `Warning #${i+1}`, value: `Warning Id: ${warning.id}`});
+                                i++; // increment counter
+    
+                            // If there are more than 21 let user know the remaining amount
+                            } else {
+                                //actionLog.send(`There are ${Object.keys(warnings).length - i} older warnings for this user!`);
+                                userWarningsEmbed.setFooter({text: `There are ${Object.keys(warnings).length - i} older warnings for this user`});
+                                break; // break the loop
+                            }
                         }
                     }
-                }
-            
-            // Send the data to the action log
-            actionLog.send({embeds: [userWarningsEmbed]}).then(() => {
-                // Don't send notification message if current channel is action log
-                if(message.channel.id === actionLog.id) return;
 
-                // Reply in the channel letting user know you sent the data to the action log
-                message.reply(`I've sent a message containing the data you requested to ${actionLog}.`)
-            });
+                // If the user is in the action log channel, reply with the embed
+                if(interaction.channel.id === actionLog.id) {
+
+                    // Reply in the channel letting user know you sent the data to the action log
+                    interaction.reply({embeds: [userWarningsEmbed]})
+
+                // If the user isn't in the action log, let them know it was sent there.
+                } else {
+                    // Send the data to the action log
+                    actionLog.send({embeds: [userWarningsEmbed]}).then(() => {
+        
+                        // Reply in the channel letting user know you sent the data to the action log
+                        interaction.reply(`I've sent a message containing the data you requested to ${actionLog}.`)
+                    });
+                }
+            }
         }
     }
 }

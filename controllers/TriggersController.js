@@ -10,7 +10,7 @@ module.exports = {
     triggerHandler: function(interaction) {
         // Create vars
         let trigger = interaction.options.getString(`trigger`);
-        const triggerAction = interaction.options.getSubcommand()
+        const triggerAction = interaction.options.getSubcommand();
         const modRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("mod_role_id"));
         const superRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("super_role_id"));
         const adminRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("admin_role_id"));
