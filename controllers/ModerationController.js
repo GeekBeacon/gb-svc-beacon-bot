@@ -1904,98 +1904,73 @@ module.exports = {
             }
         }
     },
-    roleHandler: function(message, args, client) {
-        const isSuper = message.member.roles.cache.some(role => role.id === client.settings.get("super_role_id"));
-        const isAdmin = message.member.roles.cache.some(role => role.id === client.settings.get("admin_role_id"));
-        const isElder = message.member.roles.cache.some(role => role.name.toLowerCase().includes("elder squirrel"));
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        let isOwner;
-        let user;
-        let role;
-        let argsCopy = [...args];
+    roleHandler: function(interaction) {
+        const isElder = interaction.member.roles.cache.some(role => role.name.toLowerCase().includes("elder squirrel")); //determine if the user is an Elder Squirrel
+        const elderSquirrelRole = interaction.guild.roles.cache.find((r => r.name.toLowerCase().includes(`elder squirrel`))); //Elder Squirrel role
+        const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
+        const isOwner = interaction.user.id === interaction.member.guild.ownerId ? true : false; //determine if the user is the server owner
+        const member = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(interaction.options.getUser(`user`).id); //get the member
+        const role = interaction.options.getRole(`role`); //get the role
+        const subcommand = interaction.options.getSubcommand(); //get the subcommand
 
-         // Check if user is the server owner
-         if(message.author.id === message.member.guild.ownerId) isOwner = true;
-
-        // If the user arg given is a mention assign it
-        if(args[1].startsWith("<@")) {
-            user = message.mentions.members.first();
-        // If the user arg given was a number try to get the user
-        } else {
-            // If invalid id let the user know
-            if(message.guild.members.cache.get(args[1]) === undefined) {
-                return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
-
-            // If user found, assign it to the user var
-            } else {
-                user = message.guild.members.cache.get(args[1]);
-            }
+        // If the bot isn't able to assign a role, let the mod know
+        if(interaction.guild.members.me.roles.highest.position <= role.position) {
+            return interaction.reply({content: `Uh oh! I'm not able to assign that role to members!`, ephemeral: true})
         }
 
-        // If the user gave an id for the role attempt to find the role
-        if(!isNaN(args[2])) {
-            // Find the role by id
-            role = message.guild.roles.cache.get(args[2]);
-
-            // If the role wasn't found let the user know
-            if(role === undefined) return message.reply(`Uh oh! Looks like I wasn't able to find a role with the id \`${args[2]}\`, please try again!`);
-
-        // If a number wasn't given try to find the role based on name
-        } else {
-            argsCopy.shift(); //remove the subcommand
-            argsCopy.shift(); //remove the user
-            const roleStr = argsCopy.join(" "); //join the args
-            // Find the role by id
-            role = message.guild.roles.cache.find(role => role.name.toLowerCase().includes(roleStr.toLowerCase()));
-
-            // If the role wasn't found let the user know
-            if(role === undefined) return message.reply(`Uh oh! Looks like I wasn't able to find a role with the name \`${roleStr}\`, please try again!`);
+        // If the user isn't the owner and tries to give the same level role as their highest role
+        if(interaction.member.roles.highest.position == role.position && !isOwner) {
+            // Let the user know
+            return interaction.reply({content: `Uh oh! You don't have permission to toggle that role!`, ephemeral: true});
         }
 
-        // If the bot isn't able to assign a role
-        if(message.guild.me.roles.highest.position <= role.position) {
-            return message.reply(`Uh oh, I'm not able to assign that role to users!`)
-        }
+        // If the user isn't able to edit the member, deny editing the member and let them know
+         if((interaction.member.roles.highest.position <= member.roles.highest.position && (!isOwner && !isElder)) || (interaction.member.roles.highest.position <= role.position && (!isOwner && !isElder))) {
+            return interaction.reply({content: `Uh oh! You don't have permission to edit this member!`, ephemeral: true});
 
-        // If author isn't able to edit the user, deny editing the user
-        if((message.member.roles.highest.position <= user.roles.highest.position && !isOwner) || (message.member.roles.highest.position <= role.position && !isOwner) ) {
-            return message.reply(`Uh oh! You don't have permission to edit this user!`);
+        // If the user is able to edit the member
         } else {
             // If add subcommand was used
-            if(args[0].toLowerCase() === "add") {
-                // Check if the user already has the role
-                if(user.roles.cache.some(r => r === role)) {
-                    // If user already has the role then let author know
-                    return message.reply(`Uh oh! This user is already in that role!`)
-                }
-                
+            if(subcommand === "add") {
 
-                // Add the role to the user
-                user.roles.add(role).then(() => {
+                // If the user's highest role is Elder Squirrel and provided a role that isn't the Squirrel Army
+                if(isElder && interaction.member.roles.highest.position <= elderSquirrelRole.position && !role.name.toLowerCase().includes(`squirrel army`)) {
+                    // Let the Elder Squirrel know they can't assign roles other than Squirrel Army
+                    return interaction.reply({content: `Uh oh! You are only allowed to give members the Squirrel Army role!`, ephemeral: true});
+                }
+
+                // Check if the member already has the role
+                if(member.roles.cache.some(r => r === role)) {
+                    // If member already has the role then let author know
+                    return interaction.reply({content: `Uh oh! This member is already in that role!`, ephemeral: true})
+                }
+
+                // Add the role to the member
+                member.roles.add(role).then(() => {
                     // Create embed
                     const addEmbed = {
                         color: 0x886CE4,
-                        title: `Role Added To User`,
+                        title: `Role Added To Member`,
                         author: {
-                            name: `${message.member.displayName}`,
-                            icon_url: `${message.author.displayAvatarURL()}`
+                            name: `${interaction.member.displayName}`,
+                            icon_url: `${interaction.member.displayAvatarURL()}`
                         },
-                        description: `${message.member.displayName} has given ${user.displayName} a new role.`,
+                        description: `${interaction.member.displayName} has given ${member.displayName} a new role.`,
                         fields: [
                             {
-                                name: `User Edited`,
-                                value: `${user}`,
-                                inline: true,
+                                name: `Member Edited`,
+                                value: `${member}`,
+                                inline: false,
                             },
                             {
                                 name: `Role Given`,
                                 value: `${role}`,
-                                inline: true,
+                                inline: false,
                             },
                             {
                                 name: `Given By`,
-                                value: `${message.author}`,
-                                inline: true,
+                                value: `${interaction.member}`,
+                                inline: false,
                             }
                         ],
                         timestamp: new Date(),
@@ -2004,44 +1979,51 @@ module.exports = {
                     // Send log
                     actionLog.send({embeds: [addEmbed]}).then(() => {
                         // Send feedback
-                        message.channel.send(`${user.displayName} was successfully added to the ${role.name} role!`);
+                       interaction.reply({content: `${member.displayName} was successfully added to the ${role.name} role!`, ephemeral: true});
                     });
                 });
 
             // If remove subcommand was used
-            } else if(args[0].toLowerCase() === "remove") {
-                // Check if the user already has the role
-                if(!user.roles.cache.some(r => r === role)) {
-                    // If user already has the role then let author know
-                    return message.reply(`Uh oh! This user isn't in that role!`)
+            } else if(subcommand === "remove") {
+                
+                // Check if the member already has the role
+                if(!member.roles.cache.some(r => r === role)) {
+                    // If the member already has the role then let the mod know
+                    return interaction.reply({content: `Uh oh! This member isn't in that role!`, ephemeral: true});
                 }
 
-                // Remove the role from the user
-                user.roles.remove(role).then(() => {
+                // If the user's highest role is Elder Squirrel and provided a role that isn't the Squirrel Army
+                if(isElder && interaction.member.roles.highest.position <= elderSquirrelRole.position && !role.name.toLowerCase().includes(`squirrel army`)) {
+                    // Let the Elder Squirrel know they can't assign roles other than Squirrel Army
+                    return interaction.reply({content: `Uh oh! You are only allowed to give members the Squirrel Army role!`, ephemeral: true});
+                }
+
+                // Remove the role from the member
+                member.roles.remove(role).then(() => {
                     // Create embed
                     const removeEmbed = {
                         color: 0x886CE4,
-                        title: `Role Removed From User`,
+                        title: `Role Removed From Member`,
                         author: {
-                            name: `${message.member.displayName}`,
-                            icon_url: `${message.author.displayAvatarURL()}`
+                            name: `${interaction.member.displayName}`,
+                            icon_url: `${interaction.member.displayAvatarURL()}`
                         },
-                        description: `${message.member.displayName} has removed a role from ${user.displayName}.`,
+                        description: `${interaction.member.displayName} has removed a role from ${member.displayName}.`,
                         fields: [
                             {
-                                name: `User Edited`,
-                                value: `${user}`,
-                                inline: true,
+                                name: `Member Edited`,
+                                value: `${member}`,
+                                inline: false,
                             },
                             {
                                 name: `Role Removed`,
                                 value: `${role}`,
-                                inline: true,
+                                inline: false,
                             },
                             {
                                 name: `Removed By`,
-                                value: `${message.author}`,
-                                inline: true,
+                                value: `${interaction.member}`,
+                                inline: false,
                             }
                         ],
                         timestamp: new Date(),
@@ -2050,7 +2032,7 @@ module.exports = {
                     // Send log
                     actionLog.send({embeds: [removeEmbed]}).then(() => {
                         // Send feedback
-                        message.channel.send(`${user.displayName} was successfully removed from the ${role.name} role!`);
+                        interaction.reply({content: `${member.displayName} was successfully removed from the ${role.name} role!`, ephemeral: true});
                     });
                 });
             }
@@ -2066,7 +2048,7 @@ module.exports = {
         const newNick = subcommand === "reset" ? null : interaction.options.getString(`nickname`);
 
         // Determind the response based on the nickname's subcommand
-        const sameNameReply = subcommand === "reset" ? "Uh oh!\nThis member doesn't have a nickname currently!" : "Uh oh!\nThat is the member's current nickname!";
+        const sameNameReply = subcommand === "reset" ? "Uh oh! This member doesn't have a nickname currently!" : "Uh oh! That is the member's current nickname!";
 
         // If the member has the same nickname currently let the moderator know
         if (oldNick === newNick) return interaction.reply({content: `${sameNameReply}`, ephemeral: true})
