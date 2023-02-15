@@ -286,67 +286,80 @@ module.exports = {
             });
         }
     },
-    kickHandler: function(a, m, c) {
-        const args = a, message = m, client = c;
-        let warnId = shortid.generate(); //generate a short id for the warning
-        const prefix = client.settings.get("prefix");
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        let user; // user var
-        // Get the mod+ roles
-        const modTraineeRole = message.guild.roles.cache.find(role => role.id === client.settings.get("trainee_role_id"));
-        const modRole = message.guild.roles.cache.find(role => role.id === client.settings.get("mod_role_id"));
-        const superRole = message.guild.roles.cache.find(role => role.id === client.settings.get("super_role_id"));
-        const adminRole = message.guild.roles.cache.find(role => role.id === client.settings.get("admin_role_id"));
+    kickHandler: function(interaction) {
+        const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
+        const member = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(interaction.options.getUser(`user`).id); //get the member
+        const reason = interaction.options.getString(`reason`); //get the reason
 
-        // Check if the first arg is a number
-        if(isNaN(args[0])) {
-            // Attempt to fix the arg for the user by removing the comma if the moderator forgot to add a space after the id and before the comma
-            args[0] = args[0].replace(",", "");
+        // Get the mod+ roles
+        const modTraineeRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("trainee_role_id"));
+        const modRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("mod_role_id"));
+        const superRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("super_role_id"));
+        const adminRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("admin_role_id"));
+
+        // If member is a bot then deny kicking it
+        if(member.user.bot) {
+            return interaction.reply({content: `You can't kick no beep boop!`, ephemeral: true});
+
+        // If the member tries to kick themselves then deny kicking them
+        } else if(member.user.id === interaction.user.id) {
+            return interaction.reply({content: `You can't kick yourself from the server, ya silly!`, ephemeral: true});
+
+        // If the member is a mod+ then deny kicking them
+        } else if(member.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
+            return interaction.reply({content: `You got guts, trying to kick a ${member.roles.highest} member!`, ephemeral: true});
+
+        // If the member is the server owner then deny kicking them
+        } else if (member.user.id === interaction.guild.ownerId) {
+            return interaction.reply({content: `I hope you didn't really think you could kick the server owner...`, ephemeral: true});
         }
 
-        // Make sure the first arg was a user mention or a user id
-        if(isNaN(args[0]) && !args[0].startsWith("<@")) {
-            // Let user know they need to provide a user mention or a valid user id
-            message.reply(`Uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
-        } else {
+        /* 
+        * Sync the model to the table
+        * Creates a new table if table doesn't exist, otherwise just inserts a new row
+        * id, createdAt, and updatedAt are set by default; DO NOT ADD
+        !!!!
+            Keep force set to false otherwise it will overwrite the table instead of making a new row!
+        !!!!
+        */
+        Models.kick.sync({ force: false }).then(() => {
+            // Add the kick record to the database
+            Models.kick.create({
+                user_id: member.id,
+                reason: reason,
+                moderator_id: interaction.user.id,
+            })
+            // Let the mod know it was added
+            .then(() => {
 
-            // Check if a user mention was given
-            if(args[0].startsWith("<@")) {
-                user = message.mentions.members.first(); // get user tag
-            // If not, find the user by the provided id
-            } else {
-                // If invalid id let the user know
-                if(message.guild.members.cache.get(args[0]) === undefined) {
-                    return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
-
-                // If user found, assign it to the user var
-                } else {
-                    user = message.guild.members.cache.get(args[0]);
-                }
-            }
-
-            // If user is a bot then deny kicking it
-            if(user.user.bot) {
-                return message.channel.send(`You can't kick no beep boop!`);
-            // If the user tries to kick themselves then deny kicking them
-            } else if(user.user.id === message.author.id) {
-                return message.reply(`You can't kick yourself from the server, silly!`);
-            // If the user is a mod+ then deny kicking them
-            } else if(user.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
-                return message.reply(`You got guts, trying to kick a ${user.roles.highest} member!`);
-            // If the user is the server owner then deny kicking them
-            } else if (user.user.id === user.guild.ownerID) {
-                return message.reply(`I hope you didn't really think you could kick the server owner...`);
-            }
-
-            // If a reason was given then kick the user and log the action to the database
-            if(args[1]) {
-                let reasonArr = args;
-                let reason;
-                reasonArr.shift(); //remove the first arg (user mention or id)
-                reason = reasonArr.join(" "); //turn the array into a string
-                reason = reason.replace(',', ''); // remove the first comma from the string
-                reason = reason.trim(); // remove any excess whitespace
+                // Create the kicked embed
+                const kickEmbed = {
+                    color: 0xFFA500,
+                    title: `Member Was Kicked!`,
+                    author: {
+                        name: `${member.user.username}#${member.user.discriminator}`,
+                        icon_url: `${member.user.displayAvatarURL({dynamic:true})}`,
+                    },
+                    description: `${member} was kicked from the server by ${interaction.member}`,
+                    fields: [
+                        {
+                            name: `Member Kicked`,
+                            value: `${member}`,
+                            inline: true,
+                        },
+                        {
+                            name: `Kicked By`,
+                            value: `${interaction.member}`,
+                            inline: true,
+                        },
+                        {
+                            name: `Reason`,
+                            value: `${reason}`,
+                            inline: false,
+                        }
+                    ],
+                    timestamp: new Date(),
+                };
 
                 /* 
                 * Sync the model to the table
@@ -356,96 +369,29 @@ module.exports = {
                     Keep force set to false otherwise it will overwrite the table instead of making a new row!
                 !!!!
                 */
-                Models.kick.sync({ force: false }).then(() => {
-                    // Add the kick record to the database
-                    Models.kick.create({
-                        user_id: user.id,
-                        reason: reason,
-                        moderator_id: message.author.id,
-                    })
-                    // Let the user know it was added
-                    .then(() => {
+                Models.warning.sync({ force: false }).then(() => { 
+                    // Create a new warning
+                    Models.warning.create({
+                        user_id: member.id, // add the member's id
+                        type: "Kicked", // assign the type of warning
+                        reason: reason, // add the reason for the warning
+                        username: member.user.username, // add the username
+                        mod_id: interaction.user.id, // add the mod's id
+                        nickname: member.nickname //add the nickname the member had
+                    }).then(() => {
 
-                        // Create the kicked embed
-                        const kickEmbed = {
-                            color: 0xFFA500,
-                            title: `User Was Kicked!`,
-                            author: {
-                                name: `${user.user.username}#${user.user.discriminator}`,
-                                icon_url: user.user.displayAvatarURL({dynamic:true}),
-                            },
-                            description: `${user} was kicked from the server by ${message.author}`,
-                            fields: [
-                                {
-                                    name: `User Kicked`,
-                                    value: `${user}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Kicked By`,
-                                    value: `${message.author}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Reason`,
-                                    value: `${reason}`,
-                                    inline: false,
-                                }
-                            ],
-                            timestamp: new Date(),
-                        };
+                        // Kick the member from the server
+                        member.kick(reason).then(() => {
+                            // Send the embed to the action log channel
+                            actionLog.send({embeds: [kickEmbed]});
 
-                        /* 
-                        * Sync the model to the table
-                        * Creates a new table if table doesn't exist, otherwise just inserts a new row
-                        * id, createdAt, and updatedAt are set by default; DO NOT ADD
-                        !!!!
-                            Keep force set to false otherwise it will overwrite the table instead of making a new row!
-                        !!!!
-                        */
-                        Models.warning.sync({ force: false }).then(() => { 
-                            // See if the warning id exists already
-                            Models.warning.findOne({where: {warning_id: warnId}, raw:true}).then((warning => {
-                                // If the warning id matches the newly generated one, generate a new one
-                                if(warning) {
-                                    warnId = shortid.generate();
-                                };
-                            })).then(() => { 
-                                // Create a new warning
-                                Models.warning.create({
-                                    warning_id: warnId, // add the warning Id
-                                    user_id: user.id, // add the user's id
-                                    type: "Kicked", // assign the type of warning
-                                    reason: reason, // add the reason for the warning
-                                    username: user.user.username, // add the username
-                                    mod_id: message.author.id
-                                }).then(() => {
-
-                                    // Kick the user from the server
-                                    user.kick(reason).then(() => {
-                                        // Send the embed to the action log channel
-                                        actionLog.send({embeds: [kickEmbed]});
-                                        // Let mod know the user has been kicked
-                                        message.channel.send(`${user.user.username} was successfully kicked from the server!`)
-                                    });
-                                });
-                            });
+                            // Let mod know the member has been kicked
+                            interaction.reply({content: `${member.user.username} was successfully kicked from the server!`, ephemeral: true});
                         });
-                    })
+                    });
                 });
-            } else {
-                // Check if a user mention was used
-                if(message.mentions.users.first()) {
-                    // Let user know a reason is needed
-                    message.reply(`Uh oh! It seems you forgot to give a reason for kicking, please be sure to provide a reason for this action!\nExample: \`${prefix}kick @${user.user.tag}, reason\``);
-
-                // If no user mention was given then just output the id they provided
-                } else {
-                    // Let user know a reason is needed
-                    message.reply(`Uh oh! It seems you forgot to give a reason for kicking, please be sure to provide a reason for this action!\nExample: \`${prefix}kick ${user}, reason\``);
-                }
-            }
-        }
+            })
+        });
     },
     banHandler: async function(a, m, c) {
         const args = a, message = m, client = c;
@@ -1245,135 +1191,6 @@ module.exports = {
             message.reply(`Uh oh! It seems you forgot to give a reason for unmuting, please be sure to provide a reason for this action!\nExample: \`${prefix}unmute ${user}, reason\``);
         }
     },
-    createMuteHandler: async function(m, c) {
-        const message = m, client = c;
-        const usersRole = message.guild.roles.cache.find(role => role.id === client.settings.get("user_role_id")); //users role
-        let mutedServer = message.guild.roles.cache.find(r => r.name === "Muted - Server"); //muted server role
-        let mutedVoice = message.guild.roles.cache.find(r => r.name === "Muted - Voice"); //muted voice role
-        let mutedText = message.guild.roles.cache.find(r => r.name === "Muted - Text"); //muted text role
-        let mutedReactions = message.guild.roles.cache.find(r => r.name === "Muted - Reactions"); //muted Reactions role
-        let roles = [];
-
-        // Check if the muted roles exists
-        if(!mutedServer || !mutedVoice || !mutedText || !mutedReactions) {
-
-            // If no Muted - Server role
-            if(!mutedServer) {
-                // If no Muted - Server role then create one
-                mutedServer = await message.guild.roles.create({
-                    name: `Muted - Server`,
-                    color: `#818386`,
-                    position: `${usersRole.position + 1}`,
-                    permissions: [], //set permissions to an empty array so no permissions are given
-                    reason: `No "Muted - Server" role, need one to mute users!`
-                });
-
-                // Loop through all channels channels
-                message.guild.channels.cache.forEach(async (channel) => {
-                    // Ignore threads since they don't have permissions
-                    if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
-                        // Deny the ability to send messages, speak, add reactions, and use voice activity for each channel for the Muted - Server role
-                        await channel.permissionOverwrites.edit(mutedServer, {
-                            SEND_MESSAGES: false,
-                            SPEAK: false,
-                            ADD_REACTIONS: false,
-                            USE_VAD: false,
-                            USE_PUBLIC_THREADS: false,
-                            USE_PRIVATE_THREADS: false
-                        });
-                    };
-                });
-
-                // Add the newly created role to the array
-                roles.push(mutedServer);
-            }
-
-            // If no Muted - Voice role
-            if(!mutedVoice) {
-                // If no Muted - Voice role then create one
-                mutedVoice = await message.guild.roles.create({
-                    name: `Muted - Voice`,
-                    color: `#818386`,
-                    position: `${usersRole.position + 1}`,
-                    permissions: [], //set permissions to an empty array so no permissions are given
-                    reason: `No "Muted - Voice" role, need one to mute users!`
-                });
-
-                // Loop through all channels channels
-                message.guild.channels.cache.forEach(async (channel) => {
-                    // Ignore threads since they don't have permissions
-                    if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
-                        // Deny the ability to speak and use voice activity for each channel for the Muted - Voice role
-                        await channel.permissionOverwrites.edit(mutedVoice, {
-                            SPEAK: false,
-                            USE_VAD: false
-                        });
-                    };
-                });
-
-                // Add the newly created role to the array
-                roles.push(mutedVoice);
-            }
-
-            // If no Muted - Text role
-            if(!mutedText) {
-                // If no Muted - Text role then create one
-                mutedText = await message.guild.roles.create({
-                    name: `Muted - Text`,
-                    color: `#818386`,
-                    position: `${usersRole.position + 1}`,
-                    permissions: [], //set permissions to an empty array so no permissions are given
-                    reason: `No "Muted - Text" role, need one to mute users!`
-                });
-
-                // Loop through all channels channels
-                message.guild.channels.cache.forEach(async (channel) => {
-                    // Ignore threads since they don't have permissions
-                    if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
-                        // Deny the ability to send messages for each channel for the Muted - Text role
-                        await channel.permissionOverwrites.edit(mutedText, {
-                            SendMessages: false,
-                            UsePublicThreads: false,
-                            UsePrivateThreads: false
-                        });
-                    };
-                });
-
-                // Add the newly created role to the array
-                roles.push(mutedText);
-            }
-
-            // If no Muted - Reactions role
-            if(!mutedReactions) {
-                // If no Muted - Reactions role then create one
-                mutedReactions = await message.guild.roles.create({
-                    name: `Muted - Reactions`,
-                    color: `#818386`,
-                    position: `${usersRole.position + 1}`,
-                    permissions: [], //set permissions to an empty array so no permissions are given
-                    reason: `No "Muted - Reactions" role, need one to mute users!`
-                });
-
-                // Loop through all channels channels
-                message.guild.channels.cache.forEach(async (channel) => {
-                    // Ignore threads since they don't have permissions
-                    if(channel.type !== "GUILD_PUBLIC_THREAD" && channel.type !== "GUILD_PRIVATE_THREAD") {
-                        // Deny the ability to add reactions for each channel for the Muted - Reactions role
-                        await channel.permissionOverwrites.edit(mutedReactions, {
-                            AddReactions: false
-                        });
-                    }
-                });
-
-                // Add the newly created role to the array
-                roles.push(mutedReactions);
-            }
-
-            message.channel.send(`The ${roles} role(s) was successfully created!`)
-        } else {
-            return message.reply(`Uh oh! Looks like the muted roles already exist!`)
-        }
-    },
     blacklistHandler: function(m, ar, c, tl, bu) {
         const message = m, args = ar, client = c, triggers = tl, bannedUrls = bu;
         const prefix = client.settings.get("prefix");
@@ -2106,23 +1923,16 @@ module.exports = {
         });
         
     },
-    tempVoiceHandler: function(message, args, client) {
-        const prefix = client.settings.get("prefix");
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        let argsStr = args.join(" "); //join the args together
-        const newArgs = argsStr.split(",").map(i => i.trim()); //create a new array by splitting on the comma then remove any whitespace
-        const name = newArgs[0].split(' ').map(w => w[0].toUpperCase() + w.substr(1).toLowerCase()).join(' '); //caps the first letter of each word in the name
+    tempVoiceHandler: function(interaction) {
+        const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
+        const name = interaction.options.getString(`name`).split(' ').map(w => w[0].toUpperCase() + w.substr(1).toLowerCase()).join(' '); //caps the first letter of each word in the name
+        const userLimit = interaction.options.getInteger(`limit`);
 
-        // If the user gave too many arguments let them know
-        if(newArgs.length > 2) {
-            return message.reply(`Uh oh! Looks like you gave too many arguments, please make sure to only give the required channel name and an optional member limit for the channel!\nExample: \`${prefix}tempvoice New Channel, 10\``);
-
-        // If the user only gave one argument assign it as the channel name
-        } else if(newArgs.length === 1) {
+        if(userLimit == null) {
             // Create the temporary voice channel in the same category the server's afk channel is in
-            message.guild.channels.create({name: `⏱️ ${name}`, type: Discord.ChannelType.GuildVoice, parent: message.guild.afkChannel.parent}).then((channel) => {
+            interaction.guild.channels.create({name: `⏱️ ${name}`, type: Discord.ChannelType.GuildVoice , parent: interaction.guild.afkChannel.parent}).then((channel) => {
                 // Move the newly created channel above the afk channel
-                channel.setPosition(message.guild.afkChannel.position).then(() => {
+                channel.setPosition(interaction.guild.afkChannel.position).then(() => {
                     
                     /* 
                     * Sync the model to the table
@@ -2136,7 +1946,7 @@ module.exports = {
                         // Add the temp channel to the database
                         Models.tempchannel.create({
                             channel_id: channel.id,
-                            user_id: message.author.id,
+                            user_id: interaction.user.id,
                             name: name,
                         })
                         // Let the user know it was added
@@ -2147,10 +1957,10 @@ module.exports = {
                                 color: 0x33CCFF,
                                 title: `Temporary Channel Created!`,
                                 author: {
-                                    name: `${message.author.username}#${message.author.discriminator}`,
-                                    icon_url: message.author.displayAvatarURL({dynamic:true}),
+                                    name: `${interaction.user.username}#${interaction.user.discriminator}`,
+                                    icon_url: `${interaction.user.displayAvatarURL({dynamic:true})}`,
                                 },
-                                description: `${message.author} created a new temporary voice channel!`,
+                                description: `${interaction.member} created a new temporary voice channel!`,
                                 fields: [
                                     {
                                         name: `Channel Name`,
@@ -2168,22 +1978,22 @@ module.exports = {
 
                             // Send the embed to the action log channel
                             actionLog.send({embeds: [tempChannelEmbed]});
+
+                            // Let the member know the channel was made
+                            interaction.reply({content: `The channel, <#${channel.id}>, was made successfully!`, ephemeral: true});
+
                         });
                     });
                 });
-            }).catch(console.error);
+            });
 
-        // If the user gave two arguments then assign the first as the channel name and the second as the channel limit
-        } else if (newArgs.length === 2) {
-            // If the user limit given was less than 1 or greater than 99 let user know it is invalid
-            if(isNaN(newArgs[1]) || newArgs[1] < 1 || newArgs[1] > 99) {
-                return message.reply(`Uh oh! Looks like you tried to give me an invalid user limit, please provide me with a numerical limit that is between 1 and 99, or leave blank if no limit is needed!`);
-            };
+        // If the member provided a member limit, set that
+        } else {
 
-            // Create the temporary voice channel in the same category the server's afk channel is in with the user limit given
-            message.guild.channels.create(`⏱️ ${name}`, {type: 'GUILD_VOICE', userLimit: newArgs[1], parent: message.guild.afkChannel.parent}).then(channel => {
+            // Create the temporary voice channel in the same category the server's afk channel is in with the member limit given
+            interaction.guild.channels.create({name:`⏱️ ${name}`, type: Discord.ChannelType.GuildVoice, userLimit: userLimit, parent: interaction.guild.afkChannel.parent}).then(channel => {
                 // Move the newly created channel above the afk channel
-                channel.setPosition(message.guild.afkChannel.position -1, {relative: true}).then(() => {
+                channel.setPosition(interaction.guild.afkChannel.position).then(() => {
                     /* 
                     * Sync the model to the table
                     * Creates a new table if table doesn't exist, otherwise just inserts a new row
@@ -2196,11 +2006,11 @@ module.exports = {
                         // Add the temp channel to the database
                         Models.tempchannel.create({
                             channel_id: channel.id,
-                            user_id: message.author.id,
+                            user_id: interaction.member.id,
                             name: name,
-                            user_limit: newArgs[1],
+                            user_limit: userLimit,
                         })
-                        // Let the user know it was added
+                        // Let the member know it was added
                         .then(() => {
 
                             // Create the tempchannel embed
@@ -2208,10 +2018,10 @@ module.exports = {
                                 color: 0x33CCFF,
                                 title: `Temporary Channel Created!`,
                                 author: {
-                                    name: `${message.author.username}#${message.author.discriminator}`,
-                                    icon_url: message.author.displayAvatarURL({dynamic:true}),
+                                    name: `${interaction.user.username}#${interaction.user.discriminator}`,
+                                    icon_url: `${interaction.user.displayAvatarURL({dynamic:true})}`,
                                 },
-                                description: `${message.author} created a new temporary voice channel!`,
+                                description: `${interaction.member} created a new temporary voice channel!`,
                                 fields: [
                                     {
                                         name: `Channel Name`,
@@ -2219,8 +2029,8 @@ module.exports = {
                                         inline: true,
                                     },
                                     {
-                                        name: `User Limit`,
-                                        value: `${newArgs[1]}`,
+                                        name: `Member Limit`,
+                                        value: `${userLimit}`,
                                         inline: true,
                                     },
                                 ],
@@ -2229,6 +2039,9 @@ module.exports = {
 
                             // Send the embed to the action log channel
                             actionLog.send({embeds: [tempChannelEmbed]});
+
+                            // Let the member know the channel was made
+                            interaction.reply({content: `The channel, <#${channel.id}> (Limit: ${userLimit}), was made successfully!`, ephemeral: true});
                         });
                     });
                 });

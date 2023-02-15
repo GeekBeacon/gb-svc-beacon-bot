@@ -138,15 +138,6 @@ module.exports = {
             AnnouncementController.crudHandler(i);
             
         /*
-        ##################################
-        ####### createmute command #######
-        ##################################
-        */
-        } else if(i.commandName === "createmute") {
-            // Call the mute handler function from the ModerationController file
-            ModerationController.createMuteHandler(i);
-            
-        /*
         #################################
         ####### cmdtoggle command #######
         #################################
