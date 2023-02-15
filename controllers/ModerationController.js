@@ -1191,274 +1191,213 @@ module.exports = {
             message.reply(`Uh oh! It seems you forgot to give a reason for unmuting, please be sure to provide a reason for this action!\nExample: \`${prefix}unmute ${user}, reason\``);
         }
     },
-    blacklistHandler: function(m, ar, c, tl, bu) {
-        const message = m, args = ar, client = c, triggers = tl, bannedUrls = bu;
-        const prefix = client.settings.get("prefix");
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        const subCommand = args.shift(); //remove the first arg and store it in the subcommand var
-        const allowedSubCommands = ["view", "list", "add", "create", "delete", "remove"];
+    blacklistHandler: function(interaction) {
+        const subcommand = interaction.options.getSubcommand(); //get the subcommand
+        const domain = interaction.options.getString(`domain`); //get the domain
+        const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
+        const ownerId = interaction.guild.ownerId; //get the owner's id
         // In role? Boolean
-        const inSuperRole = message.member.roles.cache.some(role => role.id === client.settings.get("super_role_id"));
-        const inAdminRole = message.member.roles.cache.some(role => role.id === client.settings.get("admin_role_id"));
-        const isOwner = message.member.guild.owner;
+        const inSuperRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("super_role_id"));
+        const inAdminRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("admin_role_id"));
         // Role vars
-        const superRole = message.guild.roles.cache.find(role => role.id === client.settings.get("super_role_id"));
-        const adminRole = message.guild.roles.cache.find(role => role.id === client.settings.get("admin_role_id"));
-        let domains = args.join(","); //create string of for all domains
-        domains = domains.split(","); //create array from all domains
-        domains = domains.filter(i=>i); //remove any null values
+        const superRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("super_role_id"));
+        const adminRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("admin_role_id"));
 
-        // Make sure a proper subcommand was given
-        if(!allowedSubCommands.includes(subCommand.toLowerCase())) {
-            return message.channel.send(`You didn't give a proper subcommand for me to use, please choose from the list below:\n**${allowedSubCommands.join(", ")}**`)
-        } else {
-            /*
-            #################################
-            ######## list subcommand ########
-            #################################
-            */
-            if(["view", "list"].includes(subCommand.toLowerCase())) {
-                let blacklistedDomains = [];
+        // List the domains
+        if(subcommand === "list") {
+            let blacklistedDomains = [];
 
-                // Find all the blacklisted domains from the db
-                Models.bannedurl.findAll().then((data) => {
-                    // If there was any data
-                    if(data) {
-                        // Add each item to the blacklistedDomains array
-                        data.forEach((item) => {
-                            blacklistedDomains.push(`**${item.get('url')}**`);
-                        });
-                    }
-                }).then(() => {
-                    blacklistedDomains = blacklistedDomains.join(", "); //create a string from array
-                    // Try to send the list; will fail if exceeding character limit
-                    try {
-                        // Create embed
-                        const blacklistsEmbed = {
-                            color: 0x33CCFF,
-                            title: `Blacklist Domains`,
-                            description: `${blacklistedDomains}`,
-                            timestamp: new Date()
-                        };
+            // Find all the blacklisted domains from the db
+            Models.bannedurl.findAll().then((data) => {
+                // If there was any data
+                if(data) {
+                    // Add each item to the blacklistedDomains array
+                    data.forEach((item) => {
+                        blacklistedDomains.push(`**${item.get('url')}**`);
+                    });
+                }
+            }).then(() => {
+                blacklistedDomains = blacklistedDomains.join(", "); //create a string from array
+                // Try to send the list; will fail if exceeding character limit
+                try {
+                    // Create embed
+                    const blacklistsEmbed = {
+                        color: 0x33CCFF,
+                        title: `Blacklist Domains`,
+                        description: `${blacklistedDomains}`,
+                        timestamp: new Date()
+                    };
+                    // If the mod is in the actionlog channel, reply with the embed
+                    if(interaction.channel.id === actionLog.id) {
+                        interaction.reply({embeds: [blacklistsEmbed]});
+
+                    // If the mod isn't in the actionlog channel let them know to check it
+                    } else {
                         // Send the embed to the action log channel
                         actionLog.send({embeds: [blacklistsEmbed]});
-                        // Let user know the data was sent
-                        return message.channel.send(`I've sent the data you requested to ${actionLog}`)
-                        
-                    // If exceeded the character limit let user know
-                    } catch(e) {
-                        return message.channel.send(`There are too many domains to display currently!`);
+                        // Let mod know the data was sent
+                        return interaction.reply({content: `I've sent the data you requested to ${actionLog}`, ephemeral: true});
                     }
-                })
-            /*
-            ################################
-            ######## add subcommand ########
-            ################################
+                    
+                // If exceeded the character limit let user know
+                } catch(e) {
+                    return interaction.reply({content: `There are too many domains to display currently! Please ask Kankuro for the list if you require it!`, ephemeral: true});
+                }
+            })
+        
+        // Add a domain
+        } else if (subcommand === "add") {
+
+            // Regex for ensuring valid url
+            const domainRegEx = /^(?:https?\:\/\/)?(?:.+\.)?([A-Za-z0-9-]+\.\w+)(?:\/?[^\s]+)?$/g;
+
+            // If only one domain was given and it doesn't match the regex let user know
+            if(!domain.match(domainRegEx)) {
+                return interaction.reply({content: `${domain} was an invalid url/domain, please try again!`, ephemeral: true});
+            }
+
+            /* 
+            * Sync the model to the table
+            * Creates a new table if table doesn't exist, otherwise just inserts a new row
+            * id, createdAt, and updatedAt are set by default; DO NOT ADD
+            !!!!
+                Keep force set to false otherwise it will overwrite the table instead of making a new row!
+            !!!!
             */
-            } else if(["add", "create"].includes(subCommand.toLowerCase())) {
-                // Make sure array has values
-                if(domains.length === 0) {
-                    return message.reply(`Uh oh! Looks like you forgot to give me the url(s) to add!`)
-                } else {
+            Models.bannedurl.sync({force: false}).then(() => {
 
-                    // Regex for ensuring valid url
-                    const domainRegEx = /^(?:https?\:\/\/)?(?:.+\.)?([A-Za-z0-9-]+\.\w+)(?:\/?[^\s]+)?$/g;
-                    let acceptedInput = [];
-                    let deniedInput = [];
+                // See the the domain is already in the db
+                Models.bannedurl.findOne({where: {url: domain}}).then((item) => {
+                    // If the domain is already blacklisted, let the mod know
+                    if(item) {
+                        return interaction.reply({content: `Uh oh! Looks like ${domain} is already in the domain blacklist!`, ephemeral: true});
+                    // If the domain isn't in the db, add it
+                    } else {
 
-                    // If only one domain was given and it doesn't match the regex let user know
-                    if(domains.length === 1 && !domains[0].match(domainRegEx)) {
-                        return message.channel.send(`${domains[0]} was an invalid url/domains, please try again!`)
-                    }
+                        // Strip the url to only get the domain name and tld (and sub domains)
+                        const newDomain = domain.replace(/(https?:\/\/(w+\.)?|\/(.+)?)/g, "");
 
-                    // // Loop through each arg given after the subcommand
-                    domains.forEach((domain) => {
-                        // If a valid url
-                        if(domain.match(domainRegEx)){
-                            // Strip the url to only get the domain name and tld (and sub domains)
-                            const newDomain = domain.replace(/(https?:\/\/(w+\.)?|\/(.+)?)/g, "");
-                            // Add the domain to acceptedInput array
-                            acceptedInput.push(newDomain);
+                        // Add the domain to the database
+                        Models.bannedurl.create({
+                            url: newDomain,
+                            added_by: interaction.member.id,
+                        }).then((item) => {
 
-                        // If not a valid url
-                        } else {
-                            // Add to deniedInput array
-                            deniedInput.push(domain)
-                        }
-                    });
-
-                    /* 
-                    * Sync the model to the table
-                    * Creates a new table if table doesn't exist, otherwise just inserts a new row
-                    * id, createdAt, and updatedAt are set by default; DO NOT ADD
-                    !!!!
-                        Keep force set to false otherwise it will overwrite the table instead of making a new row!
-                    !!!!
-                    */
-                    Models.bannedurl.sync({force: false}).then(() => {
-                        // If only one domain was given
-                        if(domains.length === 1) {
-                            // Add the domain to the database
-                            Models.bannedurl.create({
-                                url: domains[0],
-                                added_by: message.author.id,
-                            }).then(() => {
-
-                                // Create the embed
-                                const blacklistEmbed = {
-                                    color: 0x00FF00,
-                                    title: `Domain Blacklist Added`,
-                                    author: {
-                                        name: message.author.tag,
-                                        icon_url: message.author.displayAvatarURL({dynamic: true}),
+                            // Create the embed
+                            const blacklistEmbed = {
+                                color: 0x00FF00,
+                                title: `Domain Blacklist Added`,
+                                author: {
+                                    name: `${interaction.user.tag}`,
+                                    icon_url: `${interaction.member.displayAvatarURL({dynamic: true})}`,
+                                },
+                                description: `${interaction.member.displayName} has blacklisted a new domain!`,
+                                fields: [
+                                    {
+                                        name: `Domain Added`,
+                                        value: `${newDomain}`,
+                                        inline: true,
                                     },
-                                    description: `${message.author.username} has blacklisted a new domain!`,
-                                    fields: [
-                                        {
-                                            name: `Domain Added`,
-                                            value: `${domains[0]}`,
-                                            inline: true,
-                                        },
-                                        {
-                                            name: `Added By`,
-                                            value: `${message.author}`,
-                                            inline: true,
-                                        }, 
-                                    ],
-                                    timestamp: new Date()
-                                }
+                                    {
+                                        name: `Added By`,
+                                        value: `${interaction.member}`,
+                                        inline: true,
+                                    }, 
+                                ],
+                                timestamp: new Date()
+                            }
 
-                                // Add the url to the bannedUrls List
-                                bannedUrls.list.push(domains[0]);
+                            // Add the url to the blacklist
+                            interaction.client.blacklist.set(item.id, newDomain);
 
+                            // If the mod is in the actionlog, reply with the embed
+                            if(interaction.channel.id === actionLog.id) {
+                                interaction.reply({embeds: [blacklistEmbed]});
+
+                            // If the mod isn't in the actionlog, let them know to check it
+                            } else {
                                 // Send the embed to the action log channel
                                 actionLog.send({embeds: [blacklistEmbed]});
-                                // Let the user know the domain was added
-                                message.channel.send(`${domains[0]} was successfully added to the list of banned domains!`);
-                            })
-                        // If more than one domain was given
-                        } else if(domains.length > 1) {
-                            let bulkDomains = [];
+                                // Let the mod know the domain was added
+                                interaction.reply({content: `${newDomain} was successfully added to the list of banned domains!`, ephemeral: true});
+                            }
+                        })
+                    }
+                });
+            });
+        
+        // Remove a domain
+        } else if (subcommand === "remove") {
+            // Make sure user is a super or higher role
+            if(!inSuperRole && !inAdminRole && interaction.guild.ownerId !== ownerId) {
+                // If not let them know to ask a super or higher to remove the domain
+                return interaction.reply({content: `Uh oh! You aren't allowed to remove blacklisted domains, if you feel this domain should be removed please ask a ${superRole} or ${adminRole} to delete it!`, ephemeral: true});
+            }
+            // Regex for ensuring valid url
+            const domainRegEx = /^(?:https?\:\/\/)?(?:.+\.)?([A-Za-z0-9-]+\.\w+)(?:\/?[^\s]+)?$/g;
 
-                            // Loop through the accepted input
-                            acceptedInput.forEach((item) => {
-                                // Create a new comain object
-                                let domainObj = {
-                                    url: item,
-                                    added_by: message.author.id,
-                                };
-                                // Add the domain object to the bulkDomains array
-                                bulkDomains.push(domainObj);
-                            });
-                            // Create multiple rows of domains
-                            Models.bannedurl.bulkCreate(bulkDomains).then(() => {
-                                const addedDomains = acceptedInput.join(", ");
-                                const rejectedDomains = deniedInput.join(", ");
-                    
-                                // Create the embed
-                                const blacklistsEmbed = {
-                                    color: 0x00FF00,
-                                    title: `Domain Blacklists Added`,
-                                    author: {
-                                        name: message.author.tag,
-                                        icon_url: message.author.displayAvatarURL({dynamic: true}),
-                                    },
-                                    description: `${message.author.username} has blacklisted new domains!`,
-                                    fields: [
-                                        {
-                                            name: `Domains Added`,
-                                            value: `${addedDomains}`,
-                                            inline: true,
-                                        },
-                                        {
-                                            name: `Rejected Domains`,
-                                            value: `${rejectedDomains || "None"}`
-                                        },
-                                        {
-                                            name: `Added By`,
-                                            value: `${message.author}`,
-                                            inline: true,
-                                        }, 
-                                    ],
-                                    timestamp: new Date()
-                                }
+            // If the domain doesn't match the regex let user know
+            if(!domain.match(domainRegEx)) {
+                return interaction.reply({content: `${domain} was an invalid url/domain, please try again!`, ephemeral: true});
+            }
 
-                                // Add each domain to the bannedUrls list
-                                bulkDomains.forEach((item) => {
-                                    bannedUrls.list.push(item);
-                                })
+            // Strip the url to only get the domain name and tld (and sub domains)
+            const newDomain = domain.replace(/(https?:\/\/(w+\.)?|\/(.+)?)/g, "");
 
-                                // Send the embed to the action log channel
-                                actionLog.send({embeds: [blacklistsEmbed]});
-                                // Let the user know the domain was added
-                                message.channel.send(`The domains were successfully added to the list of banned domains, see ${actionLog} for more info!`);
-                                // If any domains were rejected let the user know
-                                if(deniedInput.length > 0 && deniedInput[0] !== "") {
-                                    message.channel.send(`The following domains weren't added to the list of banned domains due to invalid domain format, see ${actionLog} for more info!\n\`${rejectedDomains}\``);
-                                }
-                            })
+            // Query the database for the domain passed in
+            Models.bannedurl.findOne({where: {url: newDomain}}).then((item) => {
+                // If the domain was found, then remove it
+                if (item) {
+                    Models.bannedurl.destroy({
+                        where: {
+                            url: newDomain
+                        }
+                    // Let the user know it was removed
+                    }).then(() => {
+
+                        // Create the embed
+                        const blacklistEmbed = {
+                            color: 0x00FF00,
+                            title: `Domain Blacklist Removed`,
+                            author: {
+                                name: `${interaction.user.tag}`,
+                                icon_url: `${interaction.member.displayAvatarURL({dynamic: true})}`,
+                            },
+                            description: `${interaction.member.displayName} has removed a domain from the blacklist!`,
+                            fields: [
+                                {
+                                    name: `Domain Removed`,
+                                    value: `${newDomain}`,
+                                    inline: true,
+                                },
+                                {
+                                    name: `Removed By`,
+                                    value: `${interaction.member}`,
+                                    inline: true,
+                                }, 
+                            ],
+                            timestamp: new Date()
+                        }
+
+                        // Reomve the bannedUrl from the local collection
+                        interaction.client.blacklist.delete(item.id);
+
+                        // If the mod is in the actionlog, reply with the embed
+                        if(interaction.channel.id === actionLog.id) {
+                            interaction.reply({embeds: [blacklistEmbed]});
+
+                        // If the mod is not in the actionlog, let them know to check it
+                        } else {
+                            actionLog.send({embeds: [blacklistEmbed]});
+                            // Let user know domain was removed
+                            interaction.reply({content: `I have successfully removed \`${newDomain}\` from the blacklisted domains!`, ephemeral: true});
                         }
                     });
-                }
-            /*
-            ###################################
-            ######## delete subcommand ########
-            ###################################
-            */
-            } else if(["delete", "remove"].includes(subCommand.toLowerCase())) {
-                // Make sure user is a super or higher role
-                if(!inSuperRole && !inAdminRole && message.author !== isOwner) {
-                    // If not let them know to ask a super or higher to remove the domain
-                    return message.reply(`Uh oh! You aren't allowed to remove blacklisted domains, if you feel this domain should be removed please ask a ${superRole} or ${adminRole} to delete it!`)
-                }
-                // If no domain was given let user know
-                if(domains.length === 0) {
-                    return message.reply(`Uh oh! Looks like you forgot to give me the url(s) to add!`)
-                // If more than one domain was given let user know they can only delete one at a time
-                } else if(domains.length !== 1) {
-                    return message.reply(`Uh oh! You can only delete one domain at a time!`);
-                }
-                let domain = domains[0]; //domain var
-
-                // Regex for ensuring valid url
-                const domainRegEx = /^(?:https?\:\/\/)?(?:.+\.)?([A-Za-z0-9-]+\.\w+)(?:\/?[^\s]+)?$/g;
-
-                // If only one domain was given and it doesn't match the regex let user know
-                if(!domain.match(domainRegEx)) {
-                    return message.channel.send(`${domains[0]} was an invalid url/domains, please try again!`)
-                }
-
-                // Strip the url to only get the domain name and tld (and sub domains)
-                const newDomain = domain.replace(/(https?:\/\/(w+\.)?|\/(.+)?)/g, "");
-
-                // Query the database for the domain passed in
-                Models.bannedurl.findOne({where: {url: newDomain}}).then((item) => {
-                    // If the domain was found, then remove it
-                    if (item) {
-                        Models.bannedurl.destroy({
-                            where: {
-                                url: domain
-                            }
-                        // Let the user know it was removed
-                        }).then(() => {
-
-                            // Find the item within the bannedUrls list
-                            const itemIndex = bannedUrls.list.indexOf(item);
-
-                            // If the item was found, remove it from the bannedUrls list
-                            if(itemIndex) {
-                                bannedUrls.list.splice(itemIndex, 1);
-                            }
-
-                            // Let user know domain was removed
-                            message.channel.send(`I have successfully removed \`${domain}\` from the blacklisted domains!`);
-                        });
-                    // If the domain wasn't found let the user know
-                    } else {
-                        message.channel.send(`Unable to find \`${domain}\`, please try again or use \`${prefix}blacklist list\` to view all blacklisted domains!`);
-                    };
-                });
-            }
+                // If the domain wasn't found let the mod know
+                } else {
+                    return interaction.reply({content: `Unable to find \`${newDomain}\`, please try again or use \`/blacklist list\` to view all blacklisted domains!`, ephemeral: true});
+                };
+            });
         }
     },
     handleUrl: function(m, c, rm, deleteSet) {

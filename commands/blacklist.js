@@ -39,6 +39,6 @@ module.exports = {
 
     async execute(interaction) {
         // Call the blacklist handler function from the ModerationController file
-        //ModerationController.blacklistHandler(interaction);
+        ModerationController.blacklistHandler(interaction);
     }
 }
