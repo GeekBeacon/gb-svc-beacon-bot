@@ -1503,11 +1503,28 @@ module.exports = {
         };
 
         // Send the embed to the mod log
-        actionLog.send({embeds: [urlEmbed]}).then(() => {
+        actionLog.send({embeds: [urlEmbed]}).then((msg) => {
+            
+            // Create a new table if one doesn't exist; force: false to prevent overwrite; alter: true to make the table match the model
+            Models.warning.sync({ force: false, alter: true }).then(() => {
+                // Store the data
+                Models.warning.create({
+                    user_id: message.author.id, // add the user's id
+                    type: "Banned URL", // assign the type of warning
+                    username: message.author.username.toLowerCase(), // add the user's username
+                    nickname: message.member.nickname, // add the member's nickname
+                    message: regexMatch.input, // add the full message
+                    message_link: msg.url, // add the message url
+                    banned_url: regexMatch[0], // add the banned url
+                    channel_id: message.channel.id // add the channel's id
+                })
+            });
+
             // Delete the message with a reason
             message.delete({reason: "Blacklisted URL"}).then(() => {
+
                 // Let the user know why their message was deleted
-                message.channel.send(`${message.member.displayName} please refrain from posting blacklisted urls!`)
+                message.channel.send(`${message.member.displayName} please refrain from posting blacklisted urls!`);
             });
         });
     },

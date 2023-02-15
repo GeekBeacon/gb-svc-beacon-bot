@@ -9,9 +9,9 @@ const cooldowns = new Discord.Collection();
 module.exports = {
 
     // Create a function to be called
-    messageHandler: async function(m, c, bu, ds) {
+    messageHandler: async function(m, c, ds) {
         // Create vars
-        const message = m, client = c, bannedUrls = bu, deleteSet = ds;
+        const message = m, client = c, deleteSet = ds;
         let inModTraineeRole, inModRole, inSuperRole, inAdminRole, isOwner;
         let triggerArr = [];
         let bannedUrlArr = [];
@@ -34,9 +34,9 @@ module.exports = {
         });
 
         // Loop through the bannedUrl list
-        bannedUrls.list.forEach((domain) => {
+        client.blacklist.forEach((value, key) => {
             // Add each domain to the bannedUrlArr var
-            bannedUrlArr.push(domain);
+            bannedUrlArr.push(value);
         });
 
         // Make sure the author isn't a bot and message is from a text channel before checking its' roles
@@ -59,6 +59,24 @@ module.exports = {
             if (message.author.bot) {
                 return;
 
+            // Check if the message contains a url
+            } else if (message.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/)) {
+                // If user has an excluded role then ignore
+                if(message.member.roles.cache.some(r => url_role_whitelist.includes(r.id))) {
+                    return;
+                }
+
+                // If not blacklisted then ignore
+                if(!message.content.toLowerCase().match(bannedUrlArr.map(domain => `\\b${domain}\\b`).join("|"))) {
+                    return;
+                    
+                // If blacklisted url then handle it
+                } else {
+                    const regexMatch = message.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/);
+                    // Call the handleUrl function from the ModerationController file
+                    ModerationController.handleUrl(message, client, regexMatch, deleteSet);
+                };
+
             // Check if the message contains a trigger in the list
             /* More specifically it: 
             1. checks the triggerList to see if there is a trigger word
@@ -78,24 +96,6 @@ module.exports = {
 
                 // Call the triggerHit function from the TriggersController file
                 TriggersController.triggerHit(message, triggers, client);
-
-            // Check if the message contains a url
-            } else if (message.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/)) {
-                // If user has an excluded role then ignore
-                if(message.member.roles.cache.some(r => url_role_whitelist.includes(r.id))) {
-                    return;
-                }
-
-                // If not blacklisted then ignore
-                if(!message.content.toLowerCase().match(bannedUrlArr.map(domain => `\\b${domain}\\b`).join("|"))) {
-                    return;
-                    
-                // If blacklisted url then handle it
-                } else {
-                    const regexMatch = message.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/);
-                    // If not then call the handleUrl function from the ModerationController file
-                    ModerationController.handleUrl(message, client, regexMatch, deleteSet);
-                };
             // If not a trigger word/phrase, a blacklisted domain, or a bot message then call the experience controller to give experience.
             } else {
                 

@@ -22,6 +22,7 @@ const client = new Discord.Client({
 client.settings = new Discord.Collection(); //create a new collection for the settings from the db
 client.commands = new Discord.Collection(); //create a new collection for commands
 client.triggers = new Discord.Collection(); //create a new collection for triggers
+client.blacklist = new Discord.Collection(); //create a new collection for blacklisted domains
 
 const commandsPath = path.join(__dirname, 'commands'); //get the commands dir
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js')); //get all the command files
@@ -38,27 +39,8 @@ for (const file of commandFiles) {
 	}
 }
 
-// Create a class for banned domains
-class BannedDomainList {
-    constructor() {
-        this._list = [];
-    }
-    get list() {
-        return this._list;
-    }
-    set list(domains) {
-        this._list = domains;
-    }
-}
-
-// Instantiate classes
-const bannedUrls = new BannedDomainList();
-
 // Create a new Set for deleted messages
 let deleteSet = new Set();
-
-// Create vars
-let settings;
 
 //console.log(JSON.stringify(require("./config"), null, 4)) //shows the running config
 
@@ -91,20 +73,27 @@ client.once('ready', async () => {
     // Create the settings table if it doesn't exist
     Models.setting.sync();
     // Query the settings table for all settings
-    settings = await Models.setting.findAll({raw:true});
+    const settings = await Models.setting.findAll({raw:true});
     // Assign each setting to the settings collection
     settings.forEach((item) => {client.settings.set(item.name, item.value)});
 
     // Create the triggers table if it doesn't exist
     Models.trigger.sync();
-    // Query the settings table for all settings
-    triggers = await Models.trigger.findAll({raw:true});
-    // Assign each setting to the settings collection
+    // Query the triggers table for all settings
+    const triggers = await Models.trigger.findAll({raw:true});
+    // Assign each trigger to the triggers collection
     triggers.forEach((item) => {
-        // Create a an object for the trigger's values
+        // Create an object for the trigger's values
         let triggerValues = {"severity":item.severity, "enabled": item.enabled};
         client.triggers.set(item.trigger, triggerValues);
     });
+
+    // Create the bannedurls table if it doesn't exist
+    Models.bannedurl.sync();
+    // Query the bannedurls table for all banned domains
+    const bannedurls = await Models.bannedurl.findAll({raw:true});
+    // Assign each bannedurl to the blacklist collection
+    bannedurls.forEach((item) => {client.blacklist.set(item.id, item.url)});
 
     console.log('Bot Online!');
     
@@ -113,7 +102,7 @@ client.once('ready', async () => {
 
     // Call the method to query the database for various data
     try {
-        databaseController.botReconnect(bannedUrls, client);
+        databaseController.botReconnect(client);
     } catch(e) {
         console.error("Error: ", e);
     }
@@ -133,7 +122,7 @@ client.once('ready', async () => {
 client.on('messageCreate', async message => {
     // Call the function from /controllers/MessageController to handle the message
     try {
-        messageController.messageHandler(message, client, bannedUrls, deleteSet);
+        messageController.messageHandler(message, client, deleteSet);
     } catch (e) {
         console.error(e);
     };

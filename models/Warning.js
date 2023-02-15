@@ -47,6 +47,11 @@ const Warning = sequelize.define('warning', {
     },
     channel_id: {
         type: Sequelize.TEXT
+    },
+
+    /****** Field for Banned URL warnings ******/
+    banned_url: {
+        type: Sequelize.TEXT
     }
 },
 {

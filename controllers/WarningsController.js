@@ -197,7 +197,7 @@ module.exports = {
                                 {name: `Full Message`, value: `${fullMessage}`, inline: false},
                                 {name: `Message URL`, value: `${warning.message_link}`, inline: false}
                                 );
-                        } else if(warning.type === "Note") {
+                        } else if (warning.type === "Note") {
                             // Find the moderator
                             moderator = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(warning.mod_id.toString());
 
@@ -210,6 +210,33 @@ module.exports = {
                                 {name: `Date Warned`, value: `${Discord.time(warning.createdAt, "R")}`, inline: true},
                                 {name: `Warning Reason`, value: `${warning.reason}`, inline: false}
                                 );
+                        } else if (warning.type === "Banned URL") {
+                            // Find the channel for the warning
+                            warnedChannel = interaction.client.guilds.cache.get(interaction.guild.id).channels.cache.get(warning.channel_id);
+
+                            // If the channel was deleted
+                            if(!warnedChannel) {
+                                warnedChannel = "`Unknown Channel`";
+                            };
+
+                            // Make sure message isn't too long for embed
+                            if (warning.message.length > 1024) {
+                                fullMessage = warning.message.substring(0, 1021) + "..."; // 1021 to add elipsis to end
+                            } else {
+                                fullMessage = warning.message;
+                            }
+
+                            // Add the color for the embed
+                            specificEmbed.setColor(embedColor);
+
+                            // Add the remaining fields
+                            specificEmbed.addFields(
+                                {name: `Channel`, value: `${warnedChannel.toString()}`, inline: true},
+                                {name: `Time Warned`, value: `${Discord.time(warning.createdAt, "R")}`, inline: true},
+                                {name: `Banned URL`, value: `${warning.banned_url}`, inline: true},
+                                {name: `Full Message`, value: `${fullMessage}`, inline: false},
+                                {name: `Message URL`, value: `${warning.message_link}`, inline: false}
+                            );
                         }
                     }
                 // If there was no warning for the provided warning id let the user know

@@ -176,8 +176,7 @@ module.exports = {
     },
 
     // Function for when bot starts up
-    botReconnect: function(bu, client) {
-        let bannedUrls = bu;
+    botReconnect: function(client) {
 
         /*
         ##################################
@@ -244,15 +243,11 @@ module.exports = {
         */
         // Get all rows of blacklisted urls and add them to the blacklistedDomains list
         Models.bannedurl.findAll().then((data) => {
-            let blacklistedDomains = []; //array for blacklisted urls
 
             // Loop through each item found and add it to the blacklistedDomains array
             data.forEach((item) => {
-                blacklistedDomains.push(item.get('url'));
+                client.blacklist.set(item.get(`id`), item.get(`url`));
             });
-
-            // Add the list of blacklisted urls to the local copy
-            bannedUrls.list = blacklistedDomains;
         }).catch((e) => {
              console.error("Error: "+e);
         });
@@ -328,7 +323,7 @@ module.exports = {
                             },
                             {
                                 name: `Date Banned`,
-                                value: `${Discord.Formatters.time(banDate, "f")} (${Discord.Formatters.time(banDate, "R")})`,
+                                value: `${Discord.time(banDate, "R")}`,
                                 inline: true,
                             },
                             {
