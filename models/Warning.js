@@ -52,6 +52,11 @@ const Warning = sequelize.define('warning', {
     /****** Field for Banned URL warnings ******/
     banned_url: {
         type: Sequelize.TEXT
+    },
+
+    /****** Field for timeout warnings ******/
+    timeout_end_date: {
+        type: Sequelize.DATE
     }
 },
 {

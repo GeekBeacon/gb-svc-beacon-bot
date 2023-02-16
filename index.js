@@ -107,7 +107,7 @@ client.once('ready', async () => {
         console.error("Error: ", e);
     }
 
-    // Check for unbans/unmutes every minute
+    // Check for unbans every minute
     setInterval(() => {
         try {
             databaseController.databaseCheck(client);

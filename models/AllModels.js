@@ -5,12 +5,11 @@ const BannedUrl = require("./BannedUrl");
 const Command = require("./Command");
 const JoinableRole = require("./JoinableRole");
 const Kick = require("./Kick");
-const Mute = require("./Mute");
+const Timeout = require("./Timeout");
 const Setting = require("./Setting");
 const TempChannel = require("./TempChannel");
 const Trigger = require("./Trigger");
 const Unban = require("./Unban");
-const Unmute = require("./Unmute");
 const User = require("./User");
 const Warning = require("./Warning");
 
@@ -22,12 +21,11 @@ module.exports = {
     command : Command,
     joineableRole : JoinableRole,
     kick : Kick,
-    mute : Mute,
+    timeout : Timeout,
     setting : Setting,
     tempchannel : TempChannel,
     trigger : Trigger,
     unban : Unban,
-    unmute : Unmute,
     user : User,
     warning : Warning,
 }

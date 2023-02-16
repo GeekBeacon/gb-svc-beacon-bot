@@ -828,367 +828,158 @@ module.exports = {
         });
         
     },
-    muteHandler: function(a, m, c) {
-        const args = a, message = m, client = c;
-        let user;
-        const prefix = client.settings.get("prefix");
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        // In Role? Boolean variables
-        const inSuperRole = message.member.roles.cache.some(role => role.id === client.settings.get("super_role_id"));
-        const inAdminRole = message.member.roles.cache.some(role => role.id === client.settings.get("admin_role_id"));
-        const isOwner = message.member.guild.owner;
+    timeoutHandler: function(interaction) {
+        const member = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(interaction.options.getUser(`user`).id); //get the member
+        const subcommand = interaction.options.getSubcommand(); //get the subcommand
+        const reason = interaction.options.getString(`reason`); //get the reason
+        const durationMin = interaction.options.getInteger(`duration`); //get the duration in minutes
+        const durationMs = durationMin * 60000; //convert the duration to milliseconds
+        const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
         // Roles
-        const modTraineeRole = message.guild.roles.cache.find(role => role.id === client.settings.get("trainee_role_id"));
-        const modRole = message.guild.roles.cache.find(role => role.id === client.settings.get("mod_role_id"));
-        const superRole = message.guild.roles.cache.find(role => role.id === client.settings.get("super_role_id"));
-        const adminRole = message.guild.roles.cache.find(role => role.id === client.settings.get("admin_role_id"));
+        const modTraineeRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("trainee_role_id"));
+        const modRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("mod_role_id"));
+        const superRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("super_role_id"));
+        const adminRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("admin_role_id"));
 
-        let argsStr = args.join(" "); //create a string out of the args
-        argsStr = argsStr.replace(/,/g, ", "); // replace
-        const newArgs = argsStr.split(",").map(i => i.trim()); //create a new args array and trim the whitespace from the items
-
-        // Check for user by id
-        if(!isNaN(newArgs[0])) {
-            // If invalid id let the user know
-            if(message.guild.members.cache.get(newArgs[0]) === undefined) {
-                return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
-
-            // If user found, assign it to the user var
-            } else {
-                user = message.guild.members.cache.get(newArgs[0]);
+        // If the mod wants to put a new member in timeout
+        if(subcommand === "add") {
+            // If the member is a bot then deny timing it out
+            if (member.user.bot) {
+                return interaction.reply({content: `You can't timeout no beep boop!`, ephemeral: true});
+            // If the mod tries to timeout themselves then deny timing them out
+            } else if (member.user.id === interaction.member.id) {
+                return interaction.reply({content: `You can't timeout yourself, silly!`, ephemeral: true});
+            // If the member is a mod+ then deny timing them out
+            } else if (member.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
+                return interaction.reply({content: `You got guts, trying to timeout a ${member.roles.highest} member!`, ephemeral: true});
+            // If the user is the server owner then deny timing them out
+            } else if (member.user.id === interaction.guild.ownerId) {
+                return interaction.reply({content: `I hope you didn't really think you could timeout the server owner...`, ephemeral: true});
             }
-        // Check if a user mention was given
-        } else if (newArgs[0].startsWith("<@")) {
-            user = message.mentions.members.first(); // get user tag
-            if(!user) {
-                // Let the user know they provided an invalid user mention
-                return message.reply(`Uh oh! Looks like you gave an invalid user mention. Make sure that you are mentioning a valid user!`);
-            }
-        } else {
-            // Let user know they need to provide a user mention or a valid user id
-            return message.reply(`Uh oh! You must provide me with a user mention or id so I know who to mute!`);
-        }
 
-        // If user is a bot then deny banning it
-        if(user.user.bot) {
-            return message.channel.send(`You can't mute no beep boop!`);
-        // If the user tries to ban themselves then deny banning them
-        } else if(user.user.id === message.author.id) {
-            return message.reply(`You can't mute yourself, silly!`);
-        // If the user is a mod+ then deny banning them
-        } else if(user.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
-            return message.reply(`You got guts, trying to mute a ${user.roles.highest} member!`);
-        // If the user is the server owner then deny banning them
-        } else if (user.user.id === user.guild.ownerID) {
-            return message.reply(`I hope you didn't really think you could mute the server owner...`);
-        }
+            /* 
+            * Sync the model to the table
+            * Creates a new table if table doesn't exist, otherwise just inserts a new row
+            * id, completed, createdAt, and updatedAt are set by default; DO NOT ADD
+            !!!!
+                Keep force set to false otherwise it will overwrite the table instead of making a new row!
+            !!!!
+            */
+            Models.timeout.sync({force: false}).then(() => {
+                // Add the timeout record to the database
+                Models.timeout.create({
+                    user_id: member.id,
+                    guild_id: interaction.guild.id,
+                    reason: reason,
+                    duration: durationMin,
+                    moderator_id: interaction.member.id,
+                }).then(() => {
+                    // Timeout the member
+                    member.timeout(durationMs, reason).then(() => {
 
-        // Make sure the type of mute was given
-        if(newArgs[1]) {
-            const muteTypes = ["server", "voice", "text", "reactions"]; // accepted types
+                        interaction.channel.send(Discord.time(member.communicationDisabledUntil, "R"))
 
-            // Make sure the type given is an accepted type
-            if(muteTypes.indexOf(newArgs[1].toLowerCase()) > -1) {
-                const muteType = newArgs[1].toLowerCase(); // type of mute
+                        // Convert the time the timeout will release to a Discord Timestamp Markdown format
+                        const relativeTimestamp = Discord.time(Math.floor(member.communicationDisabledUntilTimestamp / 1000), "R");
 
-                // Check if a reason was given
-                if(newArgs[2] && user !== undefined) {
-                    // If a length wasn't given then let the user know it is required
-                    if(!newArgs[3]) {
-                        return message.reply(`Uh oh! It seems you forgot a required part of the mute command, please be sure to provide all options for this action!\nExample: \`${prefix}mute ${user}, type, reason, length\``);
-                    }
+                        // Create the timeout embed
+                        const timeoutEmbed = {
+                            color: 0xFF0000,
+                            title: `User Put In Timeout!`,
+                            author: {
+                                name: `${member.user.username}#${member.user.discriminator}`,
+                                icon_url: `${member.user.displayAvatarURL({dynamic:true})}`,
+                            },
+                            description: `${member} was put in timeout by ${interaction.member} for ${durationMin} minute(s)!`,
+                            fields: [
+                                {
+                                    name: `Member`,
+                                    value: `${member}`,
+                                    inline: true,
+                                },
+                                {
+                                    name: `Timedout By`,
+                                    value: `${interaction.member}`,
+                                    inline: true,
+                                },
+                                {
+                                    name: `Duration`,
+                                    value: `${durationMin} Minute(s)`,
+                                    inline: true,
+                                },
+                                {
+                                    name: `Communications Enabled`,
+                                    value: `${relativeTimestamp}`,
+                                    inline: true,
 
-                    const reason = newArgs[2]; //assign the mute reason
-                    let muteLength = newArgs[3]; //assign the mute length
-                    let muteValue = muteLength.replace(/\D+/, '').trim(); //assign the mute value
-                    let muteUnit = muteLength.replace(/\d+/, '').trim(); //assign the mute unit
-                    const now = moment();
-                    const timezone = moment().tz(moment.tz.guess()).format(`z`); // server timezone
-                    const muteLengthRegex = /(\d+\s*\D+$|^permanent$|^perma$|^perm$|^p{1}){1}/; //regex for mute time format
-                    let mutedRole = message.guild.roles.cache.find(r => r.name.toLowerCase() === `muted - ${muteType}`); //muted role
-                    let unmuteDate;
+                                },
+                                {
+                                    name: `Reason`,
+                                    value: `${reason}`,
+                                    inline: false,
+                                }
+                            ],
+                            timestamp: new Date(),
+                        };
+                        // If the mod is in the actionlog, reply with the embed
+                        if(interaction.channel.id === actionLog.id) {
+                            interaction.reply({embeds: [timeoutEmbed]});
 
-                    // Check if the user input for a perma mute
-                    if(muteUnit.toLowerCase().includes("perm")) {
-                        muteValue = 999; // assign value
-                        muteUnit = "years"; // set unit
-                        muteLength = "an indefinite amount of time"; // set length for description
-                    // Check if the user provided an accepted format
-                    } else if (muteUnit.toLowerCase().includes("min")) {
-                        muteUnit = "minutes";
-                    } else if(!muteLength.match(muteLengthRegex)) {
-                        return message.reply(`Uh oh! It seems like you entered an invalue mute duration! Please use formats such as these for the mute duration: \`6 years\`, \`17d\`, \`permanent\`, \`3 wks\``)
-                    } else if (muteUnit.toLowerCase() === "sec" || muteUnit.toLowerCase() === "secs" || muteUnit.toLowerCase() === "seconds" || muteUnit.toLowerCase() === "second") {
-                        return message.reply(`Please give a duration that is at least 1 minute in length!`);
-                    }
-
-                    unmuteDate = now.add(muteValue, muteUnit); //create the unmute date
-
-                    // Make sure the unban date is after the current time
-                    if(moment(unmuteDate).isAfter(now)) {
-                        // If not after the current time, let the user know how to fix the problem
-                        return message.reply("Uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
-                    }
-
-                    // Check if user is in the muted role
-                    const inMutedRole = user.roles.cache.some(role => role.name.toLowerCase().includes(`muted - ${muteType}`));
-
-                    // If no muted role exists let user know
-                    if(!mutedRole) {
-                        // Check if user is a super or higher role
-                        if(inSuperRole || inAdminRole || isOwner) {
-                            return message.reply(`Uh oh! It seems there isn't a muted - ${muteType} role, please use \`${prefix}createmute\` to make the role!`);
-                        // If not a super or higher let them know to ask a super or higher
+                        // If the user isn't in the actionlog, let them know the member was timedout
                         } else {
-                            // If no muted role let user know to create it
-                            return message.reply(`Uh oh! It seems there isn't a muted - ${muteType} role, please ask a ${superRole} or ${adminRole} to make the role with \`${prefix}createmute\`!`);
+                            actionLog.send({embeds: [timeoutEmbed]});
+                            interaction.reply({content: `${member.displayName} was successfully put in timeout for ${durationMin} minute(s)!`, ephemeral: true});
                         }
-                    }
-
-                    // If user is already muted let user know
-                    if(inMutedRole) {
-                        return message.reply(`Uh oh! Looks like ${user.displayName} is already muted!`)
-                    }
-
-                    /* 
-                    * Sync the model to the table
-                    * Creates a new table if table doesn't exist, otherwise just inserts a new row
-                    * id, completed, createdAt, and updatedAt are set by default; DO NOT ADD
-                    !!!!
-                        Keep force set to false otherwise it will overwrite the table instead of making a new row!
-                    !!!!
-                    */
-                    Models.mute.sync({force: false}).then(() => {
-                        // Add the ban record to the database
-                        Models.mute.create({
-                            user_id: user.id,
-                            guild_id: message.guild.id,
-                            type: muteType,
-                            reason: reason,
-                            unmute_date: unmuteDate,
-                            moderator_id: message.author.id,
-                        })
-                        // Let the user know it was added
-                        .then(() => {
-                            // Add the user to the muted role
-                            user.roles.add(mutedRole).then(() => {
-                                // Create the banned embed
-                                const muteEmbed = {
-                                    color: 0xFF0000,
-                                    title: `User Was Muted!`,
-                                    author: {
-                                        name: `${user.user.username}#${user.user.discriminator}`,
-                                        icon_url: user.user.displayAvatarURL({dynamic:true}),
-                                    },
-                                    description: `${user} was muted by ${message.author} for ${muteLength}!`,
-                                    fields: [
-                                        {
-                                            name: `User Muted`,
-                                            value: `${user}`,
-                                            inline: true,
-                                        },
-                                        {
-                                            name: `Mute Type`,
-                                            value: `${muteType}`,
-                                            inline: true,
-                                        },
-                                        {
-                                            name: `Muted By`,
-                                            value: `${message.author}`,
-                                            inline: true,
-                                        },
-                                        {
-                                            name: `Unmute Date`,
-                                            value: `${Discord.Formatters.time(unmuteDate.toDate(), "f")} (${Discord.Formatters.time(unmuteDate.toDate(), "R")})`,
-                                            inline: false,
-                                        },
-                                        {
-                                            name: `Reason`,
-                                            value: `${reason}`,
-                                            inline: false,
-                                        }
-                                    ],
-                                    timestamp: new Date(),
-                                };
-                                actionLog.send({embeds: [muteEmbed]});
-                                message.channel.send(`${user.displayName} was successfully muted for ${muteLength}!`);
-                            });
-                        });
                     });
-                // If no reason was given let the user know it is required
-                } else {
-                    // Check if a user mention was used
-                    if(message.mentions.users.first()) {
-                        // Let user know a reason is needed
-                        message.reply(`Uh oh! It seems you forgot to give a reason for muting, please be sure to provide a reason for this action!\nExample: \`${prefix}mute @${user.user.tag}, type, reason, length\``);
-
-                    // If no user mention was given then just output the id they provided
-                    } else {
-                        // Let user know a reason is needed
-                        message.reply(`Uh oh! It seems you forgot to give a reason for muting, please be sure to provide a reason for this action!\nExample: \`${prefix}mute ${user}, type, reason, length\``);
-                    }
-                };
-                
-            } else {
-                return message.reply(`Uh oh! It seems you gave an unaccepted type of mute! Make sure you choose a mute from this list:  __server__, __voice__, __text__, or __reactions__`)
-            }
-        } else {
-            // Check if a user mention was used
-            if(message.mentions.users.first()) {
-                // Let user know a type is needed
-                return message.reply(`Uh oh! It seems you forgot to tell me the type of mute to perform on the user! Please try again with the accepted mute types: __server__, __voice__, __text__, or __reactions__!\nExample: \`${prefix}mute @${user.user.tag}, type, reason, length\``);
-
-            // If no user mention was given then just output the id they provided
-            } else {
-                // Let user know a type is needed
-                return message.reply(`Uh oh! It seems you forgot to tell me the type of mute to perform on the user! Please try again with the accepted mute types: __server__, __voice__, __text__, or __reactions__!\nExample: \`${prefix}mute @${user}, type, reason, length\``);
-            }
-        }
-    },
-    unmuteHandler: function(m, a, c) {
-        const message = m, args = a, client = c;
-        const prefix = client.settings.get("prefix");
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        // In Role? Boolean variables
-        const inSuperRole = message.member.roles.cache.some(role => role.id === client.settings.get("super_role_id"));
-        const inAdminRole = message.member.roles.cache.some(role => role.id === client.settings.get("admin_role_id"));
-        const isOwner = message.member.guild.owner;
-        // Roles
-        const superRole = message.guild.roles.cache.find(role => role.id === client.settings.get("super_role_id"));
-        const adminRole = message.guild.roles.cache.find(role => role.id === client.settings.get("admin_role_id"));
-
-        // Check if the first arg is a number
-        if(isNaN(args[0])) {
-            // Attempt to fix the arg for the user by removing the comma if the moderator forgot to add a space after the id and before the comma
-            args[0] = args[0].replace(",", "");
-        }
-
-        // Check for user by id
-        if(!isNaN(args[0])) {
-            // If invalid id let the user know
-            if(message.guild.members.cache.get(args[0]) === undefined) {
-                return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
-
-            // If user found, assign it to the user var
-            } else {
-                user = message.guild.members.cache.get(args[0]);
-            }
-        // Check if a user mention was given
-        } else if (args[0].startsWith("<@")) {
-            user = message.mentions.members.first(); // get user tag
-            if(!user) {
-                // Let the user know they provided an invalid user mention
-                return message.reply(`Uh oh! Looks like you gave an invalid user mention. Make sure that you are mentioning a valid user!`);
-            }
-        } else {
-            // Let user know they need to provide a user mention or a valid user id
-            return message.reply(`Uh oh! You must provide me with a user mention or id so I know who to mute!`);
-        }
-
-        // Muted role
-        let mutedRole = user.roles.cache.find(r => r.name.toLowerCase().includes("muted")); //muted role
-
-        // Make sure the user is muted
-        if(!mutedRole) {
-            return message.reply(`You silly! You can't unmute a user that isn't muted!`);
-        }
-
-        // If a reason was given then unban the user and log the action to the database
-        if(args[1]) {
-            let reasonArr = args;
-            let reason;
-            let userId = user.id;
-            reasonArr.shift(); //remove the first arg (user id)
-            reason = reasonArr.join(" "); //turn the array into a string
-            reason = reason.replace(',', ''); // remove the first comma from the string
-            reason = reason.trim(); // remove any excess whitespace
-            const inMutedRole = user.roles.cache.some(role => role.name.includes("Muted"));
-
-            // If the user isn't already muted let the mod know
-            if(!inMutedRole) {
-                return message.reply(`Uh oh! Looks like ${user.displayName} isn't muted!`)
-            }
-
-            // Search the db for the mute
-            Models.mute.findOne({where: {user_id: userId, completed: 0}, raw: true}).then((data) => {
-                // Make sure data was retrieved
-                if(data) {
-                    const muteDate = data.createdAt; //assign mute date
-                    const muteReason = data.reason; //assign mute reason
-                    /* 
-                    * Sync the model to the table
-                    * Creates a new table if table doesn't exist, otherwise just inserts a new row
-                    * id, createdAt, and updatedAt are set by default; DO NOT ADD
-                    !!!!
-                        Keep force set to false otherwise it will overwrite the table instead of making a new row!
-                    !!!!
-                    */
-                    Models.unmute.sync({ force: false }).then(() => {
-
-                        // Add the unmute record to the database
-                        Models.unmute.create({
-                            user_id: userId,
-                            reason: reason,
-                            type: "Manual",
-                            moderator_id: message.author.id,
-                        })
-                        // Let the user know it was added
-                        .then(() => {
-                            // Remove user from the muted role
-                            user.roles.remove(mutedRole).then(() => {
-                                // Create the unmute embed
-                                const unmuteEmbed = {
-                                    color: 0xFF5500,
-                                    title: `User Was Unmuted!`,
-                                    author: {
-                                        name: `${user.user.username}#${user.user.discriminator}`,
-                                        icon_url: user.user.displayAvatarURL({dynamic:true}),
-                                    },
-                                    description: `${user} was unmuted from the server by ${message.author}`,
-                                    fields: [
-                                        {
-                                            name: `User Unmuted`,
-                                            value: `${user}`,
-                                            inline: true,
-                                        },
-                                        {
-                                            name: `Unmuted By`,
-                                            value: `${message.author}`,
-                                            inline: true,
-                                        },
-                                        {
-                                            name: `Unmute Reason`,
-                                            value: `${reason}`,
-                                            inline: false,
-                                        },
-                                        {
-                                            name: `Mute Date`,
-                                            value: `${Discord.Formatters.time(muteDate, "f")} (${Discord.Formatters.time(muteDate, "R")})`,
-                                            inline: false,
-                                        },
-                                        {
-                                            name: `Mute Reason`,
-                                            value: `${muteReason}`,
-                                            inline: false,
-                                        }
-                                    ],
-                                    timestamp: new Date(),
-                                };
-                                // Send log to mod log and give feedback to user
-                                actionLog.send({embeds: [unmuteEmbed]});
-                                message.channel.send(`${user.displayName} was successfully unmuted!`).then(() => {
-                                    // Update the completed field for the mute
-                                    Models.mute.update({completed: 1}, {where: {user_id: userId}});
-                                });
-                            });
-                        });
-                    });
-                };
+                });
             });
+        // If the mod wants to remove a member from timeout
+        } else if (subcommand === "remove") {
 
-        } else {
-            // Let the user know a reason is needed
-            message.reply(`Uh oh! It seems you forgot to give a reason for unmuting, please be sure to provide a reason for this action!\nExample: \`${prefix}unmute ${user}, reason\``);
+            // If the member isn't in timeout, let the mod know
+            if(member.isCommunicationDisabled() === false) return interaction.reply({content: `Uh oh! It looks like ${member} isn't currently timedout!`, ephemeral: true});
+
+            // Remove the member's timeout; set the duration to null
+            member.timeout(null, reason).then(() => {
+
+                // Create the timeout embed
+                const timeoutEmbed = {
+                    color: 0xFF0000,
+                    title: `User Removed From Timeout!`,
+                    author: {
+                        name: `${member.user.username}#${member.user.discriminator}`,
+                        icon_url: `${member.user.displayAvatarURL({dynamic:true})}`,
+                    },
+                    description: `${member} was removed from timeout by ${interaction.member}!`,
+                    fields: [
+                        {
+                            name: `Member`,
+                            value: `${member}`,
+                            inline: true,
+                        },
+                        {
+                            name: `Timedout By`,
+                            value: `${interaction.member}`,
+                            inline: true,
+                        },
+                        {
+                            name: `Reason`,
+                            value: `${reason}`,
+                            inline: false,
+                        }
+                    ],
+                    timestamp: new Date(),
+                };
+                // If the mod is in the actionlog, reply with the embed
+                if(interaction.channel.id === actionLog.id) {
+                    interaction.reply({embeds: [timeoutEmbed]});
+
+                // If the user isn't in the actionlog, let them know the member was removed from timeout
+                } else {
+                    actionLog.send({embeds: [timeoutEmbed]});
+                    interaction.reply({content: `${member.displayName} was successfully removed from timeout!`, ephemeral: true});
+                }
+            });
         }
     },
     blacklistHandler: function(interaction) {

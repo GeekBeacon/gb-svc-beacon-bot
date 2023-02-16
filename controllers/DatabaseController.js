@@ -102,22 +102,13 @@ module.exports = {
             ModerationController.unbanHandler(i);
             
         /*
-        ##################################
-        ########## mute command ##########
-        ##################################
+        ###################################
+        ######### timeout command #########
+        ###################################
         */
-        } else if(i.commandName === "mute") {
-            // Call the mute handler function from the ModerationController file
-            ModerationController.muteHandler(i);
-            
-        /*
-        ##################################
-        ######### unmute command #########
-        ##################################
-        */
-        } else if(i.commandName === "unmute") {
-            // Call the mute handler function from the ModerationController file
-            ModerationController.unmuteHandler(i);
+        } else if(i.commandName === "timeout") {
+            // Call the timeout handler function from the ModerationController file
+            ModerationController.timeoutHandler(i);
 
         /*
         ####################################
@@ -134,7 +125,7 @@ module.exports = {
         ###################################
         */
         } else if(i.commandName === "announce") {
-            // Call the mute handler function from the ModerationController file
+            // Call the cruh handler function from the ModerationController file
             AnnouncementController.crudHandler(i);
             
         /*
@@ -363,7 +354,7 @@ module.exports = {
                 data.forEach(async (announcement) => {
                     const currentTime = new Date();
 
-                    // Make sure the mute hasn't already been completed
+                    // Make sure the announcement hasn't already been created
                     if(moment(announcement.post_at).isSameOrBefore(moment(currentTime))) {
                         const channel = client.channels.cache.get(announcement.channel); //get the channel
                         const server = client.guilds.cache.get(announcement.server); //get the server
