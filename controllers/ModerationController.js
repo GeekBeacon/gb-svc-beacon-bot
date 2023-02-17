@@ -866,70 +866,82 @@ module.exports = {
             !!!!
             */
             Models.timeout.sync({force: false}).then(() => {
-                // Add the timeout record to the database
-                Models.timeout.create({
-                    user_id: member.id,
-                    guild_id: interaction.guild.id,
-                    reason: reason,
-                    duration: durationMin,
-                    moderator_id: interaction.member.id,
-                }).then(() => {
-                    // Timeout the member
-                    member.timeout(durationMs, reason).then(() => {
 
-                        interaction.channel.send(Discord.time(member.communicationDisabledUntil, "R"))
+                // Timeout the member
+                member.timeout(durationMs, reason).then((memb) => {
 
-                        // Convert the time the timeout will release to a Discord Timestamp Markdown format
-                        const relativeTimestamp = Discord.time(Math.floor(member.communicationDisabledUntilTimestamp / 1000), "R");
+                    // Add the timeout record to the database
+                    Models.timeout.create({
+                        user_id: memb.id,
+                        guild_id: interaction.guild.id,
+                        reason: reason,
+                        duration: durationMin,
+                        end_date: memb.communicationDisabledUntil,
+                        moderator_id: interaction.member.id,
+                    }).then(() => {
 
-                        // Create the timeout embed
-                        const timeoutEmbed = {
-                            color: 0xFF0000,
-                            title: `User Put In Timeout!`,
-                            author: {
-                                name: `${member.user.username}#${member.user.discriminator}`,
-                                icon_url: `${member.user.displayAvatarURL({dynamic:true})}`,
-                            },
-                            description: `${member} was put in timeout by ${interaction.member} for ${durationMin} minute(s)!`,
-                            fields: [
-                                {
-                                    name: `Member`,
-                                    value: `${member}`,
-                                    inline: true,
+                        // Create a warning
+                        Models.warning.create({
+                            type: "Timeout",
+                            user_id: memb.id,
+                            reason: reason,
+                            mod_id: interaction.member.id,
+                            username: memb.displayName,
+                            timeout_end_date: memb.communicationDisabledUntil,
+                        }).then(() => {
+
+                            // Convert the time the timeout will release to a Discord Timestamp Markdown format
+                            const relativeTimestamp = Discord.time(memb.communicationDisabledUntil, "R");
+
+                            // Create the timeout embed
+                            const timeoutEmbed = {
+                                color: 0xFF0000,
+                                title: `User Put In Timeout!`,
+                                author: {
+                                    name: `${member.user.username}#${member.user.discriminator}`,
+                                    icon_url: `${member.user.displayAvatarURL({dynamic:true})}`,
                                 },
-                                {
-                                    name: `Timedout By`,
-                                    value: `${interaction.member}`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Duration`,
-                                    value: `${durationMin} Minute(s)`,
-                                    inline: true,
-                                },
-                                {
-                                    name: `Communications Enabled`,
-                                    value: `${relativeTimestamp}`,
-                                    inline: true,
+                                description: `${member} was put in timeout by ${interaction.member} for ${durationMin} minute(s)!`,
+                                fields: [
+                                    {
+                                        name: `Member`,
+                                        value: `${member}`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `Timedout By`,
+                                        value: `${interaction.member}`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `Duration`,
+                                        value: `${durationMin} Minute(s)`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `Communications Enabled`,
+                                        value: `${relativeTimestamp}`,
+                                        inline: true,
 
-                                },
-                                {
-                                    name: `Reason`,
-                                    value: `${reason}`,
-                                    inline: false,
-                                }
-                            ],
-                            timestamp: new Date(),
-                        };
-                        // If the mod is in the actionlog, reply with the embed
-                        if(interaction.channel.id === actionLog.id) {
-                            interaction.reply({embeds: [timeoutEmbed]});
+                                    },
+                                    {
+                                        name: `Reason`,
+                                        value: `${reason}`,
+                                        inline: false,
+                                    }
+                                ],
+                                timestamp: new Date(),
+                            };
+                            // If the mod is in the actionlog, reply with the embed
+                            if(interaction.channel.id === actionLog.id) {
+                                interaction.reply({embeds: [timeoutEmbed]});
 
-                        // If the user isn't in the actionlog, let them know the member was timedout
-                        } else {
-                            actionLog.send({embeds: [timeoutEmbed]});
-                            interaction.reply({content: `${member.displayName} was successfully put in timeout for ${durationMin} minute(s)!`, ephemeral: true});
-                        }
+                            // If the user isn't in the actionlog, let them know the member was timedout
+                            } else {
+                                actionLog.send({embeds: [timeoutEmbed]});
+                                interaction.reply({content: `${member.displayName} was successfully put in timeout for ${durationMin} minute(s)!`, ephemeral: true});
+                            }
+                        });
                     });
                 });
             });

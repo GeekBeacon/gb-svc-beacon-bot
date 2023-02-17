@@ -177,12 +177,12 @@ module.exports = {
         // Loop through the models object
         for (const key of Object.keys(Models)) {
             /*
-            * Sync each model to create the table if needed
+            * Sync each model to create the table if needed, using alter to ensure the tables match the models
             !!!!
             Keep force set to false otherwise it will overwrite the table if one exists!
             !!!!
             */
-            Models[key].sync({force: false});
+            Models[key].sync({force: false, alter: true});
         };
 
         /*

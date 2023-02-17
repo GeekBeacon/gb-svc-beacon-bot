@@ -47,13 +47,18 @@ module.exports = {
                                 name: `Warning #${i}`,
                                 value: `Warning Id: **${warning.id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.time(date, "D")} (${Discord.time(date, "R")})**\rSeverity: **${warning.severity}**\rTrigger(s): **${warning.triggers}**`
                             });
+                        } else if (warning.type === "Banned URL") {
+                            // Warning from a banned url hit
+                            recentEmbed.addFields({
+                                name: `Warning #${i}`,
+                                value: `Warning Id: **${warning.id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.time(date, "D")} (${Discord.time(date, "R")})**\rBanned URL(s): **${warning.banned_url}**`
+                            });
                         } else {
                             // Warning for all other types
                             recentEmbed.addFields({
                                 name: `Warning #${i}`,
                                 value: `Warning Id: **${warning.id}**\rUser: **${warnedUser || "\`Not In Server\`"}**\rType: **${warning.type}**\rDate: **${Discord.time(date, "D")} (${Discord.time(date, "R")})**`
-                        });
-
+                            });
                         }
                         i++; // increment counter
                     });
@@ -209,7 +214,7 @@ module.exports = {
                                 {name: `Created By`, value: `${moderator}`, inline: true},
                                 {name: `Date Warned`, value: `${Discord.time(warning.createdAt, "R")}`, inline: true},
                                 {name: `Warning Reason`, value: `${warning.reason}`, inline: false}
-                                );
+                            );
                         } else if (warning.type === "Banned URL") {
                             // Find the channel for the warning
                             warnedChannel = interaction.client.guilds.cache.get(interaction.guild.id).channels.cache.get(warning.channel_id);
@@ -236,6 +241,20 @@ module.exports = {
                                 {name: `Banned URL`, value: `${warning.banned_url}`, inline: true},
                                 {name: `Full Message`, value: `${fullMessage}`, inline: false},
                                 {name: `Message URL`, value: `${warning.message_link}`, inline: false}
+                            );
+                        } else if (warning.type === "Timeout") {
+                            // Find the moderator
+                            moderator = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(warning.mod_id.toString());
+
+                            // Add the color for the embed
+                            specificEmbed.setColor(embedColor);
+
+                            // Add the remaining fields
+                            specificEmbed.addFields(
+                                {name: `Created By`, value: `${moderator}`, inline: true},
+                                {name: `Date Timedout`, value: `${Discord.time(warning.createdAt, "R")}`, inline: true},
+                                {name: `Timeout End Date`, value: `${Discord.time(warning.timeout_end_date, "R")}`, inline: true},
+                                {name: `Warning Reason`, value: `${warning.reason}`, inline: false}
                             );
                         }
                     }

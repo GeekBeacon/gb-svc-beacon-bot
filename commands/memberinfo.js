@@ -32,7 +32,7 @@ module.exports = {
         const modRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("mod_role_id"));
         const superRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("super_role_id"));
         const adminRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("admin_role_id"));
-        let warnings, mutes, kicks, bans, points, level, rank; // numeric vars
+        let warnings, timeouts, kicks, bans, points, level, rank; // numeric vars
         const user = interaction.options.getUser(`member`) ?? interaction.user; //get the user or set to initiator 
         const member = interaction.guild.members.cache.get(user.id); //get the member instance of the user
 
@@ -75,11 +75,11 @@ module.exports = {
                 }
             });
 
-            // Find all mutes from the user, if any
-            await Models.mute.findAll({where:{user_id: member.user.id}, raw: true}).then((info) => {
-                // If there are warnings then assign the amount to the warnings var
+            // Find all timeouts from the user, if any
+            await Models.timeout.findAll({where:{user_id: member.user.id}, raw: true}).then((info) => {
+                // If there are timeouts then assign the amount to the timeouts var
                 if(info) {
-                    mutes = info.length;
+                    timeouts = info.length;
                 }
             });
 
@@ -192,7 +192,7 @@ module.exports = {
                 if(interaction.member.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name)) && warnings > 0) {
                     userEmbed
                     .addFields({name: `Warnings`, value: `${warnings}`, inline: true})
-                    .addFields({name: `Mutes`, value: `${mutes}`, inline: true})
+                    .addFields({name: `Timeouts`, value: `${timeouts}`, inline: true})
                     .addFields({name: `\u200B`, value: `\u200B`, inline: true}) //add empty field for formatting
                     .addFields({name: `Kicks`, value: `${kicks}`, inline: true})
                     .addFields({name: `Bans`, value: `${bans}`, inline: true})
