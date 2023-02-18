@@ -97,8 +97,8 @@ client.once('ready', async () => {
 
     console.log('Bot Online!');
     
-    // Set the status of the bot
-    client.user.setStatus(`online`);
+    // Set the presence of the bot
+    client.user.setPresence({activities: [{name: `over GeekBeacon`, type: Discord.ActivityType.Watching}], status: `online`});
 
     // Call the method to query the database for various data
     try {

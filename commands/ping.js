@@ -1,12 +1,13 @@
 // Import the required files
 const Discord = require(`discord.js`);
+const PermissionsController = require("../controllers/PermissionsController");
 
 module.exports = {
 
     // Set config values
     name: 'ping',
     enabled: true,
-    mod: false,
+    mod: true,
     super: false,
     admin: false,
 
@@ -25,17 +26,18 @@ module.exports = {
 
     // Execute the command
     async execute(interaction) {
-        // Set this command's property values to the local collection's property values
-        this.enabled = interaction.client.commands.get(this.name).enabled;
-        this.mod = interaction.client.commands.get(this.name).mod;
-        this.super = interaction.client.commands.get(this.name).super;
-        this.admin = interaction.client.commands.get(this.name).admin;
 
-        // If the command is disabled then let the user know
-        if(this.enabled === false) {
+        // Check if the command can be used (by the member)
+        const enabled = await PermissionsController.enabledCheck(this, interaction);
+        const approved = await PermissionsController.permissionCheck(this, interaction);
+
+        // If the command is not enabled, let the member know
+        if(!enabled) {
             return interaction.reply({content: `Uh oh! This commend is currently disabled!`, ephemeral: true});
-
-        // If the command is enabled, proceed
+        // If the member doesn't have the proper permissions, let them know
+        } else if (!approved) {
+            return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this subcommand!`, ephemeral: true});
+        // If the command is enabled and the user has permission to use it
         } else {
             const pingType = interaction.options.getString(`type`) ?? `websocket`; // get the ping type or default to websocket
 

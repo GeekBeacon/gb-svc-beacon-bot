@@ -1,6 +1,7 @@
 // Import the required files
-const DatabaseController = require("../controllers/DatabaseController");
 const Discord = require(`discord.js`);
+const ModerationController = require("../controllers/ModerationController");
+const WarningsController = require("../controllers/WarningsController");
 
 // Create a new module export
 module.exports = {
@@ -61,7 +62,16 @@ module.exports = {
         .setDefaultMemberPermissions(Discord.PermissionFlagsBits.ManageMessages),
 
     async execute(interaction) {
-        // Call the query handler from the database controller with required args
-        DatabaseController.queryHandler(interaction);
+
+        // If the user is assigning a new warning
+        if(interaction.options.getSubcommand() === `new`) {
+            // Call the warn handler function from the ModerationController file
+            ModerationController.warnHandler(interaction);
+            
+        // If the user is wanting to view warnings
+        } else {
+            // Call the warning handler function from the WarningsController file
+            WarningsController.warningHandler(interaction);
+        }
     }
 }

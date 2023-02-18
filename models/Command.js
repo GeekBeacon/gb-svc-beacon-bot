@@ -18,6 +18,12 @@ const Command = sequelize.define('command', {
         allowNull: false,
         defaultValue: true,
     },
+    // Create required trainee bool column
+    trainee: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    },
     // Create required mod bool column
     mod: {
         type: Sequelize.BOOLEAN,
