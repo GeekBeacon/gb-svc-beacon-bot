@@ -1,6 +1,3 @@
-// Import required files
-const Discord = require(`discord.js`);
-
 module.exports = {
 
     // Check if the command is enabled
@@ -29,17 +26,18 @@ module.exports = {
         const mod = interaction.member.roles.cache.find(role => role.id === interaction.client.settings.get("mod_role_id"));
         const superMod = interaction.member.roles.cache.find(role => role.id === interaction.client.settings.get("super_role_id"));
         const admin = interaction.member.roles.cache.find(role => role.id === interaction.client.settings.get("admin_role_id"));
+        const owner = interaction.member.id === interaction.guild.ownerId;
 
         // If the command is admin only and the member isn't an admin
-        if(cmd.admin === true && !admin) {
+        if(cmd.admin === true && !(admin || owner)) {
             return false;
 
         // If the command is super+ only and the member isn't a super+
-        } else if(cmd.super === true && !(superMod || admin)) {
+        } else if(cmd.super === true && !(superMod || admin || owner)) {
             return false;
 
-            // If the command is mod+ and the member isn't a trainee+
-        } else if(cmd.mod === true && !(admin || superMod || mod || trainee)) {
+        // If the command is mod+ and the member isn't a trainee+
+        } else if(cmd.mod === true && !(admin || superMod || mod || trainee || owner)) {
             return false;
 
         // If the user has the appropiate role return true

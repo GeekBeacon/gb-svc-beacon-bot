@@ -1,5 +1,6 @@
 // Import the required files
 const Discord = require(`discord.js`);
+const PermissionsController = require("../controllers/PermissionsController");
 const ModerationController = require("../controllers/ModerationController");
 const WarningsController = require("../controllers/WarningsController");
 
@@ -63,15 +64,31 @@ module.exports = {
 
     async execute(interaction) {
 
-        // If the user is assigning a new warning
-        if(interaction.options.getSubcommand() === `new`) {
-            // Call the warn handler function from the ModerationController file
-            ModerationController.warnHandler(interaction);
-            
-        // If the user is wanting to view warnings
+        // Check if the command can be used (by the member)
+        const enabled = await PermissionsController.enabledCheck(this, interaction);
+        const approved = await PermissionsController.permissionCheck(this, interaction);
+        const subcommand = interaction.options.getSubcommand(); //get the subcommand
+
+        // If the command is disabled, let the user know
+        if (!enabled) {
+            return interaction.reply({content: `Uh oh! This command is currently disabled!`, ephemeral: true});
+
+        // If the member doesn't have the proper permissions
+        } else if (!approved) {
+            return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this command!`, ephemeral: true});
+
+        // If the member has the proper permissions
         } else {
-            // Call the warning handler function from the WarningsController file
-            WarningsController.warningHandler(interaction);
+            // If the user is assigning a new warning
+            if (subcommand === `new`) {
+                // Call the warn handler function from the ModerationController file
+                ModerationController.warnHandler(interaction);
+                
+            // If the user is wanting to view warnings
+            } else {
+                // Call the warning handler function from the WarningsController file
+                WarningsController.warningHandler(interaction);
+            }
         }
     }
 }

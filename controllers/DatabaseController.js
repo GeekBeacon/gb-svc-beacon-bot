@@ -1,167 +1,25 @@
 // Import the required files
-const moment = require("moment");
 const Discord = require('discord.js');
-const TriggersController = require("./TriggersController");
-const AutorolesController = require("./AutorolesController");
-const JoinableRolesController = require("./JoinableRolesController");
-const WarningsController = require("./WarningsController");
-const ModerationController = require("./ModerationController");
-const AnnouncementController = require("./AnnouncementController");
 const Models = require("../models/AllModels");
+const moment = require("moment");
 
 // Create a new module export
 module.exports = {
     // Create a function with required args
-    queryHandler: function(i) {
+    queryHandler: function(interaction) {
 
-        /*
-        ######################################
-        ########## trigger commands ##########
-        ######################################
-        */
-        if (i.commandName.includes("trigger")) {
-
-            // Call the trigger handler function from the TriggersController file
-            TriggersController.triggerHandler(i);
-
-        /*
-        #######################################
-        ########## autorole commands ##########
-        #######################################
-        */
-        } else if (i.commandName.includes("autorole")) {
-            
-            // Call the autoroles handler function from the AutorolesController file
-            AutorolesController.autoroleHandler(i);
-        
-        /*
-        #############################################
-        ######## (config)joinable(s) command ########
-        #############################################
-        */
-        } else if (i.commandName.includes("joinable")) {
-
-            // Call the joinable roles handler function from the JoinableRolesController file
-            JoinableRolesController.joinablesHandler(i);
-
-
-        /*
-        ###################################
-        ########## purge command ##########
-        ###################################
-        */
-        } else if (i.commandName === "purge") {
-            
-            // Call the purge handler function from the ModeratorController file
-            ModerationController.purgeHandler(i);
-
-
-        /*
-        ######################################
-        ########## warnings command ##########
-        ######################################
-        */
-        } else if (i.commandName === "warnings") {
-
-            // If the user is assigning a new warning
-            if(i.options.getSubcommand() === `new`) {
-                // Call the warn handler function from the ModerationController file
-                ModerationController.warnHandler(i);
-                
-            // If the user is wanting to view warnings
-            } else {
-                // Call the warning handler function from the JoinableRolesController file
-                WarningsController.warningHandler(i);
-            }
-
-        /*
-        ##################################
-        ########## kick command ##########
-        ##################################
-        */
-        } else if(i.commandName === "kick") {
-            // Call the kick handler function from the ModerationController file
-            ModerationController.kickHandler(i);
-
-        /*
-        #################################
-        ########## ban command ##########
-        #################################
-        */
-        } else if(i.commandName === "ban") {
-            // Call the ban handler function from the ModerationController file
-            ModerationController.banHandler(i);
-
-        /*
-        #################################
-        ######## unban command ##########
-        #################################
-        */
-        } else if(i.commandName === "unban") {
-            // Call the unban handler function from the ModerationController file
-            ModerationController.unbanHandler(i);
-            
-        /*
-        ###################################
-        ######### timeout command #########
-        ###################################
-        */
-        } else if(i.commandName === "timeout") {
-            // Call the timeout handler function from the ModerationController file
-            ModerationController.timeoutHandler(i);
-
-        /*
-        ####################################
-        ######### slowmode command #########
-        ####################################
-        */
-        } else if(i.commandName === "slow") {
-            // Call the slowmode handler function from the ModerationController file
-            ModerationController.slowmode(i);
-
-        /*
-        ###################################
-        ########  announce command ########
-        ###################################
-        */
-        } else if(i.commandName === "announce") {
-            // Call the cruh handler function from the ModerationController file
-            AnnouncementController.crudHandler(i);
-            
-        /*
-        #################################
-        ####### cmdtoggle command #######
-        #################################
-        */
-        } else if(i.commandName === "cmdtoggle") {
-            // Call the cmdToggle handler function from the ModerationController file
-            ModerationController.cmdToggleHandler(i);
-
-        /*
-        ######################################
-        ########## settings command ##########
-        ######################################
-        */
-        } else if(i.commandName === "settings") {
-            // Call the settings handler function from the ModerationController file
-            ModerationController.settingsHandler(i);
-
-        /*
-        ####################################
-        ########## testdb command ##########
-        ####################################
-        */
-        } else if (i.commandName === 'testdb') {
+        // If the member used the testdb command
+        if (interaction.commandName === 'testdb') {
 
             // Authenticate the sequelize object from within a model
             Models.setting.sequelize.authenticate()
             .then(() => {
                 // If valid then let user know
-                i.reply("Connection Successful!");
+                interaction.reply("Connection Successful!");
             })
             .catch(() => {
                 // If inalid then let user know
-                i.reply("Connection Failed!");
+                interaction.reply("Connection Failed!");
             });
         };
     },
@@ -410,8 +268,6 @@ module.exports = {
                         })
                     }
                 })
-
-
             }
         })
     }

@@ -11,8 +11,8 @@ module.exports = {
         const command = interaction.commandName;
         const superRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("super_role_id"));
         const adminRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("admin_role_id"));
-        const ownerRole = await interaction.member.guild.fetchOwner;
-        const superChannel = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("super_channel_name"))));
+        const owner = interaction.member.guild.ownerId === interaction.member.id;
+        const superLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("super_log_channel_name"))));
         const subcommand = interaction.options.getSubcommand()
         const role = interaction.options.getRole(`role`);
 
@@ -125,9 +125,238 @@ module.exports = {
                     return interaction.reply({content: `Uh oh! It seems there are no joinable roles at this time!`, ephemeral: true});
                 });
             }
+
+        // If the member used the add or remove subcommand
         } else if (subcommand === "add" || subcommand === "remove") {
-            // Do the stuff
+            // If the member doesn't have the proper permissions let them know
+            if(!(superRole || adminRole || owner)) {
+                return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this command!`, ephemeral: true});
+
+            // If the member has the proper permissions
+            } else {
+
+                // If the add subcommand was used
+                if(subcommand === "add") {
+                    // Check if the role has special permissions
+                    if(role.permissions.any(interaction.client.settings.get("special_permission_flags").split(","))) {
+                        return interaction.reply({content: `Uh oh! It seems that \`${role}\` has moderator or other special permissions, please check to make sure you have the right role!`, ephemeral: true});
+                    // If the role doesn't have any special permissions
+                    } else {
+
+                        // Create the row of buttons
+                        const btns = new Discord.ActionRowBuilder()
+                        .addComponents(
+                            new Discord.ButtonBuilder()
+                                .setCustomId(`yes`)
+                                .setLabel(`Yes (Continue)`)
+                                .setStyle(Discord.ButtonStyle.Success),
+                            new Discord.ButtonBuilder()
+                                .setCustomId(`no`)
+                                .setLabel(`No (Abort)`)
+                                .setStyle(Discord.ButtonStyle.Danger)
+                        )
+
+                        // Send the response with the buttons to only the user who initiated the command
+                        interaction.reply({content: `Are you sure you want to add the ${role.name} role to the joinable roles?`, ephemeral: true, components: [btns], fetchReply: true})
+                            .then(async (msg) => {
+
+                                // Create the collector to capture the button clicks
+                                const btnCollector = await msg.createMessageComponentCollector({componentType: Discord.ComponentType.Button, max:1,  time:15000});
+
+                                // When a button is clicked
+                                btnCollector.on(`collect`, i => {
+                                    // If the user agreed to continue
+                                    if(i.customId === "yes") {
+
+                                        /* 
+                                        * Sync the model to the table
+                                        * Creates a new table if table doesn't exist, otherwise just inserts new row
+                                        * id, createdAt, and updatedAt are set by default; DO NOT ADD
+                                        !!!!
+                                            Keep force set to false otherwise it will overwrite the table instead of making new row!
+                                        !!!!
+                                        */
+                                        JoinableRole.sync({ force: false }).then(() => {
+                                            // Query the database for the joinable role
+                                            JoinableRole.findOne({where:{role: role.name}}).then((jrole) => {
+                                                // If there is no joinable role add it
+                                                if (!jrole) {
+                                                    JoinableRole.create({
+                                                        role: role.name, // add the role string to the role column
+                                                        user_id: interaction.member.id // add the creator's id
+                                                    })
+                                                    // Let the user know it was added
+                                                    .then(() => {
+                                                        // Build the embed
+                                                        const joinableEmbed = new Discord.EmbedBuilder()
+                                                            .setColor(`#00FF00`)
+                                                            .setTitle(`New Joinable Role`)
+                                                            .setAuthor({name: `${interaction.member.displayName}`, iconURL: `${interaction.member.displayAvatarURL({dynamic:true})}`})
+                                                            .setDescription(`A role was added to the joinable roles.`)
+                                                            .addFields(
+                                                                {name: `Role`, value: `${role}`, inline: true},
+                                                                {name: `Added By`, value: `${interaction.member}`, inline: true},
+                                                                {name: `Hoisted`, value: `${role.hoist}`, inline: true},
+                                                                {name: `Role Id`, value: `${role.id}`, inline: false}
+                                                            )
+                                                            .setTimestamp();
+
+                                                            // If the user is in the super log channel
+                                                            if(superLog.id === interaction.channel.id) {
+                                                                // Send the embed
+                                                                i.reply({embeds: [joinableEmbed]});
+
+                                                            // If the user isn't in the super log channel
+                                                            } else {
+                                                                // Let the user know the role was added and send the embed to the super log
+                                                                i.reply({content: `I have successfully added \`${role.name}\` to the joinable roles!`, ephemeral: true});
+                                                                superLog.send({embeds: [joinableEmbed]});
+                                                            }
+                                                    });
+                                                // If there was a role, let user know it exists already
+                                                } else {
+                                                    i.reply({content: `It looks like \`${role.name}\` has already been added!`, ephemeral: true});
+                                                };
+                                            }).catch((err) => {
+                                                console.error("Error: "+err);
+                                            });
+                                        });
+
+                                    // If the user wanted to abort
+                                    } else {
+                                        return i.reply({content: `${i.user},\nGot it! I have aborted this function. The ${role.name} was not added to the joinable roles!`, ephemeral: true});
+                                    }
+                                })
+
+                                // Once the interaction times out
+                                btnCollector.on(`end`, collected => {
+
+                                    // If the user didn't click on one of the buttons let them know it timed out
+                                    if(collected.size === 0) {
+                                        interaction.channel.send(`My apologies ${interaction.user} but your previous interaction has timed out.\nNo changes were made, please try again when you're ready!`);
+                                    }
+                                })
+                        });
+                    }
+
+                // If the remove subcommand was used
+                } else if (subcommand === "remove") {
+
+                    // Create the row of buttons
+                    const btns = new Discord.ActionRowBuilder()
+                    .addComponents(
+                        new Discord.ButtonBuilder()
+                            .setCustomId(`yes`)
+                            .setLabel(`Yes (Continue)`)
+                            .setStyle(Discord.ButtonStyle.Success),
+                        new Discord.ButtonBuilder()
+                            .setCustomId(`no`)
+                            .setLabel(`No (Abort)`)
+                            .setStyle(Discord.ButtonStyle.Danger)
+                    )
+
+                    // Send the response with the buttons to only the user who initiated the command
+                    interaction.reply({content: `Are you sure you want to remove the ${role.name} role from the joinable roles?`, ephemeral: true, components: [btns], fetchReply: true})
+                        .then(async (msg) => {
+
+                            // Create the collector to capture the button clicks
+                            const btnCollector = await msg.createMessageComponentCollector({componentType: Discord.ComponentType.Button, max:1,  time:15000});
+
+                            // When a button is clicked
+                            btnCollector.on(`collect`, i => {
+                                // If the user agreed to continue
+                                if(i.customId === "yes") {
+
+                                    /* 
+                                    * Sync the model to the table
+                                    * Creates a new table if table doesn't exist, otherwise just inserts new row
+                                    * id, createdAt, and updatedAt are set by default; DO NOT ADD
+                                    !!!!
+                                        Keep force set to false otherwise it will overwrite the table instead of making new row!
+                                    !!!!
+                                    */
+                                    JoinableRole.sync({ force: false }).then(() => {
+                                        // Query the database for the joinable role
+                                        JoinableRole.findOne({where:{role: role.name}}).then((jrole) => {
+                                            // If there is a joinable role remove it
+                                            if (jrole) {
+                                                JoinableRole.destroy({
+                                                    where: {
+                                                        role: jrole.get("role")
+                                                    }
+                                                }).then(() => {
+                                                    // Find the mod who added it
+                                                    const creator = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(jrole.get(`user_id`));
+
+                                                    // Build the embed
+                                                    const joinableEmbed = new Discord.EmbedBuilder()
+                                                        .setColor(`#FF0000`)
+                                                        .setTitle(`Removed Joinable Role`)
+                                                        .setAuthor({name: `${interaction.member.displayName}`, iconURL: `${interaction.member.displayAvatarURL({dynamic:true})}`})
+                                                        .setDescription(`A role was removed from the joinable roles.`)
+                                                        .addFields(
+                                                            {name: `Role`, value: `${role}`, inline: true},
+                                                            {name: `Added By`, value: `${creator || "Unknown"}`, inline: true},
+                                                            {name: `Removed By`, value: `${interaction.member}`, inline: true},
+                                                            {name: `Date Added`, value: `${Discord.time(jrole.get(`createdAt`), Discord.TimestampStyles.RelativeTime)}`, inline: true},
+                                                            {name: `Hoisted`, value: `${role.hoist}`, inline: true},
+                                                            {name: `Role Id`, value: `${role.id}`, inline: false}
+                                                        )
+                                                        .setTimestamp();
+
+                                                        // If the user is in the super log channel
+                                                        if(superLog.id === interaction.channel.id) {
+                                                            // Send the embed
+                                                            i.reply({embeds: [joinableEmbed]});
+
+                                                        // If the user isn't in the super log channel
+                                                        } else {
+                                                            // Let the user know the role was added and send the embed to the super log
+                                                            i.reply({content: `I have successfully removed \`${role.name}\` from the joinable roles!`, ephemeral: true});
+                                                            superLog.send({embeds: [joinableEmbed]});
+                                                        }
+                                                });
+                                            // If there was no role, let user know
+                                            } else {
+                                                i.reply({content: `It looks like \`${role.name}\` isn't a joinable role!`, ephemeral: true});
+                                            };
+                                        }).catch((err) => {
+                                            console.error("Error: "+err);
+                                        });
+                                    });
+
+                                // If the user wanted to abort
+                                } else {
+                                    return i.reply({content: `${i.user},\nGot it! I have aborted this function. The ${role.name} was not removed from the joinable roles!`, ephemeral: true});
+                                }
+                            })
+
+                            // Once the interaction times out
+                            btnCollector.on(`end`, collected => {
+
+                                // If the user didn't click on one of the buttons let them know it timed out
+                                if(collected.size === 0) {
+                                    interaction.channel.send(`My apologies ${interaction.user} but your previous interaction has timed out.\nNo changes were made, please try again when you're ready!`);
+                                }
+                            })
+                    });
+                }
+            }
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         if (command.name === 'addjoinablerole' && (superRole || adminRole || interaction.member === ownerRole)) {
 

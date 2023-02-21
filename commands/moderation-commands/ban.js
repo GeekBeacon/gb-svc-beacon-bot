@@ -1,24 +1,33 @@
 // Import required files
-const DatabaseController = require("../../controllers/DatabaseController");
+const Discord = require(`discord.js`);
+const PermissionsController = require("../../controllers/PermissionsController");
+const ModerationController = require("../../controllers/ModerationController");
 
 module.exports = {
     name: 'ban',
-    description: 'Ban a user from the server, with optional argument allowing for the number of days to clear messages from the user (0-7); default being not to clear messages.',
-    aliases: [],
-    usage: "<@user | user id>, <reason>, <time>, [Message Delete]",
-    cooldown: 5,
     enabled: true,
     mod: true,
     super: false,
     admin: false,
-    execute(message, args, client) {
-        const prefix = client.settings.get("prefix");
-        if (!args.length) {
-            // If no arguments let users know arguments are required
-            return message.reply(`You must mention the user or add the user's id that you wish to ban, a reason, and a time!\n\nExamples: \`${prefix}ban @username, gore, permanently\` \`${prefix}kick 1234567890, flaming users, 3 weeks, 7\``);
+    async execute(interaction) {
+        // Check if the command can be used (by the member)
+        const enabled = await PermissionsController.enabledCheck(this, interaction);
+        const approved = await PermissionsController.permissionCheck(this, interaction);
+        
+        // If the command is disabled then let the user know
+        if(!enabled) {
+            return interaction.reply({content: `Uh oh! This command is currently disabled!`, ephemeral: true});
+        // If the command isn't disabled, proceed
         } else {
-            // Call the query handler from the database controller with required args
-            DatabaseController.queryHandler(message, args, client);
+            // If the member doesn't have the proper permissions for the subcommand
+            if(!approved) {
+                return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this subcommand!`, ephemeral: true});
+
+            // If the member has the proper permissions for the subcommand
+            } else {
+                // Call the ban handler from the moderation controller with required args
+                ModerationController.banHandler(interaction);
+            }
         }
     },
 };

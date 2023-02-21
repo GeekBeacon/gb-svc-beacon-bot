@@ -1,6 +1,7 @@
 // Import the required files
-const DatabaseController = require("../controllers/DatabaseController");
+const PermissionsController = require("../controllers/PermissionsController");
 const Discord = require(`discord.js`);
+const AutorolesController = require("../controllers/AutorolesController");
 
 module.exports = {
 
@@ -36,48 +37,39 @@ module.exports = {
                     .setDescription(`The role to remove from the autoroles.`)
                     .setRequired(true)
             )
-    ),
+    )
+    .setDefaultMemberPermissions(Discord.PermissionFlagsBits.ManageMessages),
 
     async execute(interaction) {
 
-        // Set this command's property values to the local collection's property values
-        this.enabled = interaction.client.commands.get(this.name).enabled;
-        this.mod = interaction.client.commands.get(this.name).mod;
-        this.super = interaction.client.commands.get(this.name).super;
-        this.admin = interaction.client.commands.get(this.name).admin;
+        // Check if the command can be used (by the member)
+        const enabled = await PermissionsController.enabledCheck(this, interaction);
+        const approved = await PermissionsController.permissionCheck(this, interaction);
+        const subcommand = interaction.options.getSubcommand(); //get the subcommand
 
-        // If the command is disabled then let the user know
-        if(this.enabled === false) {
-            return interaction.reply({content: `Uh oh! This commend is currently disabled!`, ephemeral: true});
+        // If the command is disabled then let the member know
+        if(!enabled) {
+            return interaction.reply({content: `Uh oh! This command is currently disabled!`, ephemeral: true});
 
         // If the command isn't disabled, proceed
         } else {
 
             // If the user didn't trigger the list command
-            if(interaction.options.getSubcommand() !== `list`) {
-                // Check if the user is in any of the mod+ roles
-                const trainee = interaction.member.roles.cache.find(role => role.id === interaction.client.settings.get("trainee_role_id"));
-                const mod = interaction.member.roles.cache.find(role => role.id === interaction.client.settings.get("mod_role_id"));
-                const superMod = interaction.member.roles.cache.find(role => role.id === interaction.client.settings.get("super_role_id"));
-                const admin = interaction.member.roles.cache.find(role => role.id === interaction.client.settings.get("admin_role_id"));
+            if(subcommand !== `list`) {
 
                 // If the user doesn't have the appropiate role for the command, let them know
-                if(this.admin === true && !admin) {
-                    return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this subcommand!`, ephemeral: true});
-                } else if(this.super === true && !(superMod || admin)) {
-                    return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this subcommand!`, ephemeral: true});
-                } else if(this.mod === true && !(admin || superMod || mod || trainee)) {
-                    return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this subcommand!`, ephemeral: true});
+                if(!approved) {
+                    return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this command!`, ephemeral: true});
 
                 // If the user has the appropiate role
                 } else {
-                    // Call the query handler from the database controller with required args
-                    DatabaseController.queryHandler(interaction);
+                    // Call the autorole handler from the autorole controller
+                    AutorolesController.autoroleHandler(interaction);
                 }
             // If the user only asked for the autoroles to be listed
             } else {
-                // Call the query handler from the database controller with required args
-                DatabaseController.queryHandler(interaction);
+                // Call the autorole handler from the autorole controller
+                AutorolesController.autoroleHandler(interaction);
             }
         }
     }

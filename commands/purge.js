@@ -1,6 +1,7 @@
 // Import required files
-const DatabaseController = require("../controllers/DatabaseController");
 const Discord = require(`discord.js`);
+const PermissionsController = require("../controllers/PermissionsController")
+const ModerationController = require("../controllers/ModerationController");
 
 module.exports = {
 
@@ -30,16 +31,24 @@ module.exports = {
     .setDefaultMemberPermissions(Discord.PermissionFlagsBits.ManageMessages),
 
     async execute(interaction) {
-        // Set this command's property values to the local collection's property values
-        this.enabled = interaction.client.commands.get(this.name).enabled;
-        this.mod = interaction.client.commands.get(this.name).mod;
-        this.super = interaction.client.commands.get(this.name).super;
-        this.admin = interaction.client.commands.get(this.name).admin;
+        // Check if the command can be used (by the member)
+        const enabled = await PermissionsController.enabledCheck(this, interaction);
+        const approved = await PermissionsController.permissionCheck(this, interaction);
+        
+        // If the command is disabled then let the user know
+        if(!enabled) {
+            return interaction.reply({content: `Uh oh! This command is currently disabled!`, ephemeral: true});
+        // If the command isn't disabled, proceed
+        } else {
+            // If the member doesn't have the proper permissions for the command
+            if(!approved) {
+                return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this command!`, ephemeral: true});
 
-        // If the command is disabled, let the user know
-        if(this.disabled == true) return interaction.reply({content: `Uh oh! This commend is currently disabled!`, ephemeral: true});
-
-        // Call the query handler from the database controller with required args
-        DatabaseController.queryHandler(interaction);
+            // If the member has the proper permissions for the command
+            } else {
+                // Call the purge handler from the moderation controller with required args
+                ModerationController.purgeHandler(interaction);
+            }
+        }
     },
 };

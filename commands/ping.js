@@ -33,10 +33,10 @@ module.exports = {
 
         // If the command is not enabled, let the member know
         if(!enabled) {
-            return interaction.reply({content: `Uh oh! This commend is currently disabled!`, ephemeral: true});
+            return interaction.reply({content: `Uh oh! This command is currently disabled!`, ephemeral: true});
         // If the member doesn't have the proper permissions, let them know
         } else if (!approved) {
-            return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this subcommand!`, ephemeral: true});
+            return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this command!`, ephemeral: true});
         // If the command is enabled and the user has permission to use it
         } else {
             const pingType = interaction.options.getString(`type`) ?? `websocket`; // get the ping type or default to websocket

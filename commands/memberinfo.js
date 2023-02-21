@@ -1,4 +1,5 @@
 const Discord = require("discord.js");
+const PermissionsController = require("../controllers/PermissionsController");
 const Models = require("../models/AllModels");
 
 module.exports = {
@@ -22,208 +23,228 @@ module.exports = {
         ),
     // Execute the command
     async execute(interaction) {
-        // Get the staff channels
-        const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
-        const modChannel = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_channel_name")))); //mod channel
-        const superChannel = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("super_channel_name")))); //super channel
-        const adminChannel = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("admin_channel_name")))); //admin channel
-        // Get the mod+ roles
-        const modTraineeRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("trainee_role_id"));
-        const modRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("mod_role_id"));
-        const superRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("super_role_id"));
-        const adminRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("admin_role_id"));
-        let warnings, timeouts, kicks, bans, points, level, rank; // numeric vars
-        const user = interaction.options.getUser(`member`) ?? interaction.user; //get the user or set to initiator 
-        const member = interaction.guild.members.cache.get(user.id); //get the member instance of the user
 
-        // If the user exists then call the userData function
-        if (member) {
-            userData(member);
-
-        // If the user provided a non-member of the server
+        // Check if the command can be used (by the member)
+        const enabled = await PermissionsController.enabledCheck(this, interaction);
+        const approved = await PermissionsController.permissionCheck(this, interaction);
+        
+        // If the command is disabled then let the user know
+        if(!enabled) {
+            return interaction.reply({content: `Uh oh! This command is currently disabled!`, ephemeral: true});
+        // If the command isn't disabled, proceed
         } else {
-            interaction.reply({content: `Uh oh! I wasn't able to find that member, please make sure you are providing me with a member of this server!`, ephemeral: true})
-        }
+            // If the member doesn't have the proper permissions for the command
+            if(!approved) {
+                return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this command!`, ephemeral: true});
 
-        async function userData(member) {
-            const joinDate = member.joinedAt; // joined date
-            const registerDate = member.user.createdAt; // register date
-            const boostDate = member.premiumSince; // boost date
-            let boostString = "Not Boosting";
-            let bot;
+            // If the member has the proper permissions for the command
+            } else {
+                // Get the staff channels
+                const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
+                const modChannel = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_channel_name")))); //mod channel
+                const superChannel = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("super_channel_name")))); //super channel
+                const adminChannel = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("admin_channel_name")))); //admin channel
+                // Get the mod+ roles
+                const modTraineeRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("trainee_role_id"));
+                const modRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("mod_role_id"));
+                const superRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("super_role_id"));
+                const adminRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("admin_role_id"));
+                let warnings, timeouts, kicks, bans, points, level, rank; // numeric vars
+                const user = interaction.options.getUser(`member`) ?? interaction.user; //get the user or set to initiator 
+                const member = interaction.guild.members.cache.get(user.id); //get the member instance of the user
 
-            // set bot var based on user.bot boolean
-            switch(member.user.bot) {
-                case false:
-                    bot = "I ain't no beep boop";
-                    break;
-                case true:
-                    bot = "🤖 beep boop";
-                    break;
-            };
+                // If the user exists then call the userData function
+                if (member) {
+                    userData(member);
 
-            // If user is boosting the server
-            if(member.premiumSince) {
-                boostString = `${Discord.time(boostDate, `D`)}`;
-            }
-
-            // Find all warnings from the user, if any
-            await Models.warning.findAll({where:{user_id: member.user.id}, raw: true}).then((info) => {
-                // If there are warnings then assign the amount to the warnings var
-                if(info) {
-                    warnings = info.length;
-                }
-            });
-
-            // Find all timeouts from the user, if any
-            await Models.timeout.findAll({where:{user_id: member.user.id}, raw: true}).then((info) => {
-                // If there are timeouts then assign the amount to the timeouts var
-                if(info) {
-                    timeouts = info.length;
-                }
-            });
-
-            // Find all kicks from the user, if any
-            await Models.kick.findAll({where:{user_id: member.user.id}, raw: true}).then((info) => {
-                // If there are kicks then assign the amount to the kicks var
-                if(info) {
-                    kicks = info.length;
-                }
-            });
-
-            // Find all bans from the user, if any
-            await Models.ban.findAll({where:{user_id: member.user.id}, raw: true}).then((info) => {
-                // If there are bans then assign the amount to the bans var
-                if(info) {
-                    bans = info.length;
-                }
-            });
-
-            // Find all points and level from the user, if any
-            await Models.user.findOne({where:{user_id: member.user.id}, raw: true}).then((info) => {
-                // If the user has points then assign the points and level
-                if(info) {
-                    points = info.points;
-                    level = info.level;
-
-                // If not then set the points and level to N/A
+                // If the user provided a non-member of the server
                 } else {
-                    points = "N/A";
-                    level = "N/A";
+                    interaction.reply({content: `Uh oh! I wasn't able to find that member, please make sure you are providing me with a member of this server!`, ephemeral: true})
                 }
-            });
 
-            // Find the user's ranking for points
-            await Models.user.findAll({order:[['points', 'DESC']],raw:true}).then((info) => {
-                if(info) {
-                    // Look through the array of users and find the one with the correct ID
-                    rank = info.map(function (e) {
-                        return e.user_id;
-                    }).indexOf(member.user.id);
+                async function userData(member) {
+                    const joinDate = member.joinedAt; // joined date
+                    const registerDate = member.user.createdAt; // register date
+                    const boostDate = member.premiumSince; // boost date
+                    let boostString = "Not Boosting";
+                    let bot;
 
-                    // If the user isn't found assign the rank to be "N/A"
-                    if(rank < 0) {
-                        rank = "N/A"
+                    // set bot var based on user.bot boolean
+                    switch(member.user.bot) {
+                        case false:
+                            bot = "I ain't no beep boop";
+                            break;
+                        case true:
+                            bot = "🤖 beep boop";
+                            break;
+                    };
 
-                    // If the user was found, assign their rank
-                    } else {
-                        rank = `#${rank+1}`
+                    // If user is boosting the server
+                    if(member.premiumSince) {
+                        boostString = `${Discord.time(boostDate, `D`)}`;
                     }
-                }
-            })
 
-            // Create the embed
-            let userEmbed = new Discord.EmbedBuilder()
-                .setColor(member.displayHexColor)
-                .setDescription(`Information for ${member}`)
-                .setAuthor({name: `${member.user.username}#${member.user.discriminator}`, iconURL: member.user.displayAvatarURL({dynamic:true})})
-                .setThumbnail(member.user.displayAvatarURL({dynamic:true}))
-                .addFields(
-                    {
-                        name: `Nickname`,
-                        value: `${member.nickname || "None"}`,
-                        inline: true
-                    },
-                    {
-                        name: `Beep Boop`,
-                        value: `${bot}`,
-                        inline: true
-                    },
-                    {
-                        name: `\u200B`,
-                        value: `\u200B`,
-                        inline: true
-                    },
-                    {
-                        name: `Joined`,
-                        value: `${Discord.time(joinDate, "D")}`,
-                        inline: true
-                    },
-                    {
-                        name: `Registered`,
-                        value: `${Discord.time(registerDate, "D")}`,
-                        inline: true
-                    },
-                    {
-                        name: `Boosting`,
-                        value: `${boostString}`,
-                        inline: true
-                    },
-                    {
-                        name: `Level`,
-                        value: `${level}`,
-                        inline: true
-                    },
-                    {
-                        name: `Points`,
-                        value: `${points}`,
-                        inline: true
-                    },
-                    {
-                        name: `Rank`,
-                        value: `${rank}`,
-                        inline: true
-                    }
-                )
-                .setTimestamp()
-                .setFooter({text: `User ID: ${member.user.id}`});
+                    // Find all warnings from the user, if any
+                    await Models.warning.findAll({where:{user_id: member.user.id}, raw: true}).then((info) => {
+                        // If there are warnings then assign the amount to the warnings var
+                        if(info) {
+                            warnings = info.length;
+                        }
+                    });
 
-                // If the user is a mod or higher role and the requested user doesn't have any warnings
-                if(interaction.member.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name)) && warnings > 0) {
-                    userEmbed
-                    .addFields({name: `Warnings`, value: `${warnings}`, inline: true})
-                    .addFields({name: `Timeouts`, value: `${timeouts}`, inline: true})
-                    .addFields({name: `\u200B`, value: `\u200B`, inline: true}) //add empty field for formatting
-                    .addFields({name: `Kicks`, value: `${kicks}`, inline: true})
-                    .addFields({name: `Bans`, value: `${bans}`, inline: true})
-                    .addFields({name: `\u200B`, value: `\u200B`, inline: true}) //add empty field for formatting
+                    // Find all timeouts from the user, if any
+                    await Models.timeout.findAll({where:{user_id: member.user.id}, raw: true}).then((info) => {
+                        // If there are timeouts then assign the amount to the timeouts var
+                        if(info) {
+                            timeouts = info.length;
+                        }
+                    });
 
-                    // If the command was used in a public channel
-                    if(interaction.channel !== modChannel && interaction.channel !== superChannel && interaction.channel !== adminChannel) {
+                    // Find all kicks from the user, if any
+                    await Models.kick.findAll({where:{user_id: member.user.id}, raw: true}).then((info) => {
+                        // If there are kicks then assign the amount to the kicks var
+                        if(info) {
+                            kicks = info.length;
+                        }
+                    });
 
-                        // If the user didn't use the command in the action log channel
-                        if(interaction.channel !== actionLog) {
-                            // Send embed to the mod log channel
-                            actionLog.send({embeds: [userEmbed]});
+                    // Find all bans from the user, if any
+                    await Models.ban.findAll({where:{user_id: member.user.id}, raw: true}).then((info) => {
+                        // If there are bans then assign the amount to the bans var
+                        if(info) {
+                            bans = info.length;
+                        }
+                    });
 
-                            // Let the user know the info was sent
-                            interaction.reply(`I've sent a message containing the data you requested to ${actionLog}.`);
-                        } else if(interaction.channel === actionLog) {
-                            // Send embed to the mod log channel
+                    // Find all points and level from the user, if any
+                    await Models.user.findOne({where:{user_id: member.user.id}, raw: true}).then((info) => {
+                        // If the user has points then assign the points and level
+                        if(info) {
+                            points = info.points;
+                            level = info.level;
+
+                        // If not then set the points and level to N/A
+                        } else {
+                            points = "N/A";
+                            level = "N/A";
+                        }
+                    });
+
+                    // Find the user's ranking for points
+                    await Models.user.findAll({order:[['points', 'DESC']],raw:true}).then((info) => {
+                        if(info) {
+                            // Look through the array of users and find the one with the correct ID
+                            rank = info.map(function (e) {
+                                return e.user_id;
+                            }).indexOf(member.user.id);
+
+                            // If the user isn't found assign the rank to be "N/A"
+                            if(rank < 0) {
+                                rank = "N/A"
+
+                            // If the user was found, assign their rank
+                            } else {
+                                rank = `#${rank+1}`
+                            }
+                        }
+                    })
+
+                    // Create the embed
+                    let userEmbed = new Discord.EmbedBuilder()
+                        .setColor(member.displayHexColor)
+                        .setDescription(`Information for ${member}`)
+                        .setAuthor({name: `${member.user.username}#${member.user.discriminator}`, iconURL: member.user.displayAvatarURL({dynamic:true})})
+                        .setThumbnail(member.user.displayAvatarURL({dynamic:true}))
+                        .addFields(
+                            {
+                                name: `Nickname`,
+                                value: `${member.nickname || "None"}`,
+                                inline: true
+                            },
+                            {
+                                name: `Beep Boop`,
+                                value: `${bot}`,
+                                inline: true
+                            },
+                            {
+                                name: `\u200B`,
+                                value: `\u200B`,
+                                inline: true
+                            },
+                            {
+                                name: `Joined`,
+                                value: `${Discord.time(joinDate, "D")}`,
+                                inline: true
+                            },
+                            {
+                                name: `Registered`,
+                                value: `${Discord.time(registerDate, "D")}`,
+                                inline: true
+                            },
+                            {
+                                name: `Boosting`,
+                                value: `${boostString}`,
+                                inline: true
+                            },
+                            {
+                                name: `Level`,
+                                value: `${level}`,
+                                inline: true
+                            },
+                            {
+                                name: `Points`,
+                                value: `${points}`,
+                                inline: true
+                            },
+                            {
+                                name: `Rank`,
+                                value: `${rank}`,
+                                inline: true
+                            }
+                        )
+                        .setTimestamp()
+                        .setFooter({text: `User ID: ${member.user.id}`});
+
+                        // If the user is a mod or higher role and the requested user doesn't have any warnings
+                        if(interaction.member.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name)) && warnings > 0) {
+                            userEmbed
+                            .addFields({name: `Warnings`, value: `${warnings}`, inline: true})
+                            .addFields({name: `Timeouts`, value: `${timeouts}`, inline: true})
+                            .addFields({name: `\u200B`, value: `\u200B`, inline: true}) //add empty field for formatting
+                            .addFields({name: `Kicks`, value: `${kicks}`, inline: true})
+                            .addFields({name: `Bans`, value: `${bans}`, inline: true})
+                            .addFields({name: `\u200B`, value: `\u200B`, inline: true}) //add empty field for formatting
+
+                            // If the command was used in a public channel
+                            if(interaction.channel !== modChannel && interaction.channel !== superChannel && interaction.channel !== adminChannel) {
+
+                                // If the user didn't use the command in the action log channel
+                                if(interaction.channel !== actionLog) {
+                                    // Send embed to the mod log channel
+                                    actionLog.send({embeds: [userEmbed]});
+
+                                    // Let the user know the info was sent
+                                    interaction.reply(`I've sent a message containing the data you requested to ${actionLog}.`);
+                                } else if(interaction.channel === actionLog) {
+                                    // Send embed to the mod log channel
+                                    interaction.reply({embeds: [userEmbed]});
+                                }
+
+                            // If the command was used in a mod+ channel
+                            } else {
+                                // Send the message
+                                interaction.reply({embeds: [userEmbed]})
+                            }
+
+                        // If the user isn't a mod or higher
+                        } else {
+                            // Send embed
                             interaction.reply({embeds: [userEmbed]});
                         }
-
-                    // If the command was used in a mod+ channel
-                    } else {
-                        // Send the message
-                        interaction.reply({embeds: [userEmbed]})
-                    }
-
-                // If the user isn't a mod or higher
-                } else {
-                    // Send embed
-                    interaction.reply({embeds: [userEmbed]});
                 }
+            }
         }
+
+        
     }
 };
