@@ -295,22 +295,42 @@ client.on("messageReactionRemove", async (reaction, user) => {
 });
 
 client.on("interactionCreate", async interaction => {
-    if(!interaction.isChatInputCommand()) return; //ignore chat commands
+    
+    // Check if the interaction is a slash command with or without autocomplete
+    if (interaction.isChatInputCommand() || interaction.isAutocomplete()) {
 
-    // Create the command object with the command name given
-    const command = interaction.client.commands.get(interaction.commandName);
+        // Create the command object with the command name given
+        const command = interaction.client.commands.get(interaction.commandName);
 
-    // Ignore if the command wasn't found
-    if(!command) {
+        
+        if(!command) return; //Ignore if the command wasn't found
+
+        // If a normal slash command is used
+        if (interaction.isChatInputCommand()) {
+
+            // Attempt to execute the command
+            try {
+                await command.execute(interaction);
+            } catch(e) {
+                console.error(e);
+                await interaction.reply({content: `There was an error trying to execute that command, please try again!`, ephemeral: true})
+            }
+
+        // If the command has autocomplete
+        } else if (interaction.isAutocomplete()) {
+
+            // Attempt to execute the autocomplete
+            try {
+                await command.autocomplete(interaction);
+            } catch(e) {
+                console.error(e);
+                await interaction.reply({content: `There was an error trying to execute that command, please try again!`, ephemeral: true})
+            }
+        }
+
+    // If not a slash comand
+    } else {
         return;
-    }
-
-    // Attempt to execute the command
-    try {
-        await command.execute(interaction);
-    } catch(e) {
-        console.error(e);
-        await interaction.reply({content: `There was an error trying to execute that command, please try again!`, ephemeral: true})
     }
 });
 

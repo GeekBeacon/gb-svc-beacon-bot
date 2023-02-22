@@ -24,6 +24,106 @@ module.exports = {
         };
     },
 
+    settingsHandler: async function(interaction) {
+        const setting = interaction.options.getString(`setting`); //get the setting
+        const subcommand = interaction.options.getSubcommand(); //get the subcommand
+        const superLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("super_log_channel_name")))); //super log channel
+
+        if(subcommand === `list`) {
+
+            return interaction.reply({content: `This subcommand isn't ready yet!`, ephemeral: true});
+
+        } else if (subcommand === "view") {
+
+            // Look for the setting in the db
+            Models.setting.findOne({where: {name: setting}}).then((item) => {
+                // If no setting was found, let the user know
+                if(!item) return interaction.reply({content: `Uh oh! Looks like ${setting} isn't a valid setting, please try again!`, ephemeral: true});
+
+                const settingVal = item.get(`value`);
+                
+                let settingEmbed = new Discord.EmbedBuilder()
+                    .setColor(`#886CE4`)
+                    .setTitle(`Setting Information`)
+                    .setAuthor({name: `${interaction.member.displayName}`, iconURL: `${interaction.member.displayAvatarURL({dynamic: true})}`})
+                    .setDescription(`Here is the data for the ${setting} setting!`)
+                    .addFields(
+                        {name: `Id`, value: `\`\`${item.get(`id`)}\`\``, inline: true},
+                        {name: `\u200B`, value: `\u200B`, inline: true},
+                        {name: `Name`, value: `\`\`${item.get(`name`)}\`\``, inline: true},
+                        {name: `Created`, value: `${Discord.time(item.get(`createdAt`), Discord.TimestampStyles.RelativeTime)}`, inline: true},
+                        {name: `\u200B`, value: `\u200B`, inline: true},
+                        {name: `Updated`, value: `${Discord.time(item.get(`updatedAt`), Discord.TimestampStyles.RelativeTime)}`, inline: true},
+                    )
+                    .setTimestamp();
+
+                // If the value is too long for an embed's value but not a message
+                if(settingVal.length > 1017 && settingVal.length <= 1993) {
+                    // Send the embed with an additional message
+
+                    // If the member is in the super log channel
+                    if(superLog.id === interaction.channel.id) {
+
+                        // Reply with the embed and message
+                        interaction.reply({embeds: [settingEmbed], content: `Value: \`\`${settingVal}\`\``});
+
+                    // If the member isn't in the super log channel
+                    } else {
+
+                        // Send the embed to the super log channel and let the member know to check
+                        superLog.send({embeds: [settingEmbed], content: `Value: \`\`${settingVal}\`\``});
+                        interaction.reply({content: `I have sent the requested data to the ${superLog} channel!`, ephemeral: true});
+                    }
+
+                // If the value is under the embed's value limit
+                } else if (settingVal.length <= 1024) {
+                    // Add the value to the embed and send
+                    settingEmbed.addFields({name: `Value`, value: `\`\`${settingVal}\`\``, inline: false});
+
+                    // If the member is in the super log channel
+                    if(superLog.id === interaction.channel.id) {
+
+                        // Reply with the embed and message
+                        interaction.reply({embeds: [settingEmbed]});
+
+                    // If the member isn't in the super log channel
+                    } else {
+
+                        // Send the embed to the super log channel and let the member know to check
+                        superLog.send({embeds: [settingEmbed]});
+                        interaction.reply({content: `I have sent the requested data to the ${superLog} channel!`, ephemeral: true});
+                    }
+
+
+                // If the value exceeds all limits
+                } else {
+                    // Send the embed, along with a message letting the member know that the value can't be displayed
+
+                    // If the member is in the super log channel
+                    if(superLog.id === interaction.channel.id) {
+
+                        // Reply with the embed and message
+                        interaction.reply({embeds: [settingEmbed], content: `The value for this setting is too long to be sent on Discord, so unfortunately you will have to look it up manually!`});
+
+                    // If the member isn't in the super log channel
+                    } else {
+
+                        // Send the embed to the super log channel and let the member know to check
+                        superLog.send({embeds: [settingEmbed], content: `The value for this setting is too long to be sent on Discord. Unfortunately you will have to look it up manually!`});
+                        interaction.reply({content: `I have sent the requested data to the ${superLog} channel!`, ephemeral: true});
+                    }
+                }
+
+            // Catch any errors
+            }).catch((e) => {
+                console.error(e);
+            });
+
+        } else if (subcommand === "update") {
+            return interaction.reply({content: `This subcommand isn't ready yet!`, ephemeral: true});
+        }
+    },
+
     // Function for when bot starts up
     botReconnect: function(client) {
 
