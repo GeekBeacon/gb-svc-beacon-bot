@@ -14,6 +14,7 @@ const channelController = require("./controllers/ChannelController");
 const voiceController = require("./controllers/VoiceController");
 const reactionsController = require("./controllers/ReactionsController");
 const Models = require("./models/AllModels");
+const DatabaseController = require('./controllers/DatabaseController');
 
 // Instantiate a new Discord client and collection
 const client = new Discord.Client({
@@ -296,17 +297,17 @@ client.on("messageReactionRemove", async (reaction, user) => {
 
 client.on("interactionCreate", async interaction => {
     
-    // Check if the interaction is a slash command with or without autocomplete
-    if (interaction.isChatInputCommand() || interaction.isAutocomplete()) {
-
-        // Create the command object with the command name given
-        const command = interaction.client.commands.get(interaction.commandName);
-
-        
-        if(!command) return; //Ignore if the command wasn't found
+    // Check if the interaction is a slash command with or without autocomplete or a modal
+    if (interaction.isChatInputCommand() || interaction.isAutocomplete() || interaction.isModalSubmit()) {
 
         // If a normal slash command is used
         if (interaction.isChatInputCommand()) {
+
+            // Create the command object with the command name given
+            const command = interaction.client.commands.get(interaction.commandName);
+
+            
+            if(!command) return; //Ignore if the command wasn't found
 
             // Attempt to execute the command
             try {
@@ -319,6 +320,12 @@ client.on("interactionCreate", async interaction => {
         // If the command has autocomplete
         } else if (interaction.isAutocomplete()) {
 
+            // Create the command object with the command name given
+            const command = interaction.client.commands.get(interaction.commandName);
+
+            
+            if(!command) return; //Ignore if the command wasn't found
+
             // Attempt to execute the autocomplete
             try {
                 await command.autocomplete(interaction);
@@ -326,9 +333,15 @@ client.on("interactionCreate", async interaction => {
                 console.error(e);
                 await interaction.reply({content: `There was an error trying to execute that command, please try again!`, ephemeral: true})
             }
+
+        // If the interaction is a modal submission
+        } else if (interaction.isModalSubmit()) {
+
+            // Call the updateSetting function from the DatabaseController
+            DatabaseController.updateSetting(interaction);
         }
 
-    // If not a slash comand
+    // If not an interaction format we can handle
     } else {
         return;
     }

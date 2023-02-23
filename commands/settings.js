@@ -6,9 +6,9 @@ const DatabaseController = require("../controllers/DatabaseController");
 module.exports = {
     name: 'settings',
     enabled: true,
-    mod: false,
+    mod: true,
     super: false,
-    admin: true,
+    admin: false,
 
     // Build the slash command
     data: new Discord.SlashCommandBuilder()
@@ -78,5 +78,5 @@ module.exports = {
             }
         }
 
-    },
+    }
 };

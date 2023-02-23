@@ -31,7 +31,44 @@ module.exports = {
 
         if(subcommand === `list`) {
 
-            return interaction.reply({content: `This subcommand isn't ready yet!`, ephemeral: true});
+            let settingsArr = [];
+
+            // Look for the settings in the db
+            Models.setting.findAll().then(async (settings) => {
+
+                // If settings were found
+                if(settings) {
+
+                    // Loop through the settings
+                    settings.forEach((item) => {
+
+                        // Add the name of the setting to the settingsArr
+                        settingsArr.push(`\`\`${item.get("name")}\`\``);
+                    })
+
+                    // Create the embed
+                    const settingsEmbed = new Discord.EmbedBuilder()
+                        .setColor(`#886CE4`)
+                        .setTitle(`Below Are The Names Of All Settings`)
+                        .setAuthor({name: `${interaction.member.displayName}`, iconURL: `${interaction.member.displayAvatarURL({dynamic: true})}`})
+                        .setDescription(`${settingsArr.join(` , `)}`)
+                        .setTimestamp()
+
+                    // If the member is in the super log channel
+                    if(superLog.id === interaction.channel.id) {
+
+                        // Reply with the embed and message
+                        interaction.reply({embeds: [settingsEmbed]});
+
+                    // If the member isn't in the super log channel
+                    } else {
+
+                        // Send the embed to the super log channel and let the member know to check
+                        superLog.send({embeds: [settingsEmbed]});
+                        interaction.reply({content: `I have sent the requested data to the ${superLog} channel!`, ephemeral: true});
+                    }
+                }
+            })
 
         } else if (subcommand === "view") {
 
@@ -120,8 +157,101 @@ module.exports = {
             });
 
         } else if (subcommand === "update") {
-            return interaction.reply({content: `This subcommand isn't ready yet!`, ephemeral: true});
+
+            // If the member isn't an Admin, deny the use of this subcommand and let them know
+            if (!interaction.member.permissions.has(Discord.PermissionFlagsBits.Administrator)) return interaction.reply({content: `Uh oh! This subcommand is only for Administrators. If you think something needs to be updated, please contact an Administrator!`, ephemeral: true});
+
+            Models.setting.findOne({where: {name: setting}}).then(async (item) => {
+                // If no setting was found, let the user know
+                if(!item) return interaction.reply({content: `Uh oh! Looks like ${setting} isn't a valid setting, please try again!`, ephemeral: true});
+
+                // Create the row of buttons
+                const btns = new Discord.ActionRowBuilder()
+                .addComponents(
+                    new Discord.ButtonBuilder()
+                        .setCustomId(`yes`)
+                        .setLabel(`Yes (Continue)`)
+                        .setStyle(Discord.ButtonStyle.Success),
+                    new Discord.ButtonBuilder()
+                        .setCustomId(`no`)
+                        .setLabel(`No (Abort)`)
+                        .setStyle(Discord.ButtonStyle.Danger)
+                )
+
+                // Send the response with the buttons to only the user who initiated the command
+                interaction.reply({content: `**WARNING!**\n\nThis subcommand is dangerous and could result in me crashing if not used properly. Are you sure you wish to continue?`, ephemeral: true, components: [btns], fetchReply: true})
+                    .then(async (msg) => {
+
+                        // Create the collector to capture the button clicks
+                        const btnCollector = await msg.createMessageComponentCollector({componentType: Discord.ComponentType.Button, max:1,  time:15000});
+
+                        // When a button is clicked
+                        btnCollector.on(`collect`, async i => {
+                            // If the user agreed to continue
+                            if(i.customId === "yes") {
+
+                                // Build the modal
+                                const settingModal = new Discord.ModalBuilder()
+                                    .setCustomId(`${item.get("name")}`)
+                                    .setTitle(`Updating ${item.get(`name`)}`);
+
+                                // Build the setting value input field
+                                const settingValInput = new Discord.TextInputBuilder()
+                                    .setCustomId(`settingVal`)
+                                    .setLabel(`Delete the old value and add the new one`)
+                                    .setValue(`${item.get("value")}`)
+                                    .setMinLength(1)
+                                    .setMaxLength(4000)
+                                    .setStyle(Discord.TextInputStyle.Short)
+                                    .setRequired(true);
+
+                                // Create the action row to hold the settingValInput
+                                const actionRow = new Discord.ActionRowBuilder().addComponents(settingValInput);
+
+                                // Add the input to the modal
+                                settingModal.addComponents(actionRow);
+
+                                // Show the modal to the member
+                                await i.showModal(settingModal);
+
+                            // If the user wanted to abort
+                            } else {
+                                return i.reply({content: `Got it! I have aborted this function. Please contact my manager if you feel a setting should be changed!`, ephemeral: true});
+                            }
+                        })
+
+                        // Once the interaction times out
+                        btnCollector.on(`end`, collected => {
+
+                            // If the user didn't click on one of the buttons let them know it timed out
+                            if(collected.size === 0) {
+                                interaction.channel.send(`My apologies ${interaction.user}, but your previous interaction has timed out.\nThe command remains unchanged, please try again when you're ready!`);
+                            }
+                        })
+                });
+            })
         }
+    },
+
+    // Function to take data from modal to update a setting
+    updateSetting: function(interaction) {
+        return console.log(interaction.fields.getTextInputValue(`settingVal`))
+        // Find the setting
+        Models.setting.findOne({where: {name: interaction.customId}}).then((item) => {
+            // If the setting was found
+            if(item) {
+
+                // Update the setting's value
+                Models.setting.update({value: interaction.fields.getTextInputValue(`settingVal`)}, {where: {id: item.get(`id`)}}).then(() => {
+                    // Let the member know that the setting has been updated
+                    interaction.reply({content: `Successfully changed the value for ${interaction.customId}!`});
+                });
+
+            // If the setting wasn't found let the member know
+            } else {
+                interaction.reply({content: `Uh oh! It seems there was an issue updating that setting. Please contact my manager so they can fix me up!`})
+            }
+        })
     },
 
     // Function for when bot starts up
