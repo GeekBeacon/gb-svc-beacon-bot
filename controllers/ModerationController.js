@@ -393,252 +393,193 @@ module.exports = {
             })
         });
     },
-    banHandler: async function(a, m, c) {
-        const args = a, message = m, client = c;
-        let warnId = shortid.generate(); //generate a short id for the warning
-        const prefix = client.settings.get("prefix");
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        let user, bans; //vars
-        let msgDel = 0; //number of days to clear messages
+    banHandler: async function(interaction) {
+
+        // Get the mod's input
+        const user = interaction.options.getUser(`user`); //user to ban
+        const reason = interaction.options.getString(`reason`); //reason for banning
+        let duration = interaction.options.getString(`duration`); //length of time to ban for
+        let purge = interaction.options.getInteger(`purge`); //days to clear messages
+
+        const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
+        let bans, warnId, banId; //vars to be used
         let msgCleared = "No"; //bool for cleared messages
+
         // Get the mod+ roles
-        const modTraineeRole = message.guild.roles.cache.find(role => role.id === client.settings.get("trainee_role_id"));
-        const modRole = message.guild.roles.cache.find(role => role.id === client.settings.get("mod_role_id"));
-        const superRole = message.guild.roles.cache.find(role => role.id === client.settings.get("super_role_id"));
-        const adminRole = message.guild.roles.cache.find(role => role.id === client.settings.get("admin_role_id"));
+        const modTraineeRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("trainee_role_id"));
+        const modRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("mod_role_id"));
+        const superRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("super_role_id"));
+        const adminRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("admin_role_id"));
 
-        let argsStr = args.join(" "); //create a string out of the args
-        argsStr = argsStr.replace(/,/g, ", "); // replace
-        const newArgs = argsStr.split(",").map(i => i.trim()); //create a new args array and trim the whitespace from the items
+        // Set msgCleared if the mod provided a number > 0
+        if(purge > 0) msgCleared = "Yes"; 
 
-        // Check if an argument for days of messages to remove was given
-        if(newArgs[3]) {
-            // Ensure a number was given
-            if(isNaN(newArgs[3])) {
-                return message.reply(`You must either give me a number (0-7) for the amount of days to clear the user's messages or leave blank.\nExample: \`${prefix}ban @user, Reason, Perma, 7\``)
-            } else {
-                // Ensure the number is between 0 and 7
-                if(newArgs[3] < 0 || newArgs[3] > 7) {
-                    return message.reply(`The maximum number of days I can clear messages for is 7, please enter a number between 0 and 7.\`${prefix}ban @user, Reason, Perma, 3\``)
-                } else {
-                    // If the number is between 0 and 7 assign the value to msgDel and set the msgCleared bool to "Yes"
-                    msgDel = newArgs[3];
-                    msgCleared = "Yes";
-                }
+        // See if the user is a member of the server
+        const userAsMember = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(user.id.toString());
+
+        // If the user is a member of the server
+        if(userAsMember) {
+            // If the user is a mod+ deny banning them
+            if(userAsMember.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
+                return interaction.reply({content: `You got guts, trying to ban a ${user.roles.highest} member!`, ephemeral: true});
             }
         }
 
-        // Make sure the first arg was a user mention or a user id
-        if(isNaN(newArgs[0]) && !newArgs[0].startsWith("<@")) {
-            // Let user know they need to provide a user mention or a valid user id
-            message.reply(`Uh oh! Looks like you gave an invalid user mention or user id. Make sure that you are either mentioning a user or providing a valid user id!`);
-        } else {
+        // If the user is a bot then deny banning it
+        if(user.bot) {
+            return interaction.reply({content: `You can't ban no beep boop!`, ephemeral: true});
+        // If the user tries to ban themselves then deny banning them
+        } else if(user.id === interaction.user.id) {
+            return interaction.reply({content: `You can't ban yourself from the server, silly!`, ephemeral: true});
+        // If the user is the server owner then deny banning them
+        } else if (user.id === interaction.guild.ownerID) {
+            return interaction.reply({content: `I hope you didn't really think you could ban the server owner...`, ephemeral: true});
+        }
 
-            // Check if a user mention was given
-            if(newArgs[0].startsWith("<@")) {
+        // Get bans from the server
+        bans = await interaction.guild.bans.fetch();
 
-                // Try to get the user
-                try {
-                    user = message.mentions.members.first(); // get user tag
-                } catch(e) {
-                    // If unable to get the user, let the mod know
-                    return message.reply(`Uh oh! That user isn't a member of this guild!`);
-                }
+        // Check if the user is already banned
+        if(bans.has(user.id)) {
+            // If the user is already banned then let the mod know
+            return interaction.reply({content: `You silly! ${user} is already banned!`, ephemeral: true});
+        };
 
-                // If user is a bot then deny banning it
-                if(user.user.bot) {
-                    return message.channel.send(`You can't ban no beep boop!`);
-                // If the user tries to ban themselves then deny banning them
-                } else if(user.user.id === message.author.id) {
-                    return message.reply(`You can't ban yourself from the server, silly!`);
-                // If the user is a mod+ then deny banning them
-                } else if(user.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
-                    return message.reply(`You got guts, trying to ban a ${user.roles.highest} member!`);
-                // If the user is the server owner then deny banning them
-                } else if (user.user.id === user.guild.ownerID) {
-                    return message.reply(`I hope you didn't really think you could ban the server owner...`);
-                }
+        let banValue = duration.replace(/\D+/, '').trim(); //assign the ban value
+        let banUnit = duration.replace(/\d+/, '').trim(); //assign the ban unit
+        const now = moment();
+        const banLengthRegex = /(\d+\s*\D+$|^permanent$|^perma$|^perm$|^p{1}$){1}/; //regex for ban time format
 
-                // Reassign the user to be a user role and not a guildMember role
-                user = user.user;
+        // Check if the mod input for a permanent ban
+        if(banUnit.toLowerCase() === "perm") {
+            banValue = 999; // assign value
+            banUnit = `years`; // set unit
+            duration = `an indefinite amount of time`; // set duration for description
+        // If the mod input a duration shorter than 1 hour
+        } else if (banUnit.toLowerCase().includes("min") || banUnit.toLowerCase().includes("sec") || banUnit === "s" || banUnit === "m") {
+            return interaction.reply({content: `Please provide a ban time that is at least 1 hour long.`, ephemeral: true});
+        // Check if the mod provided an accepted format
+        } else if(!duration.match(banLengthRegex) || banValue < 1) {
+            return interaction.reply({content: `Uh oh! It seems like you entered an invalue ban duration! Please use formats such as these for the ban duration: \`6 years\`, \`17d\`, \`permanent\`, \`3 wks\``, ephemeral: true})
+        }
 
-            // If not, find the user by the provided id
-            } else {
+        let unbanDate = now.add(banValue, banUnit); //create the unban date
 
-                // Try to get the user
-                try {
-                    user = await client.users.fetch(newArgs[0]);
-                } catch(e) {
-                    // If unable to get the user, let the mod know
-                    return message.reply(`Uh oh! I wasn't able to find that user!`);
-                }
+        // Make sure the unban date is after the current time
+        if(moment(unbanDate).isAfter(now)) {
+            // If not after the current time, let the mod know how to fix the problem
+            return interaction.reply({content: `Uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!`, ephemeral: true});
+        }
 
-                // Get bans from the server
-                bans = await message.guild.bans.fetch();
+        /* 
+        * Sync the model to the table
+        * Creates a new table if table doesn't exist, otherwise just inserts a new row
+        * id, completed, createdAt, and updatedAt are set by default; DO NOT ADD
+        !!!!
+            Keep force set to false otherwise it will overwrite the table instead of making a new row!
+        !!!!
+        */
+        Models.ban.sync({ force: false }).then(() => {
+            // Add the ban record to the database
+            Models.ban.create({
+                user_id: user.id,
+                guild_id: interaction.guild.id,
+                reason: reason,
+                unban_date: unbanDate,
+                moderator_id: interaction.user.id,
+            })
+            // Let the user know it was added
+            .then((ban) => {
 
-                // Check if user is banned
-                if(bans.has(user.id)) {
-                    // If user is banned then use the mod know
-                    return message.reply(`You silly! ${user} is already banned!`);
-                };
-                
+                // Assign the ban's id
+                banId = ban.id;
 
-                // If user is undefined let the moderator know
-                if(user === undefined) {
-                    return message.reply(`Uh oh! Looks like I wasn't able to find that user, please check the user id and try again or try using a user mention like so: \`@Username\``);
-                }
-            }
+                /* 
+                * Sync the model to the table
+                * Creates a new table if table doesn't exist, otherwise just inserts a new row
+                * id, createdAt, and updatedAt are set by default; DO NOT ADD
+                !!!!
+                    Keep force set to false otherwise it will overwrite the table instead of making a new row!
+                !!!!
+                */
+                Models.warning.sync({ force: false }).then(() => { 
+                    // Create a new warning
+                    Models.warning.create({
+                        user_id: user.id, // add the user's id
+                        type: "Banned", // assign the type of warning
+                        reason: reason, // add the reason for the warning
+                        username: user.username, // add the username
+                        mod_id: interaction.user.id
+                    }).then((warn) => {
 
-            // Check if a reason was given
-            if(newArgs[1] && user !== undefined) {
-                // If a length wasn't given then let the user know it is required
-                if(!newArgs[2]) {
-                    return message.reply(`Uh oh! It seems you forgot to give a length for ther ban, please be sure to provide a ban length for this action!\nExample: \`${prefix}ban ${user}, reason, length\``);
+                        // Assign the warning's id
+                        warnId = warn.id;
 
-                // If both a reason and length were given ban the user and log the action in the database
-                } else {
+                        // Make messages cleared string
+                        msgCleared === "Yes" ? msgCleared = `Yes (Last ${purge} Days)` : msgCleared = `No`;
 
-                    const reason = newArgs[1]; //assign the ban reason
-                    let banLength = newArgs[2]; //assign the ban length
-                    let banValue = banLength.replace(/\D+/, '').trim(); //assign the ban value
-                    let banUnit = banLength.replace(/\d+/, '').trim(); //assign the ban unit
-                    const now = moment();
-                    const banLengthRegex = /(\d+\s*\D+$|^permanent$|^perma$|^perm$|^p{1}$){1}/; //regex for ban time format
-
-                    // Check if the user input for a perma ban
-                    if(banUnit.toLowerCase() === "p" || banUnit.toLowerCase().includes("perm")) {
-                        banValue = 999; // assign value
-                        banUnit = "years"; // set unit
-                        banLength = "an indefinite amount of time"; // set length for description
-                    // If the user input a duration shorter than 1 hour
-                    } else if (banUnit.toLowerCase().includes("min") || banUnit.toLowerCase().includes("sec") || banUnit === "s" || banUnit === "m") {
-                        return message.reply(`Please provide a ban time that is at least 1 hour long.`);
-                    // Check if the user provided an accepted format
-                    } else if(!banLength.match(banLengthRegex)) {
-                        return message.reply(`Uh oh! It seems like you entered an invalue ban duration! Please use formats such as these for the ban duration: \`6 years\`, \`17d\`, \`permanent\`, \`3 wks\``)
-                    }
-
-                    let unbanDate = now.add(banValue, banUnit); //create the unban date
-
-                    // Make sure the unban date is after the current time
-                    if(moment(unbanDate).isAfter(now)) {
-                        // If not after the current time, let the user know how to fix the problem
-                        return message.reply("Uh oh! Looks like you have an invalid duration! Please try again with a proper unit of time and number duration!");
-                    }
-
-                    
-
-                    /* 
-                    * Sync the model to the table
-                    * Creates a new table if table doesn't exist, otherwise just inserts a new row
-                    * id, completed, createdAt, and updatedAt are set by default; DO NOT ADD
-                    !!!!
-                        Keep force set to false otherwise it will overwrite the table instead of making a new row!
-                    !!!!
-                    */
-                    Models.ban.sync({ force: false }).then(() => {
-                        // Add the ban record to the database
-                        Models.ban.create({
-                            user_id: user.id,
-                            guild_id: message.guild.id,
-                            reason: reason,
-                            unban_date: unbanDate,
-                            moderator_id: message.author.id,
-                        })
-                        // Let the user know it was added
-                        .then(() => {
-                            // Create the banned embed
-                            const banEmbed = {
-                                color: 0xFF0000,
-                                title: `User Was Banned!`,
-                                author: {
-                                    name: `${user.username}#${user.discriminator}`,
-                                    icon_url: user.displayAvatarURL({dynamic:true}),
+                        // Create the banned embed
+                        const banEmbed = {
+                            color: 0xFF0000,
+                            title: `User Was Banned!`,
+                            author: {
+                                name: `${user.username}#${user.discriminator}`,
+                                icon_url: user.displayAvatarURL({dynamic:true}),
+                            },
+                            description: `${user} was banned from the server by ${interaction.member} for ${duration}!`,
+                            fields: [
+                                {
+                                    name: `User Banned`,
+                                    value: `${user}`,
+                                    inline: true,
                                 },
-                                description: `${user} was banned from the server by ${message.author} for ${banLength}!`,
-                                fields: [
-                                    {
-                                        name: `User Banned`,
-                                        value: `${user}`,
-                                        inline: true,
-                                    },
-                                    {
-                                        name: `Banned By`,
-                                        value: `${message.author}`,
-                                        inline: true,
-                                    },
-                                    {
-                                        name: `Unban Date`,
-                                        value: `${Discord.Formatters.time(unbanDate.toDate(), "f")} (${Discord.Formatters.time(unbanDate.toDate(), "R")})`,
-                                        inline: true,
-                                    },
-                                    {
-                                        name: `Messages Cleared`,
-                                        value: `${msgCleared}`,
-                                        inline: true,
-                                    },
-                                    {
-                                        name: `Reason`,
-                                        value: `${reason}`,
-                                        inline: false,
-                                    }
-                                ],
-                                timestamp: new Date(),
-                            };
+                                {
+                                    name: `Banned By`,
+                                    value: `${interaction.member}`,
+                                    inline: true,
+                                },
+                                {
+                                    name: `Unban Date`,
+                                    value: `${Discord.time(unbanDate.toDate(), "R")}`,
+                                    inline: true,
+                                },
+                                {
+                                    name: `Messages Cleared`,
+                                    value: `${msgCleared}`,
+                                    inline: true,
+                                },
+                                {
+                                    name: `Ban Id`,
+                                    value: `${banId}`,
+                                    inline: true,
+                                },
+                                {
+                                    name: `Warning Id`,
+                                    value: `${warnId}`,
+                                    inline: true,
+                                },
+                                {
+                                    name: `Reason`,
+                                    value: `${reason}`,
+                                    inline: false,
+                                }
+                            ],
+                            timestamp: new Date(),
+                        };
 
-                            /* 
-                            * Sync the model to the table
-                            * Creates a new table if table doesn't exist, otherwise just inserts a new row
-                            * id, createdAt, and updatedAt are set by default; DO NOT ADD
-                            !!!!
-                                Keep force set to false otherwise it will overwrite the table instead of making a new row!
-                            !!!!
-                            */
-                            Models.warning.sync({ force: false }).then(() => { 
-                                // See if the warning id exists already
-                                Models.warning.findOne({where: {warning_id: warnId}, raw:true}).then((warning => {
-                                    // If the warning id matches the newly generated one, generate a new one
-                                    if(warning) {
-                                        warnId = shortid.generate();
-                                    };
-                                })).then(() => { 
-                                    // Create a new warning
-                                    Models.warning.create({
-                                        warning_id: warnId, // add the warning Id
-                                        user_id: user.id, // add the user's id
-                                        type: "Banned", // assign the type of warning
-                                        reason: reason, // add the reason for the warning
-                                        username: user.username, // add the username
-                                        mod_id: message.author.id
-                                    }).then(() => {
+                        // Convert the days to seconds
+                        purge = purge * 24 * 60 * 60;
 
-                                        // Ban the user from the server
-                                        message.guild.members.ban(user.id, {days: msgDel, reason: reason}).then(() => {
-                                            // Send the embed to the action log channel
-                                            actionLog.send({embeds: [banEmbed]});
-                                            message.channel.send(`${user.username} was successfully banned for ${banLength}!`)
-                                        });
-                                    });
-                                });
-                            });
+                        // Ban the user from the server
+                        interaction.guild.members.ban(user.id, {days: purge, reason: reason}).then(() => {
+                            // Send the embed to the action log channel
+                            actionLog.send({embeds: [banEmbed]});
+                            interaction.reply({content: `${user.username} was successfully banned for ${duration}!`, ephemeral: true})
                         });
                     });
-                }
-
-            // If no reason was given let the user know it is required
-            } else {
-                // Check if a user mention was used
-                if(message.mentions.users.first()) {
-                    // Let user know a reason is needed
-                    message.reply(`Uh oh! It seems you forgot to give a reason for banning, please be sure to provide a reason for this action!\nExample: \`${prefix}ban @${user.tag}, reason, length\``);
-
-                // If no user mention was given then just output the id they provided
-                } else {
-                    // Let user know a reason is needed
-                    message.reply(`Uh oh! It seems you forgot to give a reason for banning, please be sure to provide a reason for this action!\nExample: \`${prefix}ban ${user}, reason, length\``);
-                }
-            }
-        }
+                });
+            });
+        });
     },
     unbanHandler: function(a, m, c) {
         const args = a, message = m, client = c;

@@ -235,7 +235,6 @@ module.exports = {
 
     // Function to take data from modal to update a setting
     updateSetting: function(interaction) {
-        return console.log(interaction.fields.getTextInputValue(`settingVal`))
         // Find the setting
         Models.setting.findOne({where: {name: interaction.customId}}).then((item) => {
             // If the setting was found
@@ -243,8 +242,9 @@ module.exports = {
 
                 // Update the setting's value
                 Models.setting.update({value: interaction.fields.getTextInputValue(`settingVal`)}, {where: {id: item.get(`id`)}}).then(() => {
+
                     // Let the member know that the setting has been updated
-                    interaction.reply({content: `Successfully changed the value for ${interaction.customId}!`});
+                    interaction.reply({content: `${interaction.member}, I have successfully changed the value for ${interaction.customId}!`});
                 });
 
             // If the setting wasn't found let the member know
@@ -373,7 +373,7 @@ module.exports = {
             // Loop through each user that needs to be unbanned
             bannedUsers.forEach((item) => {
                 // Find the server the user was banned from
-                const guild = client.guilds.cache.get(item.guild_id);
+                const guild = client.guilds.cache.get(item.guildId);
                 logChannel = guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //action log channel
 
                 // Unban the user with a time up reason
