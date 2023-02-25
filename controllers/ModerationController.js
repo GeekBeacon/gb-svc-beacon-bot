@@ -1,8 +1,6 @@
 const moment = require("moment");
 const Models = require("../models/AllModels");
-const shortid = require('shortid');
 const Discord = require('discord.js');
-const pagination = require(`discord.js-pagination`);
 
 module.exports = {
     deleteHandler: function(m, c, tl, deleteSet) {

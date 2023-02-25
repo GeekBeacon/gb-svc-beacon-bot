@@ -21,11 +21,11 @@ module.exports = {
         const joinEmbed = {
             color: 0x886CE4, //purple
             title: `New Member`,
-            description: `<@${member.user.id}> has just joined the server!\n*${member.guild.name} now has ${member.guild.memberCount} total members!*`,
+            description: `${member} has just joined the server!\n*${member.guild.name} now has ${member.guild.memberCount} total members!*`,
             fields: [
                 {
                     name: `User`,
-                    value: `${member.user.tag}`,
+                    value: `${member.displayName}`,
                     inline: true,
                 },
                 {
@@ -35,7 +35,7 @@ module.exports = {
                 },
                 {
                     name: `Registered`,
-                    value: `${Discord.time(member.user.createdAt, "f")} (${Discord.time(member.user.createdAt, "R")})`,
+                    value: `${Discord.time(member.user.createdAt, "R")}`,
                     inline: false,
                 },
             ],

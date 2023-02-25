@@ -21,16 +21,21 @@ module.exports = {
         const leaveEmbed = {
             color: 0xff5500,
             title: `Member Left`,
-            description: `<@${member.user.id}> has left the server\n*${member.guild.name} now has ${member.guild.memberCount} members*`,
+            description: `${member} has left the server\n*${member.guild.name} now has ${member.guild.memberCount} members*`,
             fields: [
                 {
                     name: `User`,
-                    value: `${member.user.tag}`,
+                    value: `${member.displayName}`,
                     inline: true,
                 },
                 {
-                    name: `Joined`,
-                    value: `${Discord.Formatters.time(joinedDate, "f")} (${Discord.Formatters.time(joinedDate, "R")})`,
+                    name: `Account Made`,
+                    value: `${Discord.time(member.user.createdAt, "R")}`,
+                    inline: true,
+                },
+                {
+                    name: `Joined Server`,
+                    value: `${Discord.time(joinedDate, "R")}`,
                     inline: true,
                 },
                 {
