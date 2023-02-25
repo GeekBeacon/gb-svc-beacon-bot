@@ -21,6 +21,10 @@ module.exports = {
         const joinEmbed = {
             color: 0x886CE4, //purple
             title: `New Member`,
+            author: {
+                name: `${member.user.tag}`,
+                icon_url: `${member.displayAvatarURL({dynamic: true})}`
+            },
             description: `${member} has just joined the server!\n*${member.guild.name} now has ${member.guild.memberCount} total members!*`,
             fields: [
                 {

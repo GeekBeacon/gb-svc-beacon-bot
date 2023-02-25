@@ -21,6 +21,10 @@ module.exports = {
         const leaveEmbed = {
             color: 0xff5500,
             title: `Member Left`,
+            author: {
+                name: `${member.user.tag}`,
+                icon_url: `${member.displayAvatarURL({dynamic: true})}`
+            },
             description: `${member} has left the server\n*${member.guild.name} now has ${member.guild.memberCount} members*`,
             fields: [
                 {

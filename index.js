@@ -10,11 +10,10 @@ const joinController = require("./controllers/JoinController");
 const leaveController = require("./controllers/LeaveController");
 const databaseController = require("./controllers/DatabaseController");
 const moderationController = require("./controllers/ModerationController");
-const channelController = require("./controllers/ChannelController");
+const threadController = require("./controllers/ThreadController");
 const voiceController = require("./controllers/VoiceController");
 const reactionsController = require("./controllers/ReactionsController");
 const Models = require("./models/AllModels");
-const DatabaseController = require('./controllers/DatabaseController');
 
 // Instantiate a new Discord client and collection
 const client = new Discord.Client({
@@ -235,16 +234,6 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
     }
 });
 
-// Listen for channels to be created
-client.on("channelCreate", channel => {
-    // Call the function from /controllers/ChannelController to handle the message
-    try {
-        channelController.createHandler(channel);
-    } catch (e) {
-        console.error(e);
-    };
-});
-
 // Listen for voice state updates
 client.on("voiceStateUpdate", (oldState, newState) => {
     // Call the channel left handler from the voice controller
@@ -338,11 +327,22 @@ client.on("interactionCreate", async interaction => {
         } else if (interaction.isModalSubmit()) {
 
             // Call the updateSetting function from the DatabaseController
-            DatabaseController.updateSetting(interaction);
+            databaseController.updateSetting(interaction);
         }
 
     // If not an interaction format we can handle
     } else {
+        return;
+    }
+});
+
+// Listen for a thread/post to be deleted
+client.on("threadDelete", async (oldThread, newThread) => {
+
+     // Attempt to run the deleteHandler method
+    try {
+        threadController.deleteHandler(oldThread, newThread);
+    } catch (e) {
         return;
     }
 });
