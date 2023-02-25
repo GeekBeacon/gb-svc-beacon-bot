@@ -1,4 +1,3 @@
-const Announcement = require("./Announcement");
 const AutoRole = require("./AutoRole");
 const Ban = require("./Ban");
 const BannedUrl = require("./BannedUrl");
@@ -14,7 +13,6 @@ const User = require("./User");
 const Warning = require("./Warning");
 
 module.exports = {
-    announcement : Announcement,
     autorole : AutoRole,
     ban : Ban,
     bannedurl : BannedUrl,

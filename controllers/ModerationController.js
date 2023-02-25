@@ -87,7 +87,7 @@ module.exports = {
                     })
                 }
             } else {
-                // Call the addToDB function to update or create the user with 1 point value
+                // Call the removeFromDB function to update or create the user with 1 point value
                 removeFromDB(message.author.id, 1);
             }
 
@@ -581,138 +581,103 @@ module.exports = {
             });
         });
     },
-    unbanHandler: function(a, m, c) {
-        const args = a, message = m, client = c;
-        const prefix = client.settings.get("prefix");
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
-        let user; // user var
+    unbanHandler: async function(interaction) {
+        const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
+        const user = await interaction.client.users.fetch(interaction.options.getUser(`user`).id);
+        const reason = interaction.options.getString(`reason`);
 
-        // Check if the first arg is a number
-        if(isNaN(args[0])) {
-            // Attempt to fix the arg for the user by removing the comma if the moderator forgot to add a space after the id and before the comma
-            args[0] = args[0].replace(",", "");
-        }
-
-        // Make sure the first arg was a user id
-        if(isNaN(args[0])) {
-            // Let user know they need to provide a valid user id
-            message.reply(`Uh oh! Looks like you gave an invalid user id. Make sure that you are providing a valid user id!`);
-        } else {
-            let userId = args[0];
-
-            // Attempt to fetch the user
-            client.users.fetch(userId).then((u) => {
-                user = u; //assign user
-
-                // If a reason was given then unban the user and log the action to the database
-                if(args[1]) {
-                    let reasonArr = args;
-                    let reason;
-                    reasonArr.shift(); //remove the first arg (user id)
-                    reason = reasonArr.join(" "); //turn the array into a string
-                    reason = reason.replace(',', ''); // remove the first comma from the string
-                    reason = reason.trim(); // remove any excess whitespace
-
-                    // Fetch the ban from the server
-                    message.guild.bans.fetch(user).then(() => {
+        // Fetch the ban from the server
+        interaction.guild.bans.fetch(user).then(() => {
                         
-                        // Search the db for the ban
-                        Models.ban.findOne({where: {user_id: userId, completed: 0}, raw:true}).then((data) => {
+            // Search the db for the ban
+            Models.ban.findOne({where: {user_id: user.id, completed: 0}}).then((data) => {
 
-                            // Make sure data was retrieved
-                            if(data) {
-                                const banDate = moment(data.createdAt); //assign ban date
-                                const banReason = data.reason; //assign ban reason
-                                /* 
-                                * Sync the model to the table
-                                * Creates a new table if table doesn't exist, otherwise just inserts a new row
-                                * id, createdAt, and updatedAt are set by default; DO NOT ADD
-                                !!!!
-                                    Keep force set to false otherwise it will overwrite the table instead of making a new row!
-                                !!!!
-                                */
-                                Models.unban.sync({ force: false }).then(() => {
+                // Make sure data was retrieved
+                if(data) {
+                    const banDate = data.get(`createdAt`); //assign ban date
+                    const banReason = data.get(`reason`); //assign ban reason
+                    /* 
+                    * Sync the model to the table
+                    * Creates a new table if table doesn't exist, otherwise just inserts a new row
+                    * id, createdAt, and updatedAt are set by default; DO NOT ADD
+                    !!!!
+                        Keep force set to false otherwise it will overwrite the table instead of making a new row!
+                    !!!!
+                    */
+                    Models.unban.sync({ force: false }).then(() => {
 
-                                    // Add the unban record to the database
-                                    Models.unban.create({
-                                        user_id: userId,
-                                        reason: reason,
-                                        type: "Manual",
-                                        moderator_id: message.author.id,
-                                    })
-                                    // Let the user know it was added
-                                    .then(() => {
+                        // Add the unban record to the database
+                        Models.unban.create({
+                            user_id: user.id,
+                            reason: reason,
+                            type: "Manual",
+                            moderator_id: interaction.user.id,
+                        })
+                        // Let the user know it was added
+                        .then(() => {
 
-                                        // Create the unban embed
-                                        const unbanEmbed = {
-                                            color: 0xFF5500,
-                                            title: `User Was Unbanned!`,
-                                            author: {
-                                                name: `${user.username}#${user.discriminator}`,
-                                                icon_url: user.displayAvatarURL({dynamic:true}),
-                                            },
-                                            description: `${user} was unbanned from the server by ${message.author}`,
-                                            fields: [
-                                                {
-                                                    name: `User Unbanned`,
-                                                    value: `${user}`,
-                                                    inline: true,
-                                                },
-                                                {
-                                                    name: `Unbanned By`,
-                                                    value: `${message.author}`,
-                                                    inline: true,
-                                                },
-                                                {
-                                                    name: `Unban Reason`,
-                                                    value: `${reason}`,
-                                                    inline: false,
-                                                },
-                                                {
-                                                    name: `Ban Date`,
-                                                    value: `${Discord.Formatters.time(banDate.toDate(), "f")} (${Discord.Formatters.time(banDate.toDate(), "R")})`,
-                                                    inline: false,
-                                                },
-                                                {
-                                                    name: `Ban Reason`,
-                                                    value: `${banReason}`,
-                                                    inline: false,
-                                                }
-                                            ],
-                                            timestamp: new Date(),
-                                        };
-                                        // Unban the user from the server
-                                        message.guild.members.unban(userId).then(() => {
+                            // Create the unban embed
+                            const unbanEmbed = {
+                                color: 0xFF5500,
+                                title: `User Was Unbanned!`,
+                                author: {
+                                    name: `${user.username}#${user.discriminator}`,
+                                    icon_url: `${user.displayAvatarURL({dynamic:true})}`,
+                                },
+                                description: `${user} was unbanned from the server by ${interaction.member}`,
+                                fields: [
+                                    {
+                                        name: `User Unbanned`,
+                                        value: `${user}`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `Unbanned By`,
+                                        value: `${interaction.member}`,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: `Unban Reason`,
+                                        value: `${reason}`,
+                                        inline: false,
+                                    },
+                                    {
+                                        name: `Ban Date`,
+                                        value: `${Discord.time(banDate, "R")}`,
+                                        inline: false,
+                                    },
+                                    {
+                                        name: `Ban Reason`,
+                                        value: `${banReason}`,
+                                        inline: false,
+                                    }
+                                ],
+                                timestamp: new Date(),
+                            };
+                            // Unban the user from the server
+                            interaction.guild.members.unban(user.id).then(() => {
 
-                                            // Update the completed field for the ban
-                                            Models.ban.update({completed: 1}, {where: {user_id: userId}});
+                                // Update the completed field for the ban
+                                Models.ban.update({completed: 1}, {where: {user_id: user.id}});
 
-                                            // Send the embed to the action log channel
-                                            actionLog.send({embeds: [unbanEmbed]});
+                                // Send the embed to the action log channel
+                                actionLog.send({embeds: [unbanEmbed]});
 
-                                            // Reply with a message
-                                            message.channel.send(`${user.username} was successfully unbanned!`)
-                                        });
-                                    });
-                                });
-                            } else {
-                                // If no data was found in the db
-                                message.channel.send(`Uh oh, it looks like there is no information on this ban in the database!`)
-                            }
+                                // Reply with a message
+                                interaction.reply({content: `${user.username} was successfully unbanned!`});
+                            });
                         });
-                    }).catch((e) => {
-                        // If no ban was found for that user
-                        return message.reply(`You silly! ${user} isn't banned!`)
                     });
                 } else {
-                    // Let user know a reason is needed
-                    message.reply(`Uh oh! It seems you forgot to give a reason for unbanning, please be sure to provide a reason for this action!\nExample: \`${prefix}unban ${userId}, reason\``);
-                };
-            }).catch((e) => {
-                // Let the user know there was no user with the given id
-                return message.reply(`Uh oh! Looks like there is no user with the id \`${userId}\``);
+                    // If no data was found in the db
+                    interaction.reply({content: `Uh oh, it looks like there is no information on this ban in the database!`, ephemeral: true})
+                }
             });
-        }
+        }).catch((e) => {
+            // If no ban was found for that user
+            return interaction.reply({content: `You silly! ${user} isn't banned!`, ephemeral: true})
+        });
+        
     },
     warnHandler: function(interaction) {
         const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
@@ -1296,22 +1261,22 @@ module.exports = {
                 })
         });
     },
-    listBans: function(message, args, client) {
-        const prefix = client.settings.get("prefix");
+    listBans: function(interaction) {
         // Get the action log channel
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); 
+        const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name"))));
+        const subcommand = interaction.options.getSubcommand(); //get the subcommand
 
-        // If no args were given, process to list 10 most recent bans
-        if(!args.length) {
+        // If the recent subcommand was given
+        if(subcommand === "recent") {
             // Create embed with basic fields
-            const bansEmbed = new Discord.MessageEmbed()
+            const bansEmbed = new Discord.EmbedBuilder()
                 .setColor(`#33ccff`)
-                .setTitle(`10 Latest Bans`)
-                .setDescription(`This is basic information on the last 10 bans, for more detailed information pass in the ban id as an argument with this command.\n**Example:** \`${prefix}bans 1\``)
+                .setTitle(`Recent Bans`)
+                .setDescription(`This is basic information on the last 10 bans, for more detailed information pass in the ban's id with the \`\`specific\`\` subcommand.\n**Example:** \`/bans specific:1\``)
                 .setTimestamp()
 
             // Get 10 bans ordering them by createdAt date
-            Models.ban.findAll({limit:10, order:[["createdAt", "DESC"]], raw:true}).then(async (data) => {
+            Models.ban.findAll({limit:10, order:[["createdAt", "DESC"]]}).then(async (data) => {
                 // Make sure there is data
                 if(data) {
                     // Loop through the data
@@ -1319,106 +1284,115 @@ module.exports = {
                         // Assign the current ban to a var
                         const ban = data[i];
                         // Find the user
-                        const user = await client.users.fetch(ban.user_id);
+                        const user = await interaction.client.users.fetch(ban.get(`user_id`));
                         let banned;
 
                         // Assign the value of banned or not based on the boolean
-                        if(ban.completed === 1) {
+                        if(ban.get(`completed`) === 1) {
                             banned = `No`;
                         } else {
                             banned = `Yes`;
                         };
 
                         // Add the data for the banned user to the embed
-                        bansEmbed.addField(`\u200B`,`**ID:** ${ban.id}\n**User:** ${user.tag}\n**Still Banned:** ${banned}`,false);
+                        bansEmbed.addFields({ name: `\u200B`, value: `**ID:** ${ban.get("id")}\n**User:** ${user.tag}\n**Still Banned:** ${banned}`, inline: false});
                     }
                 }
             }).then(() => {
-                // Send the embed to the mod log
-                actionLog.send({embeds: [bansEmbed]});
-                // Let the user know the information was sent to the action log channel
-                message.reply(`I've sent the data to the ${actionLog} channel`);
+                // If the mod is in the mod log, reply with the embed
+                if(interaction.channel.id === actionLog.id) {
+                    interaction.reply({embeds: [bansEmbed]});
+
+                // If the mod is not in the mod log, let them know to check it
+                } else {
+                    // Send the embed to the mod log
+                    actionLog.send({embeds: [bansEmbed]});
+                    // Let the user know the information was sent to the action log channel
+                    interaction.reply({content: `I've sent the data to the ${actionLog} channel`, ephemeral: true});
+                }
             })
         // If an argument was given
         } else {
-            // Make sure the id is a valid number
-            if(isNaN(args)) {
-                // If an invalid number let the user know
-                return message.channel.send(`Uh oh! It seems you gave me an invalid id to check for!`)
-            } else {
-                // Search the database for the requested ban id
-                Models.ban.findOne({where:{id: args[0]}, raw: true}).then(async (ban) => {
-                    // Make sure there is data for the ban
-                    if(ban) {
-                        // Find the user and mod
-                        const user = await client.users.fetch(ban.user_id);
-                        const mod = await client.users.fetch(ban.moderator_id);
-                        let completed;
 
-                        // Assign the value for completed based on the boolean
-                        if(ban.completed === 1) {
-                            completed = "Yes";
-                        } else {
-                            completed = "No";
-                        }
+            // Search the database for the requested ban id
+            Models.ban.findOne({where:{id: interaction.options.getInteger(`id`)}}).then(async (ban) => {
+                // Make sure there is data for the ban
+                if(ban) {
+                    // Find the user and mod
+                    const user = await interaction.client.users.fetch(ban.get(`user_id`));
+                    const mod = await interaction.client.users.fetch(ban.get(`moderator_id`));
+                    let completed;
 
-                        // Create the embed
-                        const banEmbed = {
-                            color: 0x33ccff,
-                            title: `Ban #${args[0]}`,
-                            author: {
-                                name: user.tag,
-                                icon_url: user.displayAvatarURL({dynamic: true}),
+                    // Assign the value for completed based on the boolean
+                    if(ban.get(`completed`) === 1) {
+                        completed = "Yes";
+                    } else {
+                        completed = "No";
+                    }
+
+                    // Create the embed
+                    const banEmbed = {
+                        color: 0x33ccff,
+                        title: `Ban #${ban.get(`id`)}`,
+                        author: {
+                            name: `${user.tag}`,
+                            icon_url: `${user.displayAvatarURL({dynamic: true})}`,
+                        },
+                        fields: [
+                            {
+                                name: `Id`,
+                                value: `${ban.get("id")}`,
+                                inline: true
                             },
-                            fields: [
-                                {
-                                    name: `ID`,
-                                    value: args[0],
-                                    inline: true
-                                },
-                                {
-                                    name: `User`,
-                                    value: user,
-                                    inline: true
-                                },
-                                {
-                                    name: `Completed`,
-                                    value: completed,
-                                    inline: true
-                                },
-                                {
-                                    name: `Moderator`,
-                                    value: mod,
-                                    inline: true
-                                },
-                                {
-                                    name: `Date Banned`,
-                                    value: `${Discord.Formatters.time(ban.createdAt, "f")} (${Discord.Formatters.time(ban.createdAt, "R")})`,
-                                    inline: true
-                                },
-                                {
-                                    name: `Unban Date`,
-                                    value: `${Discord.Formatters.time(ban.unban_date, "f")} (${Discord.Formatters.time(ban.unban_date, "R")})`,
-                                    inline: true
-                                },
-                                {
-                                    name: `Reason`,
-                                    value: ban.reason,
-                                    inline: false
-                                }
-                            ],
-                            timestamp: new Date()
-                        }
+                            {
+                                name: `User`,
+                                value: `${user}`,
+                                inline: true
+                            },
+                            {
+                                name: `Completed`,
+                                value: `${completed}`,
+                                inline: true
+                            },
+                            {
+                                name: `Moderator`,
+                                value: `${mod}`,
+                                inline: true
+                            },
+                            {
+                                name: `Date Banned`,
+                                value: `${Discord.time(ban.createdAt, "R")}`,
+                                inline: true
+                            },
+                            {
+                                name: `Unban Date`,
+                                value: `${Discord.time(ban.unban_date, "R")}`,
+                                inline: true
+                            },
+                            {
+                                name: `Reason`,
+                                value: `${ban.get("reason")}`,
+                                inline: false
+                            }
+                        ],
+                        timestamp: new Date()
+                    }
 
+                    // If the mod is in the mod log channel, reply with the embed
+                    if(interaction.channel.id === actionLog.id) {
+                        interaction.reply({embeds: [banEmbed]});
+
+                    // If the mod isn't in the mod log, let them know to check it
+                    } else {
                         // Send the embed to the action log channel
                         actionLog.send({embeds: [banEmbed]});
                         // Let the user know the information was sent to the action log channel
-                        message.reply(`I've sent the data to the ${actionLog} channel`);
+                        interaction.reply({content: `I've sent the data to the ${actionLog} channel`, ephemeral: true});
                     }
-                }).catch((e) => {
-                    message.channel.send(`Uh oh! It seems the id you provided isn't in the database!`);
-                })
-            }
+                }
+            }).catch((e) => {
+                interaction.reply({content: `Uh oh! It seems the id you provided isn't in the database!`, ephemeral: true});
+            })
         }
     },
     roleHandler: function(interaction) {
