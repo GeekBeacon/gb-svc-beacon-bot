@@ -1,6 +1,7 @@
 const moment = require("moment");
 const Models = require("../models/AllModels");
 const Discord = require('discord.js');
+const TriggersController = require("./TriggersController");
 
 module.exports = {
     deleteHandler: function(m, c, tl, deleteSet) {
@@ -197,16 +198,20 @@ module.exports = {
             }
 
     },
-    editHandler: function(o, n, c, tl, bu, deleteSet) {
-        const oldMsg = o, newMsg = n, client = c, triggerList = tl, bannedUrls = bu; // create vars for parameter values
+    editHandler: function(o, n, c, deleteSet) {
+        const oldMsg = o, newMsg = n, client = c; // create vars for parameter values
+        const triggerList = client.triggers;
+        const bannedUrls = client.blacklist;
         const superLog = newMsg.guild.channels.cache.find((c => c.name.includes(client.settings.get("super_log_channel_name")))); //super log channel
         const modLog = newMsg.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
+        
         // Create author var
         const author = client.users.cache.get(newMsg.author.id);
         let bannedUrlArr = [];
+        let triggerArr = [];
 
         // Create embed and attach the shared fields
-        let editEmbed = new Discord.MessageEmbed()
+        let editEmbed = new Discord.EmbedBuilder()
         .setColor(0x00ff00)
         .setTimestamp();
 
@@ -221,7 +226,7 @@ module.exports = {
             } else {
                 // Add the editEmbed data
                 editEmbed.setTitle(`Message was edited in ${newMsg.channel.name}`)
-                .setAuthor(`${author.username}#${author.discriminator}`, author.displayAvatarURL({dynamic:true}))
+                .setAuthor({name: `${author.username}#${author.discriminator}`, iconURL: author.displayAvatarURL({dynamic:true})})
                 .setDescription(`${newMsg.author} has edited a message in ${newMsg.channel} | [Jump To Message](${newMsg.url})`)
                 .addFields(
                     {
@@ -237,7 +242,7 @@ module.exports = {
         } else {
             // Add the editEmbed data
             editEmbed.setTitle(`Message was edited in ${newMsg.channel.name}`)
-            .setAuthor(`${author.username}#${author.discriminator}`, author.displayAvatarURL({dynamic:true}))
+            .setAuthor({name: `${author.username}#${author.discriminator}`, iconURL: author.displayAvatarURL({dynamic:true})})
             .setDescription(`${newMsg.author} has edited a message in ${newMsg.channel} | [Jump To Message](${newMsg.url})`)
             .addFields(
                 {
@@ -257,13 +262,21 @@ module.exports = {
         } else {
             // Send the edit embed to the mod log channel
             modLog.send({embeds: [editEmbed]}).then(() => {
-                // Loop through the bannedUrl list
-                bannedUrls.list.forEach((domain) => {
+
+                // Loop through the bannedUrl collection
+                bannedUrls.forEach((domain) => {
                     // Add each domain to the bannedUrlArr var
                     bannedUrlArr.push(domain);
                 });
 
+                // Loop through the triggerList collection
+                triggerList.forEach((value, trigger) => {
+                    // Add each trigger to the triggerArr var
+                    triggerArr.push(trigger);
+                });
+
                 if (newMsg.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/)) {
+                    // Get the excluded roles
                     const url_role_whitelist = client.settings.get("url_role_whitelist").split(",");
                     // If user has an excluded role then ignore
                     if(newMsg.member.roles.cache.some(r => url_role_whitelist.includes(r.id))) {
@@ -278,8 +291,29 @@ module.exports = {
                     } else {
                         const regexMatch = newMsg.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/);
                         // If not then call the handleUrl function from the ModerationController file
-                        this.handleUrl(newMsg, regexMatch, deleteSet);
+                        this.handleUrl(newMsg, client, regexMatch, deleteSet);
                     };
+                } else {
+                    // Get the excluded channel names
+                    const excludedChannels = client.settings.get("excluded_channels").split(",");
+
+                    // If the edit is in en excluded channel
+                    if(excludedChannels.some(c => newMsg.channel.name.includes(c))) {
+                        return;
+
+                    } else {
+                        // If there is no trigger then ignore
+                        if(!triggerArr.some(trigger => newMsg.content.toLowerCase().match(`\\b${trigger}\\b`))) {
+                            return;
+                        // If there is a trigger than handle it
+                        } else {
+
+                            // Store the trigger words
+                            const triggers = triggerArr.filter((trig) => newMsg.content.toLowerCase().match(`\\b(${trig})\\b`));
+
+                            TriggersController.triggerHit(newMsg, triggers, client);
+                        }
+                    }
                 }
             });
         }

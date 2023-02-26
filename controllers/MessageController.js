@@ -84,7 +84,7 @@ module.exports = {
                 return;
             } 
             // Store the trigger words
-            let triggers = triggerArr.filter((trig) => message.content.toLowerCase().match(`\\b(${trig})\\b`));
+            const triggers = triggerArr.filter((trig) => message.content.toLowerCase().match(`\\b(${trig})\\b`));
 
             // Call the triggerHit function from the TriggersController file
             TriggersController.triggerHit(message, triggers, client);

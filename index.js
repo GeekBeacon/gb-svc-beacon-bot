@@ -207,7 +207,7 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
                 * Making this ignore bot messages prevent infinite loops or crashes.
                 */
                 if(fullMsg.author.bot === false) {
-                    moderationController.editHandler(oldMsg, fullMsg, client, triggerList, bannedUrls, deleteSet);
+                    moderationController.editHandler(oldMsg, fullMsg, client, deleteSet);
 
                 // If the message is from a bot, ignore it
                 } else {
@@ -222,7 +222,7 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
             * Making this ignore bot messages prevent infinite loops or crashes.
             */
             if(newMsg.author.bot === false) {
-                moderationController.editHandler(oldMsg, newMsg, client, triggerList, bannedUrls, deleteSet);
+                moderationController.editHandler(oldMsg, newMsg, client, deleteSet);
 
             // If the message is from a bot, ignore it
             } else {

@@ -1,13 +1,17 @@
 // Import required files
 const Models = require("../models/AllModels");
+const Discord = require(`discord.js`);
 
 // Create a new module export
 module.exports = {
 
     givePoints: function(message, client) {
         const thxRegex = /\b(thanks*|thx*|ty*|thank\s*you*)\b/
+
+
         // Check if the message was a reply
-        if(message.reference) {
+        if(message.type === Discord.MessageType.Reply) {
+
             // Make sure the post is from the same guild (not an automated message when following channels in other servers)
             if(message.reference.guildId === message.guildId) {
                 // Get the data about the reference
@@ -26,11 +30,19 @@ module.exports = {
                 })
             }
         } else {
+
+            // Ignore thread creation to avoid giving an extra point since it also counts the thread starter message
+            if(message.type === Discord.MessageType.ThreadCreated) return;
+
+
             // Call the addToDB function to update or create the user with 1 point value
             addToDB(message.author.id, 1);
         }
 
         function addToDB(uid, pval) {
+
+
+
             /* 
             * Sync the model to the table
             * Creates a new table if table doesn't exist, otherwise just inserts a new row
