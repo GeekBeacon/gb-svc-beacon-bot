@@ -215,8 +215,8 @@ module.exports = {
         .setColor(0x00ff00)
         .setTimestamp();
 
-        // If pinned message then ignore
-        if(oldMsg.pinned !== newMsg.pinned) {
+        // If pinned message or thread created then ignore
+        if(oldMsg.pinned !== newMsg.pinned || oldMsg.hasThread !== newMsg.hasThread) {
             return;
         // If the message contains an embed
         } else if(newMsg.embeds.length) {
@@ -443,8 +443,16 @@ module.exports = {
         const superRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("super_role_id"));
         const adminRole = interaction.guild.roles.cache.find(role => role.id === interaction.client.settings.get("admin_role_id"));
 
-        // Set msgCleared if the mod provided a number > 0
-        if(purge > 0) msgCleared = "Yes"; 
+        // If the mod provided a purge amount
+        if(purge) {
+            // Set msgCleared if the mod provided a number > 0
+            if(purge > 0) msgCleared = "Yes"; 
+
+        // If no purge amount was given, set the amount to 0
+        } else {
+            purge = 0;
+        }
+        
 
         // See if the user is a member of the server
         const userAsMember = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(user.id.toString());
@@ -1579,8 +1587,19 @@ module.exports = {
         // Change the member's nickname to the one the moderator gave
         member.setNickname(newNick).then(() => {
 
+            let replyString; //message to reply with
+            
+            // If the member's nickname was reset
+            if(subcommand === `reset`) {
+                replyString = `Done! ${member.user.username}'s nickname has been reset!`;
+
+            // If the member's nickname was changed
+            } else {
+                replyString = `Done! ${member.user.username}'s nickname is now \`${newNick}\`!`;
+            }
+
             // Let the mod know the member's nickname was changed
-            interaction.reply({content: `Done! ${member.user.username}'s nickname is now \`${newNick}\`!`, ephemeral: true});
+            interaction.reply({content: replyString, ephemeral: true});
 
             // Create the embed
             const nickEmbed = {

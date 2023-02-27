@@ -139,7 +139,7 @@ module.exports = {
                 if(subcommand === "add") {
                     // Check if the role has special permissions
                     if(role.permissions.any(interaction.client.settings.get("special_permission_flags").split(","))) {
-                        return interaction.reply({content: `Uh oh! It seems that \`${role}\` has moderator or other special permissions, please check to make sure you have the right role!`, ephemeral: true});
+                        return interaction.reply({content: `Uh oh! It seems that ${role} has moderator or other special permissions, please check to make sure you have the right role!`, allowedMentions: {parse:[]}, ephemeral: true});
                     // If the role doesn't have any special permissions
                     } else {
 

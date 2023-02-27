@@ -33,9 +33,8 @@ module.exports = {
         .addIntegerOption(option => 
             option.setName(`purge`)
             .setDescription(`The number of days to clear messages from the user (0-7).`)
-            .setMinValue(0)
+            .setMinValue(1)
             .setMaxValue(7)
-            .setRequired(true)
         ),
 
     async execute(interaction) {

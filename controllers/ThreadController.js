@@ -45,7 +45,7 @@ module.exports = {
                     },
                     {
                         name: `Parent Channel`,
-                        value: `${oldThread.parent.name}`,
+                        value: `${oldThread.parent}`,
                         inline: true
                     }
                     
