@@ -3,73 +3,44 @@ require('dotenv').config()
 // Import required files
 const Discord = require("discord.js");
 const config = require("./config");
-const { readdirSync, statSync } = require("fs");
-const { join } = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 const messageController = require("./controllers/MessageController");
 const joinController = require("./controllers/JoinController");
 const leaveController = require("./controllers/LeaveController");
 const databaseController = require("./controllers/DatabaseController");
 const moderationController = require("./controllers/ModerationController");
-const channelController = require("./controllers/ChannelController");
+const threadController = require("./controllers/ThreadController");
 const voiceController = require("./controllers/VoiceController");
 const reactionsController = require("./controllers/ReactionsController");
 const Models = require("./models/AllModels");
 
 // Instantiate a new Discord client and collection
 const client = new Discord.Client({
-    intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MEMBERS, Discord.Intents.FLAGS.GUILD_BANS, Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_PRESENCES, Discord.Intents.FLAGS.GUILD_MESSAGES, Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Discord.Intents.FLAGS.GUILD_VOICE_STATES],
-    partials: ["MESSAGE", "CHANNEL", "REACTION"]});
-client.commands = new Discord.Collection(); //create a new collection for commands
+    intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMembers, Discord.GatewayIntentBits.GuildBans, Discord.GatewayIntentBits.MessageContent, Discord.GatewayIntentBits.GuildPresences, Discord.GatewayIntentBits.GuildMessages, Discord.GatewayIntentBits.GuildMessageReactions, Discord.GatewayIntentBits.GuildVoiceStates],
+    partials: [Discord.Partials.Message, Discord.Partials.Channel, Discord.Partials.Reaction]});
 client.settings = new Discord.Collection(); //create a new collection for the settings from the db
+client.commands = new Discord.Collection(); //create a new collection for commands
+client.triggers = new Discord.Collection(); //create a new collection for triggers
+client.blacklist = new Discord.Collection(); //create a new collection for blacklisted domains
 
-// Create a class for Triggers
-class TriggerList {
-    constructor() {
-        this._list = {};
-    }
-    get list() {
-        return this._list;
-    }
-    set list(triggers) {
-        this._list = triggers;
-    }
-}
-// Create a class for banned domains
-class BannedDomainList {
-    constructor() {
-        this._list = [];
-    }
-    get list() {
-        return this._list;
-    }
-    set list(domains) {
-        this._list = domains;
-    }
-}
-// Create a class for emojirole post
-class EmojiRolePosts {
-    constructor() {
-        this._posts = [];
-    }
-    get posts() {
-        return this._data;
-    }
-    set posts(ids) {
-        this._posts = ids;
-    }
-}
+const commandsPath = path.join(__dirname, 'commands'); //get the commands dir
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js')); //get all the command files
 
-// Instantiate classes
-const triggerList = new TriggerList();
-const bannedUrls = new BannedDomainList();
-const emojiRolePosts = new EmojiRolePosts();
+// Loop through the command files
+for (const file of commandFiles) {
+	const filePath = path.join(commandsPath, file);
+	const command = require(filePath);
+	// Set a new item in the Collection with the key as the command name and the value as the exported module
+	if ('data' in command && 'execute' in command) {
+		client.commands.set(command.data.name, command);
+	} else {
+		console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+	}
+}
 
 // Create a new Set for deleted messages
 let deleteSet = new Set();
-
-// Create vars
-let dbCmds;
-let settings;
 
 //console.log(JSON.stringify(require("./config"), null, 4)) //shows the running config
 
@@ -99,40 +70,44 @@ process.on('unhandledRejection', error => console.error('Uncaught Promise Reject
 // Trigger once when the bot comes online
 client.once('ready', async () => {
 
-    // Query the database for all the commands
-    dbCmds = await Models.command.findAll({raw:true});
-    // Create the path for the commands directory
-    const absolutePath = join(__dirname, "./", "commands");
-    // Read command files
-    const commandFiles = readdirRecursive(absolutePath).filter(file => file.endsWith(".js"));
-    // Loop through commands and assign them to the client
-    for (const file of commandFiles) {
-        const cmd = require(file);
-        const extraInfo = dbCmds.find(command => command.name === cmd.name);
-        client.commands.set(cmd.name, {...cmd, ...extraInfo});
-    };
-
     // Create the settings table if it doesn't exist
     Models.setting.sync();
     // Query the settings table for all settings
-    settings = await Models.setting.findAll({raw:true});
-
+    const settings = await Models.setting.findAll({raw:true});
     // Assign each setting to the settings collection
     settings.forEach((item) => {client.settings.set(item.name, item.value)});
 
+    // Create the triggers table if it doesn't exist
+    Models.trigger.sync();
+    // Query the triggers table for all settings
+    const triggers = await Models.trigger.findAll({raw:true});
+    // Assign each trigger to the triggers collection
+    triggers.forEach((item) => {
+        // Create an object for the trigger's values
+        let triggerValues = {"severity":item.severity, "enabled": item.enabled};
+        client.triggers.set(item.trigger, triggerValues);
+    });
+
+    // Create the bannedurls table if it doesn't exist
+    Models.bannedurl.sync();
+    // Query the bannedurls table for all banned domains
+    const bannedurls = await Models.bannedurl.findAll({raw:true});
+    // Assign each bannedurl to the blacklist collection
+    bannedurls.forEach((item) => {client.blacklist.set(item.id, item.url)});
+
     console.log('Bot Online!');
     
-    // Set the status of the bot
-    client.user.setPresence({activities: [{name: `${client.settings.get("prefix")}help`}], status: 'online'});
+    // Set the presence of the bot
+    client.user.setPresence({activities: [{name: `over GeekBeacon`, type: Discord.ActivityType.Watching}], status: `online`});
 
-    // Populate the triggerList, bannedUrls, and emojiRolePosts and check for unbans/unmutes
+    // Call the method to query the database for various data
     try {
-        databaseController.botReconnect(triggerList, bannedUrls, emojiRolePosts);
+        databaseController.botReconnect(client);
     } catch(e) {
         console.error("Error: ", e);
     }
 
-    // Check for unbans/unmutes every minute
+    // Check for unbans every minute
     setInterval(() => {
         try {
             databaseController.databaseCheck(client);
@@ -147,7 +122,7 @@ client.once('ready', async () => {
 client.on('messageCreate', async message => {
     // Call the function from /controllers/MessageController to handle the message
     try {
-        messageController.messageHandler(message, client, triggerList, bannedUrls, deleteSet, dbCmds, emojiRolePosts);
+        messageController.messageHandler(message, client, deleteSet);
     } catch (e) {
         console.error(e);
     };
@@ -198,7 +173,7 @@ client.on("messageDelete", message => {
 
             // Attempt to run the deleteHandler method
             try {
-                moderationController.deleteHandler(message, client, triggerList, deleteSet);
+                moderationController.deleteHandler(message, client, deleteSet);
             } catch (e) {
                 return;
             }
@@ -232,7 +207,7 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
                 * Making this ignore bot messages prevent infinite loops or crashes.
                 */
                 if(fullMsg.author.bot === false) {
-                    moderationController.editHandler(oldMsg, fullMsg, client, triggerList, bannedUrls, deleteSet);
+                    moderationController.editHandler(oldMsg, fullMsg, client, deleteSet);
 
                 // If the message is from a bot, ignore it
                 } else {
@@ -247,7 +222,7 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
             * Making this ignore bot messages prevent infinite loops or crashes.
             */
             if(newMsg.author.bot === false) {
-                moderationController.editHandler(oldMsg, newMsg, client, triggerList, bannedUrls, deleteSet);
+                moderationController.editHandler(oldMsg, newMsg, client, deleteSet);
 
             // If the message is from a bot, ignore it
             } else {
@@ -257,16 +232,6 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
     } catch (e) {
         console.error(e);
     }
-});
-
-// Listen for channels to be created
-client.on("channelCreate", channel => {
-    // Call the function from /controllers/ChannelController to handle the message
-    try {
-        channelController.createHandler(channel);
-    } catch (e) {
-        console.error(e);
-    };
 });
 
 // Listen for voice state updates
@@ -283,7 +248,7 @@ client.on("messageReactionAdd", async (reaction, user) => {
         try {
             await reaction.fetch().then(() => {
                 // Call the reaction add handler from the reactions controller
-                reactionsController.reactionAdd(reaction, user, emojiRolePosts);
+                reactionsController.reactionAdd(reaction, user);
             });
         // Catch the error
         } catch(e) {
@@ -293,7 +258,7 @@ client.on("messageReactionAdd", async (reaction, user) => {
     // If not a partial continue as normal
     } else {
         // Call the reaction add handler from the reactions controller
-        reactionsController.reactionAdd(reaction, user, emojiRolePosts);
+        reactionsController.reactionAdd(reaction, user);
     }
 });
 
@@ -305,7 +270,7 @@ client.on("messageReactionRemove", async (reaction, user) => {
         try {
             await reaction.fetch().then(() => {
                 // Call the reaction remove handler from the reactions controller
-                reactionsController.reactionRemove(reaction, user, emojiRolePosts);
+                reactionsController.reactionRemove(reaction, user);
             });
         // Catch the error
         } catch(e) {
@@ -315,38 +280,72 @@ client.on("messageReactionRemove", async (reaction, user) => {
     // If not a partial continue as normal
     } else {
         // Call the reaction remove handler from the reactions controller
-        reactionsController.reactionRemove(reaction, user, emojiRolePosts);
+        reactionsController.reactionRemove(reaction, user);
     }
 });
 
-// Function to read the given directory recursively
-function readdirRecursive(directory) {
-    const cmds = []; //cmds arr
-  
-    // Nested function to read the files within the directory given
-    (function read(dir) {
-        // Gather the contents of the directory
-        const files = readdirSync(dir);
-  
-        // Loop through the files
-        for (const file of files) {
+client.on("interactionCreate", async interaction => {
+    
+    // Check if the interaction is a slash command with or without autocomplete or a modal
+    if (interaction.isChatInputCommand() || interaction.isAutocomplete() || interaction.isModalSubmit()) {
 
-            // Join the directory and file to create the path
-            const path = join(dir, file);
+        // If a normal slash command is used
+        if (interaction.isChatInputCommand()) {
 
-            // If the path is a directory then look inside of it
-            if (statSync(path).isDirectory()) {
-                // Read the contents of the path
-                read(path);
-            } else {
-                // Add the file to the commands arr
-                cmds.push(path);
+            // Create the command object with the command name given
+            const command = interaction.client.commands.get(interaction.commandName);
+
+            
+            if(!command) return; //Ignore if the command wasn't found
+
+            // Attempt to execute the command
+            try {
+                await command.execute(interaction);
+            } catch(e) {
+                console.error(e);
+                await interaction.reply({content: `There was an error trying to execute that command, please try again!`, ephemeral: true})
             }
+
+        // If the command has autocomplete
+        } else if (interaction.isAutocomplete()) {
+
+            // Create the command object with the command name given
+            const command = interaction.client.commands.get(interaction.commandName);
+
+            
+            if(!command) return; //Ignore if the command wasn't found
+
+            // Attempt to execute the autocomplete
+            try {
+                await command.autocomplete(interaction);
+            } catch(e) {
+                console.error(e);
+                await interaction.reply({content: `There was an error trying to execute that command, please try again!`, ephemeral: true})
+            }
+
+        // If the interaction is a modal submission
+        } else if (interaction.isModalSubmit()) {
+
+            // Call the updateSetting function from the DatabaseController
+            databaseController.updateSetting(interaction);
         }
-    })(directory);
-    // Return the cmds found
-    return cmds;
-}
+
+    // If not an interaction format we can handle
+    } else {
+        return;
+    }
+});
+
+// Listen for a thread/post to be deleted
+client.on("threadDelete", async (oldThread, newThread) => {
+
+     // Attempt to run the deleteHandler method
+    try {
+        threadController.deleteHandler(oldThread, newThread);
+    } catch (e) {
+        return;
+    }
+});
 
 // Log the client in
 client.login(config.token);

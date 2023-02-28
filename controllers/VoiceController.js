@@ -37,7 +37,7 @@ module.exports = {
                             // If channel is now empty, delete it
                             oldState.channel.delete("All members have left the activated temporary channel!").then(() => {
                                 // Update the temp channel to show it has been deleted
-                                Models.tempchannel.update({deleted: 1}, {where: {id: data.id}});
+                                Models.tempchannel.update({active: 0, deleted: 1}, {where: {id: data.id}});
 
                                 // Create the tempChannelRemoved embed
                                 const tempChannelRemovedEmbed = {
@@ -45,7 +45,7 @@ module.exports = {
                                     title: `Temporary Channel Deleted!`,
                                     author: {
                                         name: `${user.username}#${user.discriminator}`,
-                                        icon_url: user.displayAvatarURL({dynamic:true}),
+                                        icon_url: `${user.displayAvatarURL({dynamic:true})}`,
                                     },
                                     description: `The channel created by ${user} has been removed due to all members leaving it!`,
                                     fields: [

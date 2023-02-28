@@ -1,200 +1,261 @@
 // Import the required files
-const moment = require("moment");
 const Discord = require('discord.js');
-const TriggersController = require("./TriggersController");
-const AutorolesController = require("./AutorolesController");
-const JoinableRolesController = require("./JoinableRolesController");
-const WarningsController = require("./WarningsController");
-const ModerationController = require("./ModerationController");
-const AnnouncementController = require("./AnnouncementController");
 const Models = require("../models/AllModels");
+const moment = require("moment");
 
 // Create a new module export
 module.exports = {
     // Create a function with required args
-    queryHandler: function(m, a, c, tl) {
-        // Create vars
-        const message = m, client = c, triggerList = tl;
-        const prefix = client.settings.get("prefix");
-        let args = a;
-        let commandName;
+    queryHandler: function(interaction) {
 
-        // Check if the command has args
-        if (!args.length) {
-            // If no args, remove the prefix
-            commandName = message.content.replace(`${prefix}`, '');
-        } else {
-            // If args, pull the command name and remove the prefix
-            commandName = message.content.split(" ")[0].replace(`${prefix}`, '');
-        };
-
-        // Check if command has any aliases
-        const command = client.commands.get(commandName.toLowerCase()) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName.toLowerCase()));
-
-        /*
-        ######################################
-        ########## trigger commands ##########
-        ######################################
-        */
-        if (command.name.includes("trigger")) {
-
-            // Call the trigger handler function from the TriggersController file
-            TriggersController.triggerHandler(command, client, args, message, triggerList);
-
-        /*
-        #######################################
-        ########## autorole commands ##########
-        #######################################
-        */
-        } else if (command.name.includes("autorole")) {
-            
-            // Call the autoroles handler function from the AutorolesController file
-            AutorolesController.autoroleHandler(command, client, args, message);
-        
-        /*
-        ###########################################
-        ########## joinableroles command ##########
-        ###########################################
-        */
-        } else if (command.name.includes("joinablerole") || command.name.includes("joinrole") || command.name.includes("leaverole")) {
-
-            // Call the joinable roles handler function from the JoinableRolesController file
-            JoinableRolesController.joinableRolesHandler(command, client, args, message);
-
-
-        /*
-        ###################################
-        ########## purge command ##########
-        ###################################
-        */
-        } else if (command.name === "purge") {
-            
-            // Call the purge handler function from the ModeratorController file
-            ModerationController.purgeHandler(args, message, client);
-
-
-        /*
-        ######################################
-        ########## warnings command ##########
-        ######################################
-        */
-        } else if (command.name === "warnings") {
-            // Call the warning handler function from the JoinableRolesController file
-            WarningsController.warningHandler(client, args, message);
-
-        /*
-        ##################################
-        ########## kick command ##########
-        ##################################
-        */
-        } else if(command.name === "kick") {
-            // Call the kick handler function from the ModerationController file
-            ModerationController.kickHandler(args, message, client);
-
-        /*
-        #################################
-        ########## ban command ##########
-        #################################
-        */
-        } else if(command.name === "ban") {
-            // Call the ban handler function from the ModerationController file
-            ModerationController.banHandler(args, message, client);
-
-        /*
-        #################################
-        ######## unban command ##########
-        #################################
-        */
-        } else if(command.name === "unban") {
-            // Call the unban handler function from the ModerationController file
-            ModerationController.unbanHandler(args, message, client);
-            
-        /*
-        ##################################
-        ########## warn command ##########
-        ##################################
-        */
-        } else if(command.name === "warn") {
-            // Call the warn handler function from the ModerationController file
-            ModerationController.warnHandler(args, message, client);
-            
-        /*
-        ##################################
-        ########## mute command ##########
-        ##################################
-        */
-        } else if(command.name === "mute") {
-            // Call the mute handler function from the ModerationController file
-            ModerationController.muteHandler(args, message, client);
-            
-        /*
-        ##################################
-        ######### unmute command #########
-        ##################################
-        */
-        } else if(command.name === "unmute") {
-            // Call the mute handler function from the ModerationController file
-            ModerationController.unmuteHandler(message, args, client);
-
-        /*
-        ###################################
-        ########  announce command ########
-        ###################################
-        */
-        } else if(command.name === "announce") {
-            // Call the mute handler function from the ModerationController file
-            AnnouncementController.crudHandler(message, args, client);
-            
-        /*
-        ##################################
-        ####### createmute command #######
-        ##################################
-        */
-        } else if(command.name === "createmute") {
-            // Call the mute handler function from the ModerationController file
-            ModerationController.createMuteHandler(message, client);
-            
-        /*
-        ##############################
-        ####### config command #######
-        ##############################
-        */
-        } else if(command.name === "configure") {
-            // Call the config handler function from the ModerationController file
-            ModerationController.configHandler(args, message, client);
-
-        /*
-        ######################################
-        ########## settings command ##########
-        ######################################
-        */
-        } else if(command.name === "settings") {
-            // Call the settings handler function from the ModerationController file
-            ModerationController.settingsHandler(args, message, client);
-
-        /*
-        ####################################
-        ########## testdb command ##########
-        ####################################
-        */
-        } else if (command.name === 'testdb') {
+        // If the member used the testdb command
+        if (interaction.commandName === 'testdb') {
 
             // Authenticate the sequelize object from within a model
             Models.setting.sequelize.authenticate()
             .then(() => {
                 // If valid then let user know
-                message.channel.send("Connection Successful!");
+                interaction.reply("Connection Successful!");
             })
             .catch(() => {
                 // If inalid then let user know
-                message.channel.send("Connection Failed!");
+                interaction.reply("Connection Failed!");
             });
         };
     },
 
+    settingsHandler: async function(interaction) {
+        const setting = interaction.options.getString(`setting`); //get the setting
+        const subcommand = interaction.options.getSubcommand(); //get the subcommand
+        const superLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("super_log_channel_name")))); //super log channel
+
+        if(subcommand === `list`) {
+
+            let settingsArr = [];
+
+            // Look for the settings in the db
+            Models.setting.findAll().then(async (settings) => {
+
+                // If settings were found
+                if(settings) {
+
+                    // Loop through the settings
+                    settings.forEach((item) => {
+
+                        // Add the name of the setting to the settingsArr
+                        settingsArr.push(`\`\`${item.get("name")}\`\``);
+                    })
+
+                    // Create the embed
+                    const settingsEmbed = new Discord.EmbedBuilder()
+                        .setColor(`#886CE4`)
+                        .setTitle(`Below Are The Names Of All Settings`)
+                        .setAuthor({name: `${interaction.member.displayName}`, iconURL: `${interaction.member.displayAvatarURL({dynamic: true})}`})
+                        .setDescription(`${settingsArr.join(` , `)}`)
+                        .setTimestamp()
+
+                    // If the member is in the super log channel
+                    if(superLog.id === interaction.channel.id) {
+
+                        // Reply with the embed and message
+                        interaction.reply({embeds: [settingsEmbed]});
+
+                    // If the member isn't in the super log channel
+                    } else {
+
+                        // Send the embed to the super log channel and let the member know to check
+                        superLog.send({embeds: [settingsEmbed]});
+                        interaction.reply({content: `I have sent the requested data to the ${superLog} channel!`, ephemeral: true});
+                    }
+                }
+            })
+
+        } else if (subcommand === "view") {
+
+            // Look for the setting in the db
+            Models.setting.findOne({where: {name: setting}}).then((item) => {
+                // If no setting was found, let the user know
+                if(!item) return interaction.reply({content: `Uh oh! Looks like ${setting} isn't a valid setting, please try again!`, ephemeral: true});
+
+                const settingVal = item.get(`value`);
+                
+                let settingEmbed = new Discord.EmbedBuilder()
+                    .setColor(`#886CE4`)
+                    .setTitle(`Setting Information`)
+                    .setAuthor({name: `${interaction.member.displayName}`, iconURL: `${interaction.member.displayAvatarURL({dynamic: true})}`})
+                    .setDescription(`Here is the data for the ${setting} setting!`)
+                    .addFields(
+                        {name: `Id`, value: `\`\`${item.get(`id`)}\`\``, inline: true},
+                        {name: `\u200B`, value: `\u200B`, inline: true},
+                        {name: `Name`, value: `\`\`${item.get(`name`)}\`\``, inline: true},
+                        {name: `Created`, value: `${Discord.time(item.get(`createdAt`), Discord.TimestampStyles.RelativeTime)}`, inline: true},
+                        {name: `\u200B`, value: `\u200B`, inline: true},
+                        {name: `Updated`, value: `${Discord.time(item.get(`updatedAt`), Discord.TimestampStyles.RelativeTime)}`, inline: true},
+                    )
+                    .setTimestamp();
+
+                // If the value is too long for an embed's value but not a message
+                if(settingVal.length > 1017 && settingVal.length <= 1993) {
+                    // Send the embed with an additional message
+
+                    // If the member is in the super log channel
+                    if(superLog.id === interaction.channel.id) {
+
+                        // Reply with the embed and message
+                        interaction.reply({embeds: [settingEmbed], content: `Value: \`\`${settingVal}\`\``});
+
+                    // If the member isn't in the super log channel
+                    } else {
+
+                        // Send the embed to the super log channel and let the member know to check
+                        superLog.send({embeds: [settingEmbed], content: `Value: \`\`${settingVal}\`\``});
+                        interaction.reply({content: `I have sent the requested data to the ${superLog} channel!`, ephemeral: true});
+                    }
+
+                // If the value is under the embed's value limit
+                } else if (settingVal.length <= 1024) {
+                    // Add the value to the embed and send
+                    settingEmbed.addFields({name: `Value`, value: `\`\`${settingVal}\`\``, inline: false});
+
+                    // If the member is in the super log channel
+                    if(superLog.id === interaction.channel.id) {
+
+                        // Reply with the embed and message
+                        interaction.reply({embeds: [settingEmbed]});
+
+                    // If the member isn't in the super log channel
+                    } else {
+
+                        // Send the embed to the super log channel and let the member know to check
+                        superLog.send({embeds: [settingEmbed]});
+                        interaction.reply({content: `I have sent the requested data to the ${superLog} channel!`, ephemeral: true});
+                    }
+
+
+                // If the value exceeds all limits
+                } else {
+                    // Send the embed, along with a message letting the member know that the value can't be displayed
+
+                    // If the member is in the super log channel
+                    if(superLog.id === interaction.channel.id) {
+
+                        // Reply with the embed and message
+                        interaction.reply({embeds: [settingEmbed], content: `The value for this setting is too long to be sent on Discord, so unfortunately you will have to look it up manually!`});
+
+                    // If the member isn't in the super log channel
+                    } else {
+
+                        // Send the embed to the super log channel and let the member know to check
+                        superLog.send({embeds: [settingEmbed], content: `The value for this setting is too long to be sent on Discord. Unfortunately you will have to look it up manually!`});
+                        interaction.reply({content: `I have sent the requested data to the ${superLog} channel!`, ephemeral: true});
+                    }
+                }
+
+            // Catch any errors
+            }).catch((e) => {
+                console.error(e);
+            });
+
+        } else if (subcommand === "update") {
+
+            // If the member isn't an Admin, deny the use of this subcommand and let them know
+            if (!interaction.member.permissions.has(Discord.PermissionFlagsBits.Administrator)) return interaction.reply({content: `Uh oh! This subcommand is only for Administrators. If you think something needs to be updated, please contact an Administrator!`, ephemeral: true});
+
+            Models.setting.findOne({where: {name: setting}}).then(async (item) => {
+                // If no setting was found, let the user know
+                if(!item) return interaction.reply({content: `Uh oh! Looks like ${setting} isn't a valid setting, please try again!`, ephemeral: true});
+
+                // Create the row of buttons
+                const btns = new Discord.ActionRowBuilder()
+                .addComponents(
+                    new Discord.ButtonBuilder()
+                        .setCustomId(`yes`)
+                        .setLabel(`Yes (Continue)`)
+                        .setStyle(Discord.ButtonStyle.Success),
+                    new Discord.ButtonBuilder()
+                        .setCustomId(`no`)
+                        .setLabel(`No (Abort)`)
+                        .setStyle(Discord.ButtonStyle.Danger)
+                )
+
+                // Send the response with the buttons to only the user who initiated the command
+                interaction.reply({content: `**WARNING!**\n\nThis subcommand is dangerous and could result in me crashing if not used properly. Are you sure you wish to continue?`, ephemeral: true, components: [btns], fetchReply: true})
+                    .then(async (msg) => {
+
+                        // Create the collector to capture the button clicks
+                        const btnCollector = await msg.createMessageComponentCollector({componentType: Discord.ComponentType.Button, max:1,  time:15000});
+
+                        // When a button is clicked
+                        btnCollector.on(`collect`, async i => {
+                            // If the user agreed to continue
+                            if(i.customId === "yes") {
+
+                                // Build the modal
+                                const settingModal = new Discord.ModalBuilder()
+                                    .setCustomId(`${item.get("name")}`)
+                                    .setTitle(`Updating ${item.get(`name`)}`);
+
+                                // Build the setting value input field
+                                const settingValInput = new Discord.TextInputBuilder()
+                                    .setCustomId(`settingVal`)
+                                    .setLabel(`Delete the old value and add the new one`)
+                                    .setValue(`${item.get("value")}`)
+                                    .setMinLength(1)
+                                    .setMaxLength(4000)
+                                    .setStyle(Discord.TextInputStyle.Short)
+                                    .setRequired(true);
+
+                                // Create the action row to hold the settingValInput
+                                const actionRow = new Discord.ActionRowBuilder().addComponents(settingValInput);
+
+                                // Add the input to the modal
+                                settingModal.addComponents(actionRow);
+
+                                // Show the modal to the member
+                                await i.showModal(settingModal);
+
+                            // If the user wanted to abort
+                            } else {
+                                return i.reply({content: `Got it! I have aborted this function. Please contact my manager if you feel a setting should be changed!`, ephemeral: true});
+                            }
+                        })
+
+                        // Once the interaction times out
+                        btnCollector.on(`end`, collected => {
+
+                            // If the user didn't click on one of the buttons let them know it timed out
+                            if(collected.size === 0) {
+                                interaction.channel.send(`My apologies ${interaction.user}, but your previous interaction has timed out.\nThe command remains unchanged, please try again when you're ready!`);
+                            }
+                        })
+                });
+            })
+        }
+    },
+
+    // Function to take data from modal to update a setting
+    updateSetting: function(interaction) {
+        // Find the setting
+        Models.setting.findOne({where: {name: interaction.customId}}).then((item) => {
+            // If the setting was found
+            if(item) {
+
+                // Update the setting's value
+                Models.setting.update({value: interaction.fields.getTextInputValue(`settingVal`)}, {where: {id: item.get(`id`)}}).then(() => {
+
+                    // Let the member know that the setting has been updated
+                    interaction.reply({content: `${interaction.member}, I have successfully changed the value for ${interaction.customId}!`});
+                });
+
+            // If the setting wasn't found let the member know
+            } else {
+                interaction.reply({content: `Uh oh! It seems there was an issue updating that setting. Please contact my manager so they can fix me up!`})
+            }
+        })
+    },
+
     // Function for when bot starts up
-    botReconnect: function(tl, bu, erp) {
-        let triggerList = tl, bannedUrls = bu, emojiRolePosts = erp;
+    botReconnect: function(client) {
 
         /*
         ##################################
@@ -204,13 +265,33 @@ module.exports = {
         // Loop through the models object
         for (const key of Object.keys(Models)) {
             /*
-            * Sync each model to create the table if needed
+            * Sync each model to create the table if needed, using alter to ensure the tables match the models
             !!!!
             Keep force set to false otherwise it will overwrite the table if one exists!
             !!!!
             */
-            Models[key].sync({force: false});
+            Models[key].sync({force: false, alter: true});
         };
+
+        /*
+        #####################################
+        ######## gather cmd settings ########
+        #####################################
+        */
+        // Find all the commands in the database
+        Models.command.findAll().then((cmds) =>{
+            // Loop through each command
+            cmds.forEach((cmd) =>{
+                // Find the command in the local collection
+                let localCmd = client.commands.get(cmd.get(`name`));
+
+                // Assign the values from the database to the local command's values
+                localCmd.enabled = cmd.get("enabled");
+                localCmd.mod = cmd.get("mod");
+                localCmd.super = cmd.get("super");
+                localCmd.admin = cmd.get("admin");
+            });
+        })
         
         /*
         ###################################
@@ -223,15 +304,13 @@ module.exports = {
                 enabled: 1 //make sure trigger is enabled; 0 = false 1 = true
             }
         }).then((data) => {
-            let triggers = {}; //obj for triggers
-
             // Loop through each item found and add it to the triggers obj
             data.forEach((item) => {
-                triggers[item.get('trigger')] = item.get("severity");
+                // Assign the trigger's local collection values
+                const triggerValues = {"severity":item.get(`severity`), "enabled":item.get(`enabled`)}
+                // Update the local collection trigger's values
+                client.triggers.set(item.get(`trigger`),triggerValues);
             });
-
-            // Add the list of triggers to the local copy
-            triggerList.list = triggers;
         }).catch((e) => {
              console.error("Error: "+e);
         });
@@ -243,48 +322,15 @@ module.exports = {
         */
         // Get all rows of blacklisted urls and add them to the blacklistedDomains list
         Models.bannedurl.findAll().then((data) => {
-            let blacklistedDomains = []; //array for blacklisted urls
 
             // Loop through each item found and add it to the blacklistedDomains array
             data.forEach((item) => {
-                blacklistedDomains.push(item.get('url'));
+                client.blacklist.set(item.get(`id`), item.get(`url`));
             });
-
-            // Add the list of blacklisted urls to the local copy
-            bannedUrls.list = blacklistedDomains;
         }).catch((e) => {
              console.error("Error: "+e);
         });
-
-        /*
-        ############################################
-        ######## populate emojirole post_id ########
-        ############################################
-        */
-        // Get all rows of emojiroles and add their post ids to the postIds arr
-        Models.emojirole.findAll().then((data) => {
-            let postIds = []; //array for post ids
-
-            // Loop through each item found and add it to the postsIds array
-            data.forEach((item) => {
-
-                // Check if the post_id was already added to the array
-                if(postIds.includes(item.get("post_id"))) {
-                    return; //ignore if so
-
-                // Add to the array if the id doesn't exist in it already
-                } else {
-                    postIds.push(item.get('post_id'));
-                }
-            });
-
-            // Add the list of postIds to the local copy
-            emojiRolePosts.posts = postIds;
-        }).catch((e) => {
-            console.error("Error: "+e);
-        });
     },
-
 
     // Function to check db on startup
     databaseCheck: async function(c) {
@@ -327,7 +373,7 @@ module.exports = {
             // Loop through each user that needs to be unbanned
             bannedUsers.forEach((item) => {
                 // Find the server the user was banned from
-                const guild = client.guilds.cache.get(item.guild_id);
+                const guild = client.guilds.cache.get(item.guildId);
                 logChannel = guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //action log channel
 
                 // Unban the user with a time up reason
@@ -356,7 +402,7 @@ module.exports = {
                             },
                             {
                                 name: `Date Banned`,
-                                value: `${Discord.Formatters.time(banDate, "f")} (${Discord.Formatters.time(banDate, "R")})`,
+                                value: `${Discord.time(banDate, "R")}`,
                                 inline: true,
                             },
                             {
@@ -381,176 +427,5 @@ module.exports = {
                 });
             });
         });
-
-        /*
-        ###########################
-        ###### UNMUTES CHECK ######
-        ###########################
-        */
-        // Function to handle unmutes
-        mutedUsers = await Models.mute.findAll({where: {completed: 0},raw:true}).then((data) => {
-            const currentTime = new Date();
-            // If the mute(s) were found...
-            if (data) {
-                // Loop through each row from the db
-                data.forEach(async (mute) => {
-                    let umDate = moment(mute.unmute_date); // store the unmute date
-                    // Make sure the mute hasn't already been completed
-                    if(moment(umDate).isSameOrBefore(moment(currentTime))) {
-                        // Find the server the user was muted in
-                        const guild = client.guilds.cache.get(mute.guild_id);
-                        let member;
-
-                        // Attempt to find the member
-                        try {
-                            // If able to find a user by the id, assign to member var
-                            member = await guild.members.fetch(mute.user_id);
-                        } catch(e) {
-                            // If unable to find member then ignore
-                            return;
-                        }
-
-                        const mutedRole = member.roles.cache.find(r => r.name.includes("Muted")); //muted role
-                        logChannel = guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //action log channel
-                        // Unmute the user
-                        member.roles.remove(mutedRole).then(() => {
-                            const moderator = client.users.cache.get(mute.moderator_id); //get the moderator that performed the mute
-                            let muteDate = mute.created;
-
-                            // Update the completed field
-                            Models.mute.update({completed: true}, {where: {id: mute.id}});
-
-                            // Create the unmute embed
-                            const unmuteEmbed = {
-                                color: 0xFF5500,
-                                title: "User Unmuted",
-                                author: {
-                                    name: `${member.user.username}#${member.user.discriminator}`,
-                                    icon_url: member.user.displayAvatarURL({dynamic:true}),
-                                },
-                                description: `${member.user.username}'s mute has expired`,
-                                fields: [
-                                    {
-                                        name: `User`,
-                                        value: `${member}`,
-                                        inline: true,
-                                    },
-                                    {
-                                        name: `Mute Type`,
-                                        value: `${mute.type}`,
-                                        inline: true,
-                                    },
-                                    {
-                                        name: `Muted By`,
-                                        value: `${moderator}`,
-                                        inline: true,
-                                    },
-                                    {
-                                        name: `Date Muted`,
-                                        value: `${Discord.Formatters.time(muteDate, "f")} (${Discord.Formatters.time(muteDate, "R")})`,
-                                        inline: true,
-                                    },
-                                    {
-                                        name: `Reason`,
-                                        value: `${mute.reason}`,
-                                        inline: false,
-                                    },
-                                ],
-                                timestamp: new Date(),
-                                footer: {
-                                    text: `Mute Id: ${mute.id}`
-                                }
-                            };
-
-                            // Send the embed to the log channel
-                            logChannel.send({embeds: [unmuteEmbed]});
-                        // If member doesn't have a muted rule then update the db and ignore
-                        }).catch(() => {
-                            // Update the completed field
-                            Models.mute.update({completed: true}, {where: {id: mute.id}});
-                            return;
-                        })
-                    }
-                });
-            // If no mutes were found just ignore
-            } else {
-                return;
-            }
-        });
-
-
-        /*
-        #################################
-        ###### ANNOUNCEMENTS CHECK ######
-        #################################
-        */
-        // Find all unposted announcements
-        Models.announcement.findAll({where: {posted: false},raw:true}).then((data) => {
-            if(data) {
-
-                // Loop throught the data
-                data.forEach(async (announcement) => {
-                    const currentTime = new Date();
-
-                    // Make sure the mute hasn't already been completed
-                    if(moment(announcement.post_at).isSameOrBefore(moment(currentTime))) {
-                        const channel = client.channels.cache.get(announcement.channel); //get the channel
-                        const server = client.guilds.cache.get(announcement.server); //get the server
-
-                        // Create the embed
-                        let announceEmbed = new Discord.MessageEmbed()
-                            .setColor(`#551CFF`)
-                            .setTitle(announcement.title)
-                            .setDescription(announcement.body)
-                            .setTimestamp(new Date());
-
-                        // If the user wanted to be the author set it to their display name and avatar
-                        if(announcement.show_author == true) {
-                            let author;
-
-                            // Attempt to find the author
-                            try {
-                                // If able to find an author by the id, assign to author var
-                                author = await server.members.fetch(announcement.author);
-                            } catch(e) {
-                                // If unable to find author then set to bot
-                                author = server.me;
-                            }
-
-                            announceEmbed.setAuthor(author.displayName, author.displayAvatarURL({dynamic:true}));
-
-                        // If the user didn't want to be the author set to the bot's display name and avatar
-                        } else {
-                            announceEmbed.setAuthor(server.me.displayName, server.me.displayAvatarURL({dynamic:true}));
-                        }
-
-                        channel.send({embeds: [announceEmbed]}).then((msg) => {
-
-                            // If reactions were given
-                            if(announcement.reactions !== null) {
-                                // Attempt to react to announceMsg
-                                try {
-                                    // Convert the reactions string to an array
-                                    const reactionArr = announcement.reactions.split(",");
-
-                                    // Loop through the array and react with the reactions in order given
-                                    reactionArr.forEach(async (reaction) => {
-                                        await msg.react(reaction)
-                                    })
-                                // Catch and log any errors
-                                } catch(e) {
-                                    console.error("One of the emojis from the announcement builder failed to react!", e)
-                                }
-                            }
-
-                            // Update the posted field for the announcement
-                            Models.announcement.update({posted: 1}, {where: {id: announcement.id}});
-                        })
-                    }
-                })
-
-
-            }
-        })
     }
 }

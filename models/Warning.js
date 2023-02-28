@@ -9,10 +9,6 @@ const sequelize = new Sequelize(`mysql://${db_user}:${db_pass}@${db_host}:${db_p
 const Warning = sequelize.define('warning', {
     
     /****** Fields for all warnings ******/
-    warning_id: {
-        type: Sequelize.STRING,
-        allowNull: false
-    },
     type: {
         type: Sequelize.STRING,
         allowNull: false
@@ -21,13 +17,11 @@ const Warning = sequelize.define('warning', {
         type: Sequelize.TEXT,
         allowNull: false
     },
-
-    /****** Fields for banned words warnings ******/
-    banned_words: {
+    username: {
         type: Sequelize.TEXT
     },
-    strikes: {
-        type: Sequelize.INTEGER
+    nickname: {
+        type: Sequelize.TEXT
     },
 
     /****** Fields for manual warnings ******/
@@ -39,9 +33,6 @@ const Warning = sequelize.define('warning', {
     },
 
     /****** Fields for triggers warnings ******/
-    username: {
-        type: Sequelize.TEXT
-    },
     triggers: {
         type: Sequelize.TEXT
     },
@@ -56,6 +47,16 @@ const Warning = sequelize.define('warning', {
     },
     channel_id: {
         type: Sequelize.TEXT
+    },
+
+    /****** Field for Banned URL warnings ******/
+    banned_url: {
+        type: Sequelize.TEXT
+    },
+
+    /****** Field for timeout warnings ******/
+    timeout_end_date: {
+        type: Sequelize.DATE
     }
 },
 {
