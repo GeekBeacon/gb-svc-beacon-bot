@@ -1,9 +1,6 @@
 # BeaconBot
 
-
-![BeaconBot](/docs/assets/BeaconBot_small.png)  [![Build Status](https://cloud.drone.io/api/badges/GeekBeacon/gb-svc-beacon-bot/status.svg)](https://cloud.drone.io/GeekBeacon/gb-svc-beacon-bot)
-
-
+[![Build Status](https://github.com/GeekBeacon/gb-svc-beacon-bot/actions/workflows/docker-image.yml/badge.svg?)](https://github.com/GeekBeacon/gb-svc-beacon-bot/actions/workflows/docker-image.yml)[![Build Status](https://github.com/GeekBeacon/gb-svc-beacon-bot/actions/workflows/publish-docker.yml/badge.svg?)](https://github.com/GeekBeacon/gb-svc-beacon-bot/actions/workflows/publish-docker.yml)
 
 BeaconBot is a JavaScript [Discord](https://discordapp.com/) bot being built by the [GeekBeacon](www.geekbeacon.org) community. GeekBeacon a community of nerds and geeks who come together to be your guiding light to all things geek. Please join us in our [discord](https://discord.gg/geekbeacon) to see the bot in action and learn more about us. If you would like to contribute, we would love your help to make things better!
 
