@@ -82,7 +82,7 @@ module.exports = {
                                             if(i.customId === "yes") {
 
                                                 i.member.roles.add(role); // add the role
-                                                return i.reply({content: `$You've been successfully added to the ${role.name} role!`, ephemeral: true});
+                                                return i.reply({content: `You've been successfully added to the ${role.name} role!`, ephemeral: true});
 
                                             // If the user wanted to abort
                                             } else {

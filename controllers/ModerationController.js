@@ -4,11 +4,14 @@ const Discord = require('discord.js');
 const TriggersController = require("./TriggersController");
 
 module.exports = {
-    deleteHandler: function(m, c, tl, deleteSet) {
-        const message = m, client = c, triggerList = tl;
+    deleteHandler: function(m, c, deleteSet) {
+        const message = m, client = c;
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
         const superLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("super_log_channel_name")))); //super log channel
         let triggerArr = [];
+        let triggerObj = {};
+
+
 
         // If deleted due to an unapproved url then ignore
         if(deleteSet.has(message.id)) {
@@ -17,10 +20,12 @@ module.exports = {
             return;
         }
 
-        // Add the trigger words/phrases to the local array
-        for(key in triggerList.list) {
-            triggerArr.push(key);
-        }
+        // Add each trigger word/phrase to the trigger array and populate the triggerObj with the trigger data
+        client.triggers.forEach((trig, index) => {
+            triggerArr.push(index);
+            triggerObj[index] = trig;
+        });
+
 
         // See if the message contains a trigger
         if(triggerArr.some(trigger => message.content.toLowerCase().match(`\\b${trigger}\\b`))) {
@@ -31,12 +36,13 @@ module.exports = {
             triggers.forEach((trigg) => {
 
                 // If the trigger is high severity then return (don't send embed)
-                if(triggerList.list[trigg] === "high") {
+                if(triggerObj[trigg].severity === "high") {
                     return;
                 }
             })
             
         } else {
+
             // Create the delete embed
             const delEmbed = {
                 color: 0x33ccff,
@@ -461,7 +467,7 @@ module.exports = {
         if(userAsMember) {
             // If the user is a mod+ deny banning them
             if(userAsMember.roles.cache.some(r => [modTraineeRole.name, modRole.name, superRole.name, adminRole.name].includes(r.name))) {
-                return interaction.reply({content: `You got guts, trying to ban a ${user.roles.highest} member!`, ephemeral: true});
+                return interaction.reply({content: `You got guts, trying to ban a ${userAsMember.roles.highest} member!`, ephemeral: true});
             }
         }
 
