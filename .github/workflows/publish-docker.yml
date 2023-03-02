@@ -3,6 +3,10 @@ on:
   create:
     tags:
       - '*'
+  push:
+    branches:
+      - master
+
           
 jobs:
   push_to_registry:
