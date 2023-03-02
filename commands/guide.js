@@ -13,7 +13,7 @@ module.exports = {
 
     // Build the command
     data: new Discord.SlashCommandBuilder()
-    .setName(`usage`)
+    .setName(`guide`)
     .setDescription(`Get a link to my user guide!`),
 
     // Execute the command
