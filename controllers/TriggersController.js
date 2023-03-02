@@ -11,89 +11,88 @@ module.exports = {
         // Create vars
         let trigger = interaction.options.getString(`trigger`);
         const triggerAction = interaction.options.getSubcommand();
-        const modRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("mod_role_id"));
         const superRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("super_role_id"));
         const adminRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("admin_role_id"));
-        const ownerRole = interaction.member.guild.owner;
+        const ownerId = interaction.member.guild.owner.id;
 
         /*********** LIST TRIGGERS ***********/
         if (triggerAction === 'list') {
 
-            // If user is a mod+ then list triggers
-            if ((modRole || superRole || adminRole || interaction.member === ownerRole)) {
-                let enabledTriggers = [];
-                let disabledTriggers = [];
+            let enabledTriggers = [];
+            let disabledTriggers = [];
 
-                // If a trigger was passed in
-                if(interaction.options.get(`trigger`)) {
-                    // Attempt to find the trigger in the db
-                    Models.trigger.findOne({where: {trigger:trigger}}).then(async (trig) =>{
-                        // If a matching trigger was found
-                        if(trig) {
-                            // Get the user that added the trigger
-                            const creator = await interaction.client.users.fetch(trig.get(`user_id`));
-                            let embedColor = ""; //color for the embed
+            // If a trigger was passed in
+            if(interaction.options.get(`trigger`)) {
+                // Attempt to find the trigger in the db
+                Models.trigger.findOne({where: {trigger:trigger}}).then(async (trig) =>{
+                    // If a matching trigger was found
+                    if(trig) {
+                        // Get the user that added the trigger
+                        const creator = await interaction.client.users.fetch(trig.get(`user_id`));
+                        let embedColor = ""; //color for the embed
 
-                            // Set the embed color based on severify level
-                            switch(trig.get(`severity`)) {
-                                case "high":
-                                    embedColor = "#FF0000";
-                                    break;
-                                case "medium":
-                                    embedColor = "#FFA500";
-                                    break;
-                                case "low":
-                                    embedColor = "#00FF00";
-                                    break;
-                            }
-
-                            // Create embed
-                            const triggerEmbed = new Discord.EmbedBuilder()
-                                .setColor(embedColor)
-                                .setTitle(`Information for ${trig.get(`trigger`)}`)
-                                .addFields(
-                                    {name: `Word/Phrase`, value: `${trig.get("trigger")}`, inline: false},
-                                    {name: `Severity`, value: `${Lodash.startCase(trig.get("severity"))}`, inline: true},
-                                    {name: `Enabled`, value: `${trig.get("enabled") == 1 ? "True" : "False"}`, inline: true},
-                                    {name: `Created by`, value: `${creator}`, inline: true}
-                                )
-                                .setTimestamp();
-
-                            // Send the user the embed
-                            interaction.reply({embeds: [triggerEmbed], ephemeral: true});
-
-                        // If no matching trigger was found let the user know
-                        } else {
-                            interaction.reply({content:`Uh oh! Looks like ${interaction.option.getString(`trigger`)} isn't in the list of triggers!`, ephemeral:true});
+                        // Set the embed color based on severify level
+                        switch(trig.get(`severity`)) {
+                            case "high":
+                                embedColor = "#FF0000";
+                                break;
+                            case "medium":
+                                embedColor = "#FFA500";
+                                break;
+                            case "low":
+                                embedColor = "#00FF00";
+                                break;
                         }
-                    })
 
-                // If no trigger was passed in
-                } else {
-                    // Get all rows and add their trigger word/phrase to the correct triggers array
-                    Models.trigger.findAll().then((data) => {
-                        data.forEach((item) => {
-                            // If the trigger is enabled add it to the enabledTriggers array
-                            if(item.get(`enabled`) == true) {
-                                enabledTriggers.push(item.get('trigger'));
-                            // If the trigger is disabled add it to the disabledTriggers array
-                            } else if (item.get(`enabled`) == false) {
-                                disabledTriggers.push(item.get(`trigger`))
-                            }
-                        });
-                    // Send the triggers to the user
-                    }).then(() => {
-                        if (enabledTriggers.length || disabledTriggers) {
-                            interaction.reply({content: `**Enabled triggers:** ${enabledTriggers.map(trigger => `\`${trigger}\``).join(', ') || "None"}\n\n**Disabled triggers:** ${disabledTriggers.map(trigger => `\`${trigger}\``).join(', ') || "None"}`, ephemeral: true});
-                        // If there are no triggers let the user know
-                        } else {
-                            interaction.reply({content: "Uh oh! It seems there aren't any triggers yet!", ephemeral: true});
+                        // Create embed
+                        const triggerEmbed = new Discord.EmbedBuilder()
+                            .setColor(embedColor)
+                            .setTitle(`Information for ${trig.get(`trigger`)}`)
+                            .addFields(
+                                {name: `Word/Phrase`, value: `${trig.get("trigger")}`, inline: false},
+                                {name: `Severity`, value: `${Lodash.startCase(trig.get("severity"))}`, inline: true},
+                                {name: `Enabled`, value: `${trig.get("enabled") == 1 ? "True" : "False"}`, inline: true},
+                                {name: `Created by`, value: `${creator}`, inline: true}
+                            )
+                            .setTimestamp();
+
+                        // Send the user the embed
+                        interaction.reply({embeds: [triggerEmbed], ephemeral: true});
+
+                    // If no matching trigger was found let the user know
+                    } else {
+                        interaction.reply({content:`Uh oh! Looks like ${interaction.option.getString(`trigger`)} isn't in the list of triggers!`, ephemeral:true});
+                    }
+                })
+
+            // If no trigger was passed in
+            } else {
+                // Get all rows and add their trigger word/phrase to the correct triggers array
+                Models.trigger.findAll().then((data) => {
+                    data.forEach((item) => {
+                        // If the trigger is enabled add it to the enabledTriggers array
+                        if(item.get(`enabled`) == true) {
+                            enabledTriggers.push(item.get('trigger'));
+                        // If the trigger is disabled add it to the disabledTriggers array
+                        } else if (item.get(`enabled`) == false) {
+                            disabledTriggers.push(item.get(`trigger`))
                         }
                     });
-                }
+                // Send the triggers to the user
+                }).then(() => {
+                    if (enabledTriggers.length || disabledTriggers) {
+                        interaction.reply({content: `**Enabled triggers:** ${enabledTriggers.map(trigger => `\`${trigger}\``).join(', ') || "None"}\n\n**Disabled triggers:** ${disabledTriggers.map(trigger => `\`${trigger}\``).join(', ') || "None"}`, ephemeral: true});
+                    // If there are no triggers let the user know
+                    } else {
+                        interaction.reply({content: "Uh oh! It seems there aren't any triggers yet!", ephemeral: true});
+                    }
+                });
             }
         /*********** ADD TRIGGER ***********/
         } else if (triggerAction === 'add') {
+
+            if(!(superRole || adminRole || ownerId === interaction.member.id)) return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this command!`, ephemeral: true});
+
             const severity = interaction.options.getString(`severity`) //severity level
 
             /* 
@@ -134,6 +133,8 @@ module.exports = {
 
         /*********** REMOVE TRIGGER ***********/
         } else if (triggerAction === 'remove') {
+            if(!(adminRole || ownerId === interaction.member.id)) return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this command!`, ephemeral: true});
+
             // Query the database for the trigger passed in
             Models.trigger.findOne({where: {trigger: trigger}}).then((trig) => {
                 // If the trigger was found, then remove it
@@ -159,6 +160,8 @@ module.exports = {
 
         /*********** ENABLE TRIGGER ***********/
         } else if (triggerAction === 'enable') {
+            if(!(superRole || adminRole || ownerId === interaction.member.id)) return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this command!`, ephemeral: true});
+
             // Find the trigger
             Models.trigger.findOne({where: {trigger: trigger}}).then((trig) => {
                 //If the trigger was found...
@@ -188,6 +191,8 @@ module.exports = {
 
         /*********** DISABLE TRIGGER ***********/
         } else if (triggerAction === 'disable') {
+            if(!(superRole || adminRole || ownerId === interaction.member.id)) return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this command!`, ephemeral: true});
+            
             // Find the trigger
             Models.trigger.findOne({where: {trigger: trigger}}).then((trig) => {
                 //If the trigger was found...
