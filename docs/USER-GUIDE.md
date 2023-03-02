@@ -200,4 +200,4 @@ ___
 
 ## Final Notes
 
-There are many more features and commands planned or already in the works! If you have any suggestions or find any issues feel free to [create an issue](/issues) or even contribute yourself by joining [our Discord](https://discord.gg/geekbeacon)!
+There are many more features and commands planned or already in the works! If you have any suggestions or find any issues feel free to [create an issue](https://github.com/GeekBeacon/gb-svc-beacon-bot/issues) or even contribute yourself by joining [our Discord](https://discord.gg/geekbeacon)!
