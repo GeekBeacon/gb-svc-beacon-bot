@@ -5,7 +5,7 @@ const PermissionsController = require("../controllers/PermissionsController");
 module.exports = {
 
     // Set config values
-    name: 'ping',
+    name: 'guide',
     enabled: true,
     mod: false,
     super: false,
@@ -13,16 +13,8 @@ module.exports = {
 
     // Build the command
     data: new Discord.SlashCommandBuilder()
-    .setName(`ping`)
-    .setDescription(`Ping the bot for a response from either the API or Websocket!`)
-    .addStringOption(option =>
-        option.setName(`type`)
-        .setDescription(`The type of ping to execute.`)
-        .setRequired(false)
-        .addChoices(
-            {name: `API`, value: `api`},
-            {name: `Websocket`, value: `websocket`}
-        )),
+    .setName(`usage`)
+    .setDescription(`Get a link to my user guide!`),
 
     // Execute the command
     async execute(interaction) {
@@ -39,17 +31,8 @@ module.exports = {
             return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this command!`, ephemeral: true});
         // If the command is enabled and the user has permission to use it
         } else {
-            const pingType = interaction.options.getString(`type`) ?? `websocket`; // get the ping type or default to websocket
-
-            // If user asked for the api ping
-            if (pingType === "api") {
-                const sent = await interaction.reply({ content: `Pinging...`, fetchReply: true});
-                interaction.editReply(`Pong! API response time: ${sent.createdTimestamp - interaction.createdTimestamp}ms`);
-
-            // If user asked for the websocket ping
-            } else if(pingType === "websocket") {
-                interaction.reply(`Pong! Websocket response time: ${Math.round( ( interaction.client.ws.ping + Number.EPSILON ) * 100 ) / 100}ms`);
-            }
+            // Send the link to the bot's user guide
+            interaction.reply(`Hello!\n\nYou can find my user guide here: https://github.com/GeekBeacon/gb-svc-beacon-bot !`);
         }
     }
 };
