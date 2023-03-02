@@ -32,7 +32,7 @@ module.exports = {
         // If the command is enabled and the user has permission to use it
         } else {
             // Send the link to the bot's user guide
-            interaction.reply(`Hello!\n\nYou can find my user guide here: https://github.com/GeekBeacon/gb-svc-beacon-bot !`);
+            interaction.reply(`Hello!\n\nYou can find my user guide here: https://github.com/GeekBeacon/gb-svc-beacon-bot/blob/master/docs/USER-GUIDE.md !`);
         }
     }
 };
