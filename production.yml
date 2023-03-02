@@ -5,7 +5,7 @@ services:
     restart: always
     build:
         context: . 
-        dockerfile: compose/Dockerfile-bot
+        dockerfile: docker/Dockerfile
     networks:
        - shared_backend
     external_links:
