@@ -33,7 +33,7 @@ module.exports = {
             // If the member has the proper permissions for the command
             } else {
                 // Send the link to the bot's repo
-                interaction.reply(`Hello!\n\nMy name is BeaconBot and I live here: https://github.com/GeekBeacon/gb-svc-beacon-bot !`);
+                interaction.reply(`Hello!\n\nMy name is BeaconBot and I live in my very own [repository](https://github.com/GeekBeacon/gb-svc-beacon-bot "Click to visit me!") over on Github!`);
             }
         }
         
