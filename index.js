@@ -13,11 +13,12 @@ const moderationController = require("./controllers/ModerationController");
 const threadController = require("./controllers/ThreadController");
 const voiceController = require("./controllers/VoiceController");
 const reactionsController = require("./controllers/ReactionsController");
+const inviteController = require(`./controllers/InviteController`);
 const Models = require("./models/AllModels");
 
 // Instantiate a new Discord client and collection
 const client = new Discord.Client({
-    intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMembers, Discord.GatewayIntentBits.GuildBans, Discord.GatewayIntentBits.MessageContent, Discord.GatewayIntentBits.GuildPresences, Discord.GatewayIntentBits.GuildMessages, Discord.GatewayIntentBits.GuildMessageReactions, Discord.GatewayIntentBits.GuildVoiceStates],
+    intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMembers, Discord.GatewayIntentBits.GuildModeration, Discord.GatewayIntentBits.MessageContent, Discord.GatewayIntentBits.GuildPresences, Discord.GatewayIntentBits.GuildMessages, Discord.GatewayIntentBits.GuildMessageReactions, Discord.GatewayIntentBits.GuildVoiceStates, Discord.GatewayIntentBits.GuildInvites, Discord.GatewayIntentBits.GuildScheduledEvents],
     partials: [Discord.Partials.Message, Discord.Partials.Channel, Discord.Partials.Reaction]});
 client.settings = new Discord.Collection(); //create a new collection for the settings from the db
 client.commands = new Discord.Collection(); //create a new collection for commands
@@ -343,6 +344,17 @@ client.on("threadDelete", async (oldThread, newThread) => {
     try {
         threadController.deleteHandler(oldThread, newThread);
     } catch (e) {
+        return;
+    }
+});
+
+// Listen for an invite to be created
+client.on(Discord.Events.InviteCreate, async (invite) => {
+
+    // Attempt to run the inviteCreate method
+    try {
+        inviteController.inviteCreate(invite, client);
+    } catch(e) {
         return;
     }
 });
