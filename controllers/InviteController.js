@@ -15,7 +15,7 @@ module.exports = {
         } else {
             invite.delete(`Auto deleted invite, please use vanity url or discord.geekbeacon.org!`).then(() => {
                 if(invite.guild.vanityURLCode) {
-                    adminChannel.send(`${invite.inviter}, I have deleted your recently created invite. Please use https://discord.gg/${invite.guild.vanityURL} or https://discord.geekbeacon.org to invite people to the server!`);
+                    adminChannel.send(`${invite.inviter}, I have deleted your recently created invite. Please use https://discord.gg/${invite.guild.vanityURLCode} or https://discord.geekbeacon.org to invite people to the server!`);
                 } else {
                     adminChannel.send(`${invite.inviter}, I have deleted your recently created invite. Please use https://discord.geekbeacon.org to invite people to the server!`);
                 }
