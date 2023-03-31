@@ -5,7 +5,7 @@ const PermissionsController = require("../controllers/PermissionsController");
 module.exports = {
 
     // Set config values
-    name: 'guide',
+    name: 'coinflip',
     enabled: true,
     mod: false,
     super: false,
@@ -13,8 +13,8 @@ module.exports = {
 
     // Build the command
     data: new Discord.SlashCommandBuilder()
-    .setName(`guide`)
-    .setDescription(`Get a link to my user guide!`),
+    .setName(`coinflip`)
+    .setDescription(`Flip a coin!`),
 
     // Execute the command
     async execute(interaction) {
@@ -31,8 +31,13 @@ module.exports = {
             return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this command!`, ephemeral: true});
         // If the command is enabled and the user has permission to use it
         } else {
-            // Send the link to the bot's user guide
-            interaction.reply(`Hello!\n\nYou can find my [user guide](https://github.com/GeekBeacon/gb-svc-beacon-bot/blob/master/docs/USER-GUIDE.md "Click me!") in the docs section of my very own repository!`);
+            const choices = ["heads", "tails"];
+            const result = choices[Math.floor(Math.random() * choices.length)];
+
+            await interaction.reply({content: `Flipping coin...`, ephemeral: true, fetchReply: true});
+            setTimeout(function () {
+                interaction.editReply({content: `The coin landed on **${result}**!`});
+            }, 2000)
         }
     }
 };

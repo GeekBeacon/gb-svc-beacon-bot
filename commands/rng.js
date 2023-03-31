@@ -5,7 +5,7 @@ const PermissionsController = require("../controllers/PermissionsController");
 module.exports = {
 
     // Set config values
-    name: 'guide',
+    name: 'coinflip',
     enabled: true,
     mod: false,
     super: false,
@@ -13,8 +13,18 @@ module.exports = {
 
     // Build the command
     data: new Discord.SlashCommandBuilder()
-    .setName(`guide`)
-    .setDescription(`Get a link to my user guide!`),
+    .setName(`rng`)
+    .setDescription(`Generate a random number!`)
+    .addIntegerOption(option => 
+        option.setName(`min`)
+        .setDescription(`The minimum number value.`)
+        .setRequired(true)
+    )
+    .addIntegerOption(option => 
+        option.setName(`max`)
+        .setDescription(`The maximum number value.`)
+        .setRequired(true)
+    ),
 
     // Execute the command
     async execute(interaction) {
@@ -31,8 +41,13 @@ module.exports = {
             return interaction.reply({content: `Uh oh! Looks like you don't have the proper permissions to use this command!`, ephemeral: true});
         // If the command is enabled and the user has permission to use it
         } else {
-            // Send the link to the bot's user guide
-            interaction.reply(`Hello!\n\nYou can find my [user guide](https://github.com/GeekBeacon/gb-svc-beacon-bot/blob/master/docs/USER-GUIDE.md "Click me!") in the docs section of my very own repository!`);
+            const min = interaction.options.getInteger(`min`);
+            const max = interaction.options.getInteger(`max`);
+            const result = Math.floor(Math.random() * (max - min + 1)) + min;
+            await interaction.reply({content: `Generating random number...`, ephemeral: true, fetchReply: true});
+            setTimeout(function () {
+                interaction.editReply({content: `Your number is: \`${result}\`!`});
+            }, 1500)
         }
     }
 };
