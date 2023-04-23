@@ -617,7 +617,7 @@ module.exports = {
                         purge = purge * 24 * 60 * 60;
 
                         // Ban the user from the server
-                        interaction.guild.members.ban(user.id, {days: purge, reason: reason}).then(() => {
+                        interaction.guild.members.ban(user.id, {deleteMessageSeconds: purge, reason: reason}).then(() => {
                             // Send the embed to the action log channel
                             actionLog.send({embeds: [banEmbed]});
                             interaction.reply({content: `${user.username} was successfully banned for ${duration}!`, ephemeral: true})
@@ -1576,7 +1576,6 @@ module.exports = {
         }
     },
     nicknameHandler: async function(interaction) {
-        const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
         const member = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(interaction.options.getUser(`user`).id); //get the member
         const oldNick = member.nickname; //old nickname var
         const subcommand = interaction.options.getSubcommand(); //subcommand var
@@ -1606,47 +1605,6 @@ module.exports = {
 
             // Let the mod know the member's nickname was changed
             interaction.reply({content: replyString, ephemeral: true});
-
-            // Create the embed
-            const nickEmbed = {
-                color: 0x886ce4, //purple
-                title: `Nickname Changed`,
-                author: {
-                    name: `${member.user.tag}`,
-                    icon_url: member.user.displayAvatarURL({dynamic:true})
-                },
-                description: `${member.user.username} has had their nickname changed.`,
-                fields: [
-                    {
-                        name: `Member Edited`,
-                        value: `${member}`,
-                        inline: true
-                    },
-                    {
-                        name: `Edited By`,
-                        value: `${interaction.member}`,
-                        inline: true
-                    },
-                    {
-                        name: `\u200b`,
-                        value: `\u200b`,
-                        inline: true
-                    },
-                    {
-                        name: `Previous Nickname`,
-                        value: `${oldNick || "None"}`,
-                        inline: true
-                    },
-                    {
-                        name: `New Nickname`,
-                        value: `${newNick || "None"}`,
-                        inline: true
-                    }
-                ],
-                timestamp: new Date(),
-            };
-            // Send the embed to the action log channel
-            actionLog.send({embeds: [nickEmbed]});
 
         // If unable to change the member's nickname let the moderator know
         }).catch(e => {
