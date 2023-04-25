@@ -4,6 +4,7 @@ const BannedUrl = require("./BannedUrl");
 const Command = require("./Command");
 const JoinableRole = require("./JoinableRole");
 const Kick = require("./Kick");
+const NameChange = require("./NameChange");
 const Timeout = require("./Timeout");
 const Setting = require("./Setting");
 const TempChannel = require("./TempChannel");
@@ -19,6 +20,7 @@ module.exports = {
     command : Command,
     joineableRole : JoinableRole,
     kick : Kick,
+    nameChange : NameChange,
     timeout : Timeout,
     setting : Setting,
     tempchannel : TempChannel,

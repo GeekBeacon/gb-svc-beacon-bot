@@ -5,15 +5,16 @@ const Discord = require("discord.js");
 const config = require("./config");
 const fs = require("node:fs");
 const path = require("node:path");
-const messageController = require("./controllers/MessageController");
-const joinController = require("./controllers/JoinController");
-const leaveController = require("./controllers/LeaveController");
-const databaseController = require("./controllers/DatabaseController");
-const moderationController = require("./controllers/ModerationController");
-const threadController = require("./controllers/ThreadController");
-const voiceController = require("./controllers/VoiceController");
-const reactionsController = require("./controllers/ReactionsController");
-const inviteController = require(`./controllers/InviteController`);
+const MessageController = require("./controllers/MessageController");
+const JoinController = require("./controllers/JoinController");
+const LeaveController = require("./controllers/LeaveController");
+const DatabaseController = require("./controllers/DatabaseController");
+const ModerationController = require("./controllers/ModerationController");
+const ThreadController = require("./controllers/ThreadController");
+const VoiceController = require("./controllers/VoiceController");
+const ReactionsController = require("./controllers/ReactionsController");
+const InviteController = require(`./controllers/InviteController`);
+const UserController = require(`./controllers/UserController`)
 const Models = require("./models/AllModels");
 
 // Instantiate a new Discord client and collection
@@ -103,7 +104,7 @@ client.once('ready', async () => {
 
     // Call the method to query the database for various data
     try {
-        databaseController.botReconnect(client);
+        DatabaseController.botReconnect(client);
     } catch(e) {
         console.error("Error: ", e);
     }
@@ -111,7 +112,7 @@ client.once('ready', async () => {
     // Check for unbans every minute
     setInterval(() => {
         try {
-            databaseController.databaseCheck(client);
+            DatabaseController.databaseCheck(client);
         } catch(e) {
             console.error("Error: ", e);
         }
@@ -123,7 +124,7 @@ client.once('ready', async () => {
 client.on('messageCreate', async message => {
     // Call the function from /controllers/MessageController to handle the message
     try {
-        messageController.messageHandler(message, client, deleteSet);
+        MessageController.messageHandler(message, client, deleteSet);
     } catch (e) {
         console.error(e);
     };
@@ -134,7 +135,7 @@ client.on('guildMemberAdd', member => {
 
     // Attempt to run the joinHandler method
     try {
-        joinController.joinHandler(member, client);
+        JoinController.joinHandler(member, client);
     } catch (e) {
         console.error(e);
     }
@@ -145,7 +146,7 @@ client.on('guildMemberRemove', member => {
 
     // Attempt to run the leaveHandler method
     try {
-        leaveController.leaveHandler(member, client);
+        LeaveController.leaveHandler(member, client);
     } catch (e) {
         console.error(e);
     }
@@ -156,7 +157,7 @@ client.on('guildMemberUpdate', (oldMember, newMember) => {
 
     // Attempt to run the screeningHandler method
     try {
-        joinController.screeningHandler(oldMember, newMember);
+        JoinController.screeningHandler(oldMember, newMember);
     } catch(e) {
         console.error(e);
     }
@@ -174,7 +175,7 @@ client.on("messageDelete", message => {
 
             // Attempt to run the deleteHandler method
             try {
-                moderationController.deleteHandler(message, client, deleteSet);
+                ModerationController.deleteHandler(message, client, deleteSet);
             } catch (e) {
                 return;
             }
@@ -208,7 +209,7 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
                 * Making this ignore bot messages prevent infinite loops or crashes.
                 */
                 if(fullMsg.author.bot === false) {
-                    moderationController.editHandler(oldMsg, fullMsg, client, deleteSet);
+                    ModerationController.editHandler(oldMsg, fullMsg, client, deleteSet);
 
                 // If the message is from a bot, ignore it
                 } else {
@@ -223,7 +224,7 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
             * Making this ignore bot messages prevent infinite loops or crashes.
             */
             if(newMsg.author.bot === false) {
-                moderationController.editHandler(oldMsg, newMsg, client, deleteSet);
+                ModerationController.editHandler(oldMsg, newMsg, client, deleteSet);
 
             // If the message is from a bot, ignore it
             } else {
@@ -238,7 +239,7 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
 // Listen for voice state updates
 client.on("voiceStateUpdate", (oldState, newState) => {
     // Call the channel left handler from the voice controller
-    voiceController.voiceUpdateHandler(oldState, newState, client);
+    VoiceController.voiceUpdateHandler(oldState, newState, client);
 });
 
 // Listen for reaction adds
@@ -249,7 +250,7 @@ client.on("messageReactionAdd", async (reaction, user) => {
         try {
             await reaction.fetch().then(() => {
                 // Call the reaction add handler from the reactions controller
-                reactionsController.reactionAdd(reaction, user);
+                ReactionsController.reactionAdd(reaction, user);
             });
         // Catch the error
         } catch(e) {
@@ -259,7 +260,7 @@ client.on("messageReactionAdd", async (reaction, user) => {
     // If not a partial continue as normal
     } else {
         // Call the reaction add handler from the reactions controller
-        reactionsController.reactionAdd(reaction, user);
+        ReactionsController.reactionAdd(reaction, user);
     }
 });
 
@@ -271,7 +272,7 @@ client.on("messageReactionRemove", async (reaction, user) => {
         try {
             await reaction.fetch().then(() => {
                 // Call the reaction remove handler from the reactions controller
-                reactionsController.reactionRemove(reaction, user);
+                ReactionsController.reactionRemove(reaction, user);
             });
         // Catch the error
         } catch(e) {
@@ -281,7 +282,7 @@ client.on("messageReactionRemove", async (reaction, user) => {
     // If not a partial continue as normal
     } else {
         // Call the reaction remove handler from the reactions controller
-        reactionsController.reactionRemove(reaction, user);
+        ReactionsController.reactionRemove(reaction, user);
     }
 });
 
@@ -328,7 +329,7 @@ client.on("interactionCreate", async interaction => {
         } else if (interaction.isModalSubmit()) {
 
             // Call the updateSetting function from the DatabaseController
-            databaseController.updateSetting(interaction);
+            DatabaseController.updateSetting(interaction);
         }
 
     // If not an interaction format we can handle
@@ -342,7 +343,7 @@ client.on("threadDelete", async (oldThread, newThread) => {
 
      // Attempt to run the deleteHandler method
     try {
-        threadController.deleteHandler(oldThread, newThread);
+        ThreadController.deleteHandler(oldThread, newThread);
     } catch (e) {
         return;
     }
@@ -353,10 +354,32 @@ client.on(Discord.Events.InviteCreate, async (invite) => {
 
     // Attempt to run the inviteCreate method
     try {
-        inviteController.inviteCreate(invite, client);
+        InviteController.inviteCreate(invite, client);
     } catch(e) {
         return;
     }
+});
+
+// Listen for a member to be updated
+client.on("guildMemberUpdate", async (oldMember, newMember) => {
+
+    // Attempt to run the memberHandler method
+   try {
+       UserController.memberHandler(oldMember, newMember);
+   } catch (e) {
+       return;
+   }
+});
+
+// Listen for a user to be updated
+client.on("userUpdate", async (oldUser, newUser) => {
+
+    // Attempt to run the userHandler method
+   try {
+       UserController.userHandler(oldUser, newUser);
+   } catch (e) {
+       return;
+   }
 });
 
 // Log the client in
