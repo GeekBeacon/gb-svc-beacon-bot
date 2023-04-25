@@ -17,11 +17,6 @@ const NameChange = sequelize.define('namechange', {
         type: Sequelize.TEXT,
         allowNull: false
     },
-    // Create required discriminator text column
-    discriminators: {
-        type: Sequelize.TEXT,
-        allowNull: false
-    },
     // Create optional nicknames text column
     nicknames: {
         type: Sequelize.TEXT,
