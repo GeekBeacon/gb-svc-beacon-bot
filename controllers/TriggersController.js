@@ -13,7 +13,7 @@ module.exports = {
         const triggerAction = interaction.options.getSubcommand();
         const superRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("super_role_id"));
         const adminRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("admin_role_id"));
-        const ownerId = interaction.member.guild.owner.id;
+        const ownerId = interaction.member.guild.ownerId;
 
         /*********** LIST TRIGGERS ***********/
         if (triggerAction === 'list') {
