@@ -8,8 +8,6 @@ module.exports = {
     givePoints: function(message, client) {
         const thxRegex = /\b(thanks*|thx*|ty*|thank\s*you*)\b/
 
-        console.log("test")
-
 
         // Check if the message was a reply
         if(message.type === Discord.MessageType.Reply) {
