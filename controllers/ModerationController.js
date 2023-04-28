@@ -45,25 +45,6 @@ module.exports = {
             
         } else {
 
-            // Create the delete embed
-            const delEmbed = {
-                color: 0x33ccff,
-                title: `Message Deleted in ${message.channel.name}`,
-                author: {
-                    name: `${message.author.username}#${message.author.discriminator}`,
-                    icon_url: message.author.displayAvatarURL({dynamic:true})
-                },
-                description: `A message by ${message.author} was deleted in ${message.channel}`,
-                fields: [
-                    {
-                        name: "Message",
-                        value: message.content || "`{Message was either an Embed or Image}`",
-                        inline: false,
-                    }
-                ],
-                timestamp: new Date()
-            }
-
             // Call the function to decide how to handle the embed(s)
             determineEmbeds();
 
@@ -379,8 +360,9 @@ module.exports = {
                 // If blacklisted url then handle it
                 } else {
                     const regexMatch = newMsg.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/);
-                    // If not then call the handleUrl function from the ModerationController file
-                    this.handleUrl(newMsg, client, regexMatch, deleteSet);
+
+                    // If not then call the handleUrl function from the module exports
+                    module.exports.handleUrl(newMsg, client, regexMatch, deleteSet);
                 };
             } else {
                 // Get the excluded channel names
@@ -1310,49 +1292,92 @@ module.exports = {
             });
         }
     },
-    handleUrl: function(m, c, rm, deleteSet) {
+    handleUrl: async function(m, c, rm, deleteSet) {
         const message = m, client = c, regexMatch = rm;
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
+        let embedArr = [];
 
         // Add the message id to the deleteSet
         deleteSet.add(message.id);
 
-        // Create the embed
-        const urlEmbed = {
-            color: 0xff5500,
-            title: `Message Deleted in ${message.channel.name}`,
-            author: {
-                name: message.author.tag,
-                icon_url: message.author.displayAvatarURL({dynamic:true}),
-            },
-            description: `I have deleted a message by ${message.author} in ${message.channel} because it contained a link that is blacklisted!`,
-            fields: [
-                {
-                    name: `Author`,
-                    value: `${message.author}`,
-                    inline: true,
-                },
-                {
-                    name: `Channel`,
-                    value: `${message.channel}`,
-                    inline: true,
-                },
-                {
-                    name: `Link`,
-                    value: `${regexMatch[0]}`,
-                    inline: false,
-                },
-                {
-                    name: `Full Message`,
-                    value: `${regexMatch.input}`,
-                    inline: false,
-                },
-            ],
-            timestamp: new Date(),
-        };
+        // Check if the message can fit within the field value character limit
+        if(regexMatch.input.length <= 1024) {
+            // Create the embed
+            const urlEmbed = new Discord.EmbedBuilder()
+                .setColor(0xff5500)
+                .setTitle(`Message Deleted in ${message.channel.name}`)
+                .setAuthor({name: `${message.author.username}#${message.author.discriminator}`, iconURL: message.author.displayAvatarURL({dynamic:true})})
+                .setDescription(`I have deleted a message by ${message.author} in ${message.channel} because it contained a link that is blacklisted!`)
+                .addFields(
+                    {
+                        name: `Author`,
+                        value: `${message.author}`,
+                        inline: true,
+                    },
+                    {
+                        name: `Channel`,
+                        value: `${message.channel}`,
+                        inline: true,
+                    },
+                    {
+                        name: `Link`,
+                        value: `${regexMatch[0]}`,
+                        inline: false,
+                    },
+                    {
+                        name: `Full Message`,
+                        value: `${regexMatch.input}`,
+                        inline: false,
+                    },
+                )
+                .setTimestamp();
+
+                // Add the embed to the array
+                embedArr.push(urlEmbed);
+
+            // If the message is too big for the field value
+        } else {
+            // Create the embed for the information
+            const urlEmbed = new Discord.EmbedBuilder()
+                .setColor(0xff5500)
+                .setTitle(`Message Deleted in ${message.channel.name}`)
+                .setAuthor({name: `${message.author.username}#${message.author.discriminator}`, iconURL: message.author.displayAvatarURL({dynamic:true})})
+                .setDescription(`I have deleted a message by ${message.author} in ${message.channel} because it contained a link that is blacklisted!`)
+                .addFields(
+                    {
+                        name: `Author`,
+                        value: `${message.author}`,
+                        inline: true,
+                    },
+                    {
+                        name: `Channel`,
+                        value: `${message.channel}`,
+                        inline: true,
+                    },
+                    {
+                        name: `Link`,
+                        value: `${regexMatch[0]}`,
+                        inline: false,
+                    }
+                )
+                .setTimestamp();
+
+                // Add the embed to the array
+                embedArr.push(urlEmbed);
+
+            // Create the second embed for the message
+            const msgEmbed = new Discord.EmbedBuilder()
+            .setColor(0xff5500)
+            .setTitle(`Message`)
+            .setDescription(`${regexMatch.input}`);
+
+            // Add the embed to the array
+            embedArr.push(msgEmbed);
+
+        }
 
         // Send the embed to the mod log
-        actionLog.send({embeds: [urlEmbed]}).then((msg) => {
+        await actionLog.send({embeds: embedArr}).then((msg) => {
             
             // Create a new table if one doesn't exist; force: false to prevent overwrite; alter: true to make the table match the model
             Models.warning.sync({ force: false, alter: true }).then(() => {
@@ -1373,7 +1398,7 @@ module.exports = {
             message.delete({reason: "Blacklisted URL"}).then(() => {
 
                 // Let the user know why their message was deleted
-                message.channel.send(`${message.member.displayName} please refrain from posting blacklisted urls!`);
+                message.channel.send(`${message.member.displayName}, we do not allow that website to be shared on our Discord, please refrain from posting links to that website!`);
             });
         });
     },

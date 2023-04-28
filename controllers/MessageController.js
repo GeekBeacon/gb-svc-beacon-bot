@@ -53,8 +53,8 @@ module.exports = {
         }
 
         // Check if the message contains a url
-        if (message.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/) && !message.member.roles.cache.some(r => url_role_whitelist.includes(r.id)) && !message.content.toLowerCase().match(bannedUrlArr.map(domain => `\\b${domain}\\b`).join("|"))) {
-                
+        if (message.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/) && !message.member.roles.cache.some(r => url_role_whitelist.includes(r.id)) && message.content.toLowerCase().match(bannedUrlArr.map(domain => `\\b${domain}\\b`).join("|"))) {
+
             // // If blacklisted url then handle it
             const regexMatch = message.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/);
             // Call the handleUrl function from the ModerationController file
