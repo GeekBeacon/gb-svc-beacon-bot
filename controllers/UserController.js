@@ -9,8 +9,6 @@ module.exports = {
     // Method for handling guild member changes
     memberHandler: async function(oldMember, newMember) {
 
-        // this.userHandler(oldMember.user, newMember.user);
-
         const actionLog = newMember.guild.channels.cache.find((c => c.name.includes(newMember.client.settings.get("mod_log_channel_name")))); //mod log channel
         let embedDesc;
 
@@ -81,8 +79,26 @@ module.exports = {
                             // Update the nicknames field in the db entry
                             Models.nameChange.update({nicknames: newNicknames}, {where: {user_id: newMember.id}}).then(() =>{
 
-                                // Send the embed to the mod log channel
-                                actionLog.send({embeds: [nickChangeEmbed]});
+                                // Look for the member in the db
+                                Models.user.findOne({where: {user_id: newMember.user.id}, raw: true}).then((memb) => {
+                                    // Check if the member was found (has posted/points)
+                                    if(memb) {
+                                        // Send the embed to the mod log channel
+                                        actionLog.send({embeds: [nickChangeEmbed]});
+                                    // If the user has no points
+                                    } else {
+                                        Models.warning.findOne({where: {user_id: newMember.user.id}, raw: true}).then((membr) => {
+                                            // Check if the member has any warnings
+                                            if(membr) {
+                                                // Send the embed to the mod log channel
+                                                actionLog.send({embeds: [nickChangeEmbed]});
+                                            // If member has no warnings, ignore
+                                            } else {
+                                                return;
+                                            }
+                                        })
+                                    }
+                                })
                             });
                         }
 
@@ -105,8 +121,26 @@ module.exports = {
                             usernames: newMember.user.tag,
                             nicknames: nicknamesStr
                         }).then(() => {
-                            // Send the embed to the mod log channel
-                            actionLog.send({embeds: [nickChangeEmbed]});
+                            // Look for the member in the db
+                            Models.user.findOne({where: {user_id: newMember.user.id}, raw: true}).then((memb) => {
+                                // Check if the member was found (has posted/points)
+                                if(memb) {
+                                    // Send the embed to the mod log channel
+                                    actionLog.send({embeds: [nickChangeEmbed]});
+                                // If the user has no points
+                                } else {
+                                    Models.warning.findOne({where: {user_id: newMember.user.id}, raw: true}).then((membr) => {
+                                        // Check if the member has any warnings
+                                        if(membr) {
+                                            // Send the embed to the mod log channel
+                                            actionLog.send({embeds: [nickChangeEmbed]});
+                                        // If member has no warnings, ignore
+                                        } else {
+                                            return;
+                                        }
+                                    })
+                                }
+                            })
                         })
                     }
                 })
@@ -120,7 +154,7 @@ module.exports = {
         const actionLog = guild.channels.cache.find((c => c.name.includes(newUser.client.settings.get("mod_log_channel_name")))); //mod log channel
 
         // If the user changed their username
-        if(oldUser.tag !== newUser.tag) {
+        if(oldUser.username !== newUser.username) {
 
             // Create the embed
             const usernameChangedEmbed = new Discord.EmbedBuilder()
@@ -152,9 +186,26 @@ module.exports = {
 
                         // Update the usernames field in the db entry
                         Models.nameChange.update({usernames: `${user.usernames},${newUser.tag}`}, {where: {user_id: newUser.id}}).then(() => {
-
-                            // Send the embed to the mod log channel
-                            actionLog.send({embeds: [usernameChangedEmbed]});
+                            // Look for the member in the db
+                            Models.user.findOne({where: {user_id: newMember.user.id}, raw: true}).then((memb) => {
+                                // Check if the member was found (has posted/points)
+                                if(memb) {
+                                    // Send the embed to the mod log channel
+                                    actionLog.send({embeds: [usernameChangedEmbed]});
+                                // If the user has no points
+                                } else {
+                                    Models.warning.findOne({where: {user_id: newMember.user.id}, raw: true}).then((membr) => {
+                                        // Check if the member has any warnings
+                                        if(membr) {
+                                            // Send the embed to the mod log channel
+                                            actionLog.send({embeds: [usernameChangedEmbed]});
+                                        // If member has no warnings, ignore
+                                        } else {
+                                            return;
+                                        }
+                                    })
+                                }
+                            })
                         });
 
                     // If the member has no entry in the table, create one
@@ -165,8 +216,26 @@ module.exports = {
                             user_id: newUser.id,
                             usernames: `${oldUser.tag},${newUser.tag}`
                         }).then(() => {
-                            // Send the embed to the mod log channel
-                            actionLog.send({embeds: [usernameChangedEmbed]});
+                            // Look for the member in the db
+                            Models.user.findOne({where: {user_id: newMember.user.id}, raw: true}).then((memb) => {
+                                // Check if the member was found (has posted/points)
+                                if(memb) {
+                                    // Send the embed to the mod log channel
+                                    actionLog.send({embeds: [usernameChangedEmbed]});
+                                // If the user has no points
+                                } else {
+                                    Models.warning.findOne({where: {user_id: newMember.user.id}, raw: true}).then((membr) => {
+                                        // Check if the member has any warnings
+                                        if(membr) {
+                                            // Send the embed to the mod log channel
+                                            actionLog.send({embeds: [usernameChangedEmbed]});
+                                        // If member has no warnings, ignore
+                                        } else {
+                                            return;
+                                        }
+                                    })
+                                }
+                            })
                         })
                     }
                 })

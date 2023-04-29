@@ -634,7 +634,7 @@ module.exports = {
         const banLengthRegex = /(\d+\s*\D+$|^permanent$|^perma$|^perm$|^p{1}$){1}/; //regex for ban time format
 
         // Check if the mod input for a permanent ban
-        if(banUnit.toLowerCase() === "perm") {
+        if(banUnit.toLowerCase().match(banLengthRegex)) {
             banValue = 999; // assign value
             banUnit = `years`; // set unit
             duration = `an indefinite amount of time`; // set duration for description
