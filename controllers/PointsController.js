@@ -8,7 +8,6 @@ module.exports = {
     givePoints: function(message, client) {
         const thxRegex = /\b(thanks*|thx*|ty*|thank\s*you*)\b/
 
-
         // Check if the message was a reply
         if(message.type === Discord.MessageType.Reply) {
 
@@ -34,14 +33,11 @@ module.exports = {
             // Ignore thread creation to avoid giving an extra point since it also counts the thread starter message
             if(message.type === Discord.MessageType.ThreadCreated) return;
 
-
             // Call the addToDB function to update or create the user with 1 point value
             addToDB(message.author.id, 1);
         }
 
         function addToDB(uid, pval) {
-
-
 
             /* 
             * Sync the model to the table

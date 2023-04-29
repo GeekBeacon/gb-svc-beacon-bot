@@ -50,24 +50,15 @@ module.exports = {
         // If the message is from a bot, ignore it
         if (message.author.bot) {
             return;
+        }
 
         // Check if the message contains a url
-        } else if (message.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/)) {
-            // If user has an excluded role then ignore
-            if(message.member.roles.cache.some(r => url_role_whitelist.includes(r.id))) {
-                return;
-            }
+        if (message.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/) && !message.member.roles.cache.some(r => url_role_whitelist.includes(r.id)) && message.content.toLowerCase().match(bannedUrlArr.map(domain => `\\b${domain}\\b`).join("|"))) {
 
-            // If not blacklisted then ignore
-            if(!message.content.toLowerCase().match(bannedUrlArr.map(domain => `\\b${domain}\\b`).join("|"))) {
-                return;
-                
-            // If blacklisted url then handle it
-            } else {
-                const regexMatch = message.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/);
-                // Call the handleUrl function from the ModerationController file
-                ModerationController.handleUrl(message, client, regexMatch, deleteSet);
-            };
+            // // If blacklisted url then handle it
+            const regexMatch = message.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/);
+            // Call the handleUrl function from the ModerationController file
+            ModerationController.handleUrl(message, client, regexMatch, deleteSet);
 
         // Check if the message contains a trigger in the list
         /* More specifically it: 
@@ -88,9 +79,11 @@ module.exports = {
 
             // Call the triggerHit function from the TriggersController file
             TriggersController.triggerHit(message, triggers, client);
-        // If not a trigger word/phrase, a blacklisted domain, or a bot message then call the experience controller to give experience.
+
+        // If not a trigger word/phrase, a blacklisted domain, or a bot message then call the points controller to give points.
         } else {
             PointsController.givePoints(message, client);
         }
+
     }
 }

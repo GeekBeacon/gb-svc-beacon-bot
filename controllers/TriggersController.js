@@ -13,7 +13,7 @@ module.exports = {
         const triggerAction = interaction.options.getSubcommand();
         const superRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("super_role_id"));
         const adminRole = interaction.member.roles.cache.some(role => role.id === interaction.client.settings.get("admin_role_id"));
-        const ownerId = interaction.member.guild.owner.id;
+        const ownerId = interaction.member.guild.ownerId;
 
         /*********** LIST TRIGGERS ***********/
         if (triggerAction === 'list') {
@@ -221,15 +221,16 @@ module.exports = {
             });
         };
     },
-    triggerHit: function(m, t, c) {
+    triggerHit: async function(m, t, c) {
         // Create vars
         const message = m, triggers = t, client = c;
-        let severity, fullMessage, warnId;
+        let severity, warnId;
         let severityArr = [];
         const modRole = message.member.roles.cache.find(role => role.id === client.settings.get("mod_role_id"));
         const modTraineeRole = message.member.roles.cache.find(role => role.id === client.settings.get("trainee_role_id"));
         const superRole = message.member.roles.cache.find(role => role.id === client.settings.get("super_role_id"));
         const adminRole = message.member.roles.cache.find(role => role.id === client.settings.get("admin_role_id"));
+        let embedArr = [];
 
         // Find the trigger(s) in the database
         Models.trigger.findAll({where: {trigger: triggers},raw:true}).then((data) => {
@@ -270,23 +271,15 @@ module.exports = {
                     // Set the id for the warning
                     warnId = item.id;
 
-                    // Make sure full message isn't too large for embed field
-                    if(message.content.length > 1024) {
-                        fullMessage = message.content.substring(0, 1021) + "..."; // 1021 to add elipsis at end
-                    } else {
-                        fullMessage = message.content;
-                    }
-
-                    // Create the embed
-                    const embedMsg = {
-                        color: 0x00FF00, // this will change based on severity
-                        title: "A User Has Hit A Trigger!",
-                        author: {
-                            name: `${message.author.username}#${message.author.discriminator}`,
-                            icon_url: message.author.displayAvatarURL({dynamic:true}),
-                        },
-                        description: `${message.author} has been warned for saying a trigger!`,
-                        fields: [
+                    // If the message is able to fit within the field value character limit
+                    if(message.content.length <= 1024) {
+                        // Create the embed
+                        const trigEmbed = new Discord.EmbedBuilder()
+                        .setColor(0x00ff00)
+                        .setTitle(`A Member Has Hit A Trigger!`)
+                        .setAuthor({name: `${message.author.username}#${message.author.discriminator}`, iconURL: message.author.displayAvatarURL({dynamic:true})})
+                        .setDescription(`${message.author} has been warned for saying a trigger!`)
+                        .addFields(
                             {
                                 name: "Severity",
                                 value: severity,
@@ -302,26 +295,71 @@ module.exports = {
                                 value: `/warnings specific ${warnId}`,
                             },
                             {
-                                name: "Full Message From User",
-                                value: fullMessage,
+                                name: `Full Message`,
+                                value: message.content
                             },
                             {
                                 name: "Message URL",
                                 value: message.url,
+                            }
+                        )
+                        .setTimestamp();
+
+                        // Add the embed to the embedArr
+                        embedArr.push(trigEmbed);
+                        
+                    // If the message is too big for the embed field value
+                    } else {
+                        // Create the information embed
+                        const infoEmbed = new Discord.EmbedBuilder()
+                        .setColor(0x00ff00)
+                        .setTitle(`A Member Has Hit A Trigger!`)
+                        .setAuthor({name: `${message.author.username}#${message.author.discriminator}`, iconURL: message.author.displayAvatarURL({dynamic:true})})
+                        .setDescription(`${message.author} has been warned for saying a trigger!`)
+                        .addFields(
+                            {
+                                name: "Severity",
+                                value: severity,
+                                inline: true,
                             },
-                        ],
-                        timestamp: new Date(),
+                            {
+                                name: "Channel",
+                                value: `${message.channel}`,
+                                inline: true,
+                            },
+                            {
+                                name: "Get More Info",
+                                value: `/warnings specific ${warnId}`,
+                            },
+                            {
+                                name: "Message URL",
+                                value: message.url,
+                            }
+                        )
+                        .setTimestamp();
+
+                        // Add the embed to the embedArr
+                        embedArr.push(infoEmbed);
+
+                        // Create the message embed
+                        const msgEmbed = new Discord.EmbedBuilder()
+                        .setColor(0x00ff00)
+                        .setTitle(`Full Message`)
+                        .setDescription(`${message.content}`)
+
+                        // Add the embed to the embedArr
+                        embedArr.push(msgEmbed);
                     }
 
                     switch(severity) {
                         case "high":
-                            handleHigh(triggers, embedMsg);
+                            handleHigh(triggers, embedArr);
                             break;
                         case "medium":
-                            handleMedium(triggers, embedMsg);
+                            handleMedium(triggers, embedArr);
                             break;
                         case "low":
-                            handlelow(triggers, embedMsg);
+                            handlelow(triggers, embedArr);
                             break;
                     }
                 });
@@ -329,57 +367,63 @@ module.exports = {
         });
 
         // Handle the high severity trigger(s)
-        function handleHigh(t, e) {
-            // Set the color for the embed
-            e.color = 0xFF0000; // red since high severity
+        async function handleHigh(t, e) {
+
+            // Loop through the embed array
+            e.forEach((embed) => {
+                // Set the color for the embed
+                embed.setColor(0xFF0000); // red since high severity
+            })
 
             // Set description for high severity urgency
-            e.description = `A message by ${message.author} has been warned for saying a trigger, further action is required!`
+            e[0].setDescription(`A message by ${message.author} has been deleted for saying a trigger, further action is required!`)
 
             // Call reportLadder function
             reportLadder(t, e);
         }
 
         // Handle the medium severity trigger(s)
-        function handleMedium(t, e) {
-            // Set the color for the embed
-            e.color = 0xFFA500; // orange since medium severity
+        async function handleMedium(t, e) {
+
+            // Loop through the embed array
+            e.forEach((embed) => {
+                // Set the color for the embed
+                embed.setColor(0xFFA500); // orange since medium severity
+
+            })
 
             // Set description for medium severity urgency
-            e.description = `A message by ${message.author} has been warned for saying a trigger, further action may be required!`
-
+            e[0].setDescription(`${message.author} has been warned for containing a trigger, further action may be required!`)
+            
             // Call reportLadder function
             reportLadder(t, e);
         }
 
         // Handle the low severity trigger(s)
-        function handlelow(t, e) {
-            // Set the color for the embed
-            e.color = 0x00FF00; // green since low severity
-
+        async function handlelow(t, e) {
             // Call reportLadder function
             reportLadder(t, e);
         }
 
         // Sends reports of triggers based on user's permissions and the existence of specific channels
-        function reportLadder(t, e) {
+        async function reportLadder(t, e) {
             const superChannel = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("super_channel_name")))); //super channel
             const adminChannel = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("admin_channel_name")))); //admin channel
             const superLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("super_log_channel_name")))); //super log channel
             const logChannel = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //action log channel
             // Gets the guildMember instance of the user so we can get more information on them and their information within our server.
             warnedUser = client.guilds.cache.get(message.guild.id).members.cache.get(message.author.id);
+            const delEmbedArr = [];
 
-            // Create deleted message embed for action log for high severity triggers
-            const delMsgEmbed = {
-                color: 0xFF0000,
-                title: `Trigger Message Deleted!`,
-                author: {
-                    name: `${message.author.username}#${message.author.discriminator}`,
-                    icon_url: message.author.displayAvatarURL({dynamic:true}),
-                },
-                description: `A message by ${message.author} has been deleted because it has hit a high severity trigger, disciplinary action should be taken as soon as possible!`,
-                fields: [
+            // If the message can fit within the field value character limit
+            if(message.content.length <= 1024) {
+                // Create the delete embed
+                const delEmbed = new Discord.EmbedBuilder()
+                .setColor(0xff0000)
+                .setTitle(`Trigger Message Deleted!`)
+                .setAuthor({name: `${message.author.username}#${message.author.discriminator}`, iconURL: message.author.displayAvatarURL({dynamic:true})})
+                .setDescription(`A message by ${message.author} has been deleted because it has hit a high severity trigger, disciplinary action should be taken as soon as possible!`)
+                .addFields(
                     {
                         name: "User Roles",
                         value: `${warnedUser.roles.cache.map(role => role.name).join(", ")}`,
@@ -394,11 +438,50 @@ module.exports = {
                     },
                     {
                         name: "Full Message",
-                        value: fullMessage,
+                        value: message.content,
                     }
-                ],
-                timestamp: new Date(),
-            };
+                )
+                .setTimestamp();
+
+                // Add the embed to the delEmbedArr
+                delEmbedArr.push(delEmbed);
+
+            // If the message is too long to fit in the field value
+            } else {
+                // Create the infomation embed
+                const infoEmbed = new Discord.EmbedBuilder()
+                .setColor(0xff0000)
+                .setTitle(`Trigger Message Deleted!`)
+                .setAuthor({name: `${message.author.username}#${message.author.discriminator}`, iconURL: message.author.displayAvatarURL({dynamic:true})})
+                .setDescription(`A message by ${message.author} has been deleted because it has hit a high severity trigger, disciplinary action should be taken as soon as possible!`)
+                .addFields(
+                    {
+                        name: "User Roles",
+                        value: `${warnedUser.roles.cache.map(role => role.name).join(", ")}`,
+                    },
+                    {
+                        name: "Triggers Hit",
+                        value: `${t}`,
+                    },
+                    {
+                        name: "More Info",
+                        value: `/warnings specific ${warnId}`,
+                    },
+                )
+                .setTimestamp();
+
+                // Add the embed to the delEmbedArr
+                delEmbedArr.push(infoEmbed);
+
+                // Create the delete embed
+                const delMsgEmbed = new Discord.EmbedBuilder()
+                .setColor(0xff0000)
+                .setTitle(`Trigger Message Deleted!`)
+                .setDescription(`${message.content}`)
+
+                // Add the embed to the delEmbedArr
+                delEmbedArr.push(delMsgEmbed);
+            }
 
             // If not server owner or admin
             if(message.author.id !== message.guild.ownerID) {
@@ -411,12 +494,12 @@ module.exports = {
                 // If super uses a trigger
                 if (superRole) {
                     // Set embed title
-                    e.title = `A Member Of The ${superRole.name} Group Has Hit A Trigger!`
+                    delEmbedArr[0].title = `A Member Of The ${superRole.name} Group Has Hit A Trigger!`
                     if (severity === "high") {
                         // Delete the message
-                        message.delete().then(() => {
+                        message.delete().then(async () => {
                             // Send the embed with a copy of the message to the super log
-                            superLog.send({embeds: [delMsgEmbed]}).then(d => {
+                            await superLog.send({embeds: delEmbedArr}).then(d => {
                                 // Update the db's message link
                                 Models.warning.update({message_link: d.url}, {
                                     where: {
@@ -427,32 +510,34 @@ module.exports = {
                         });
                     } else if (severity === "medium" || severity === "low") {
                         // Send embed to the super log
-                        superLog.send({embeds: [e]});
+                        await superLog.send({embeds: e});
                     }
 
                 // If mod uses a trigger
                 } else if (modRole || modTraineeRole) {
                     // Set embed title based on role
                     if(modRole) {
-                        e.title = `A Member Of The ${modRole.name} Group Has Hit A Trigger!`;
+                        e[0].title = `A Member Of The ${modRole.name} Group Has Hit A Trigger!`;
                     } else {
-                        e.title = `A Member Of The ${modTraineeRole.name} Group Has Hit A Trigger!`
+                        e[0].title = `A Member Of The ${modTraineeRole.name} Group Has Hit A Trigger!`
                     }
 
                     // If there is an super channel
                     if (superChannel) {
                         if (severity === "high") {
                             // Delete the message
-                            message.delete().then(() => {
+                            await message.delete().then(async () => {
 
                                 // Make sure a super log channel exists
                                 if(superLog) {
                                     // Send the embed with a copy of the message to the super log
-                                    superLog.send({embeds: [delMsgEmbed]}).then(d => {
-                                        // Change the url for the mod channel's embed to link to log in the log channel
-                                        e.fields[4].value = d.url;
+                                    await superLog.send({embeds: delEmbedArr}).then(async (d) => {
+                                        
+                                        // Change the url in the embed
+                                        e[0].data.fields[3] = d.url;
+
                                         // Send embed to the super channel
-                                        superChannel.send({embeds: [e]});
+                                        await superChannel.send({embeds: e});
 
                                         // Update the db's message link
                                         Models.warning.update({message_link: d.url}, {
@@ -464,7 +549,7 @@ module.exports = {
 
                                 // If no super log channel, just send deleted embed to super channel
                                 } else {
-                                    superChannel.send({embeds: [delMsgEmbed]}).then(d => {
+                                    await superChannel.send({embeds: delEmbedArr}).then(d => {
                                         // Update the db's message link
                                         Models.warning.update({message_link: d.url}, {
                                             where: {
@@ -476,20 +561,20 @@ module.exports = {
                             });
                         } else if (severity === "medium" || severity === "low") {
                             // Send embed to the super log
-                            superLog.send({embeds: [e]});
+                            await superLog.send({embeds: e});
                         }
 
                     // If a super channel isn't found
                     } else if (adminChannel) {
                         if (severity === "high") {
                            // Delete the message
-                            message.delete().then(() => {
+                            await message.delete().then(async () => {
                                 // Send the embed with a copy of the message to the admin channel
-                                adminChannel.send({embeds: [delMsgEmbed]});
+                                await adminChannel.send({embeds: delEmbedArr});
                             });
                         } else if (severity === "medium" || severity === "low") {
                             // Send embed to the admin channel
-                            adminChannel.send({embeds: [e]});
+                            await adminChannel.send({embeds: e});
                         }
                     }
 
@@ -497,13 +582,15 @@ module.exports = {
                 } else {
                     if (severity === "high") {
                         // Delete the message
-                        message.delete().then(() => {
+                        await message.delete().then(async () => {
                             // Send the embed with a copy of the message to the mod log
-                            logChannel.send({embeds: [delMsgEmbed]}).then(d => {
-                                // Change the url for the mod channel's embed to link to log in the log channel
-                                e.fields[4].value = d.url;
+                            await logChannel.send({embeds: delEmbedArr}).then(async (d) => {
+
+                                // Splice the 4th field to remove it and replace it with the new URL
+                                e[0].spliceFields(3,1,{name: `Message URL`, value: d.url, inline: false});
+
                                 // Send embed to the mod log
-                                logChannel.send("@here", {embeds: [e]});
+                                await logChannel.send({content: "@here", embeds: e});
 
                                 // Update the db's message link
                                 Models.warning.update({message_link: d.url}, {
@@ -518,13 +605,13 @@ module.exports = {
                         message.reply(`Please try to refrain from using words such as: \`${t}\``);
 
                         // Send embed to the moderation log with here tag
-                        logChannel.send({embeds: [e]});
+                        await logChannel.send({embeds: e});
                     } else if (severity === "low") {
                         // Warn the user
                         message.reply(`Please try to refrain from using words such as: \`${t}\``);
 
                         // Send embed to the moderation log
-                        logChannel.send({embeds: [e]});
+                        await logChannel.send({embeds: e});
                     }
                 }
             }

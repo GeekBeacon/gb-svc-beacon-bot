@@ -4,12 +4,14 @@ const Discord = require('discord.js');
 const TriggersController = require("./TriggersController");
 
 module.exports = {
-    deleteHandler: function(m, c, deleteSet) {
+    deleteHandler: async function(m, c, deleteSet) {
         const message = m, client = c;
-        const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
+        const modLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
         const superLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("super_log_channel_name")))); //super log channel
         let triggerArr = [];
         let triggerObj = {};
+        let embedsArr = [];
+        let embedCharCount = 0;
 
 
 
@@ -43,31 +45,32 @@ module.exports = {
             
         } else {
 
-            // Create the delete embed
-            const delEmbed = {
-                color: 0x33ccff,
-                title: `Message Deleted in ${message.channel.name}`,
-                author: {
-                    name: `${message.author.username}#${message.author.discriminator}`,
-                    icon_url: message.author.displayAvatarURL({dynamic:true})
-                },
-                description: `A message by ${message.author} was deleted in ${message.channel}`,
-                fields: [
-                    {
-                        name: "Message",
-                        value: message.content || "`{Message was either an Embed or Image}`",
-                        inline: false,
-                    }
-                ],
-                timestamp: new Date()
-            }
+            // Call the function to decide how to handle the embed(s)
+            determineEmbeds();
 
-            // Send to master control logs
+            // If the edit was made in the super channel send to super logs
             if(message.channel.name.includes("master-control") || message.channel.name.includes("employees")) {
-                superLog.send({embeds: [delEmbed]});
+
+                // If the embeds count is 6000 characters or less
+                if(embedCharCount <= 6000) {
+                    // Send the embeds in a single message
+                    await superLog.send({embeds: embedsArr});
+                // If the embeds count is over 6000
+                } else {
+                    // Send the first two embeds (info andmessage)
+                    await superLog.send({embeds: [embedsArr[0], embedsArr[1]]});
+                };
             } else {
-                // Send the embed to the action log channel
-                actionLog.send({embeds: [delEmbed]});
+                
+                // If the embeds count is 6000 characters or less
+                if(embedCharCount <= 6000) {
+                    // Send the embeds in a single message
+                    await modLog.send({embeds: embedsArr});
+                // If the embeds count is over 6000
+                } else {
+                    // Send the first two embeds (info and old message)
+                    await modLog.send({embeds: [embedsArr[0], embedsArr[1]]});
+                }
             }
 
             /* POINT REMOVAL */
@@ -142,6 +145,64 @@ module.exports = {
                 })
             }
         }
+
+        // Create a function for determining how to handle the delete log message
+        function determineEmbeds() {
+            
+            // If the message can fit in the field value limit
+            if(message.content.length <= 1024) {
+
+                // Add the delEmbed data
+                const delEmbed = new Discord.EmbedBuilder()
+                .setColor(0x33ccff)
+                .setTitle(`Message Deleted in ${message.channel.name}`)
+                .setAuthor({name: `${message.author.username}#${message.author.discriminator}`, iconURL: message.author.displayAvatarURL({dynamic:true})})
+                .setDescription(`A message by ${message.author} was deleted in ${message.channel}`)
+                .addFields(
+                    {
+                        name: "Message",
+                        value: message.content || "`{Message was either an Embed or Image}`",
+                        inline: false,
+                    }
+                )
+                .setTimestamp();
+
+                // Add the embed's character count to the embed count var
+                embedCharCount += Discord.embedLength(delEmbed.data);
+
+                // Add the embed to the array
+                embedsArr.push(delEmbed);
+
+            // If the messages can't fit within the field value limit
+            } else {
+
+                // Add the delEmbed data
+                const delEmbed = new Discord.EmbedBuilder()
+                .setColor(0x33ccff)
+                .setTitle(`Message Deleted in ${message.channel.name}`)
+                .setAuthor({name: `${message.author.username}#${message.author.discriminator}`, iconURL: message.author.displayAvatarURL({dynamic:true})})
+                .setDescription(`A message by ${message.author} was deleted in ${message.channel}`)
+                .setTimestamp();
+
+                // Add the embed's character count to the embed count var
+                embedCharCount += Discord.embedLength(delEmbed.data);
+
+                // Add the embed to the array
+                embedsArr.push(delEmbed);
+
+                // Create the old message's embed
+                const msgEmbed = new Discord.EmbedBuilder()
+                .setColor(0x33ccff)
+                .setTitle(`Message`)
+                .setDescription(message.content || "`{Message was either an Embed or Image}`");
+
+                // Add the msgEmbed's character count to the embed count var
+                embedCharCount += Discord.embedLength(msgEmbed.data);
+
+                // Add the message embed to the array
+                embedsArr.push(msgEmbed);
+            }
+        }
     },
     purgeHandler: function(interaction) {
         const superLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("super_log_channel_name")))); //super log channel
@@ -204,22 +265,19 @@ module.exports = {
             }
 
     },
-    editHandler: function(o, n, c, deleteSet) {
+    editHandler: async function(o, n, c, deleteSet) {
         const oldMsg = o, newMsg = n, client = c; // create vars for parameter values
         const triggerList = client.triggers;
         const bannedUrls = client.blacklist;
         const superLog = newMsg.guild.channels.cache.find((c => c.name.includes(client.settings.get("super_log_channel_name")))); //super log channel
         const modLog = newMsg.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
         
-        // Create author var
+        // Create vars
         const author = client.users.cache.get(newMsg.author.id);
         let bannedUrlArr = [];
         let triggerArr = [];
-
-        // Create embed and attach the shared fields
-        let editEmbed = new Discord.EmbedBuilder()
-        .setColor(0x00ff00)
-        .setTimestamp();
+        let embedsArr = [];
+        let embedCharCount = 0;
 
         // If pinned message or thread created then ignore
         if(oldMsg.pinned !== newMsg.pinned || oldMsg.hasThread !== newMsg.hasThread) {
@@ -230,8 +288,116 @@ module.exports = {
             if(oldMsg.content === newMsg.content) {
                 return;
             } else {
+                determineEmbeds();
+            }
+        } else {
+            determineEmbeds();
+        }
+        // If the edit was made in the super channel send to super logs
+        if(newMsg.channel.name.includes("master-control") || newMsg.channel.name.includes("employees")) {
+
+            // If the embeds count is 6000 characters or less
+            if(embedCharCount <= 6000) {
+                // Send the embeds in a single message
+                await superLog.send({embeds: embedsArr});
+            // If the embeds count is over 6000
+            } else {
+                // Send the first two embeds (info and old message)
+                await superLog.send({embeds: [embedsArr[0], embedsArr[1]]}).then(async () => {
+                    // Send the third embed (new message)
+                    await superLog.send({embeds: [embedsArr[2]]});
+                });
+            };
+        } else {
+            
+            // If the embeds count is 6000 characters or less
+            if(embedCharCount <= 6000) {
+                // Send the embeds in a single message
+                await modLog.send({embeds: embedsArr}).then(() => {
+                    // Call the function to check the new message
+                    newMsgCheck();
+                });
+            // If the embeds count is over 6000
+            } else {
+                // Send the first two embeds (info and old message)
+                await modLog.send({embeds: [embedsArr[0], embedsArr[1]]}).then(async () => {
+                    // Send the third embed (new message)
+                    await modLog.send({embeds: [embedsArr[2]]}).then(() => {
+                        // Call the function to check the new message
+                        newMsgCheck();
+                    });
+                });
+            }
+        }
+
+        // Create a function to check the new message for disallowed content
+        function newMsgCheck() {
+
+            // Loop through the bannedUrl collection
+            bannedUrls.forEach((domain) => {
+                // Add each domain to the bannedUrlArr var
+                bannedUrlArr.push(domain);
+            });
+
+            // Loop through the triggerList collection
+            triggerList.forEach((value, trigger) => {
+                // Add each trigger to the triggerArr var
+                triggerArr.push(trigger);
+            });
+
+            if (newMsg.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/)) {
+                // Get the excluded roles
+                const url_role_whitelist = client.settings.get("url_role_whitelist").split(",");
+                // If user has an excluded role then ignore
+                if(newMsg.member.roles.cache.some(r => url_role_whitelist.includes(r.id))) {
+                    return;
+                }
+
+                // If not blacklisted then ignore
+                if(!newMsg.content.toLowerCase().match(bannedUrlArr.map(domain => `\\b${domain}\\b`).join("|"))) {
+                    return;
+                    
+                // If blacklisted url then handle it
+                } else {
+                    const regexMatch = newMsg.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/);
+
+                    // If not then call the handleUrl function from the module exports
+                    module.exports.handleUrl(newMsg, client, regexMatch, deleteSet);
+                };
+            } else {
+                // Get the excluded channel names
+                const excludedChannels = client.settings.get("excluded_channels").split(",");
+
+                // If the edit is in en excluded channel
+                if(excludedChannels.some(c => newMsg.channel.name.includes(c))) {
+                    return;
+
+                } else {
+                    // If there is no trigger then ignore
+                    if(!triggerArr.some(trigger => newMsg.content.toLowerCase().match(`\\b${trigger}\\b`))) {
+                        return;
+                    // If there is a trigger than handle it
+                    } else {
+
+                        // Store the trigger words
+                        const triggers = triggerArr.filter((trig) => newMsg.content.toLowerCase().match(`\\b(${trig})\\b`));
+
+                        TriggersController.triggerHit(newMsg, triggers, client);
+                    }
+                }
+            }
+        }
+
+        // Create a function for determining how to handle the edit log message
+        function determineEmbeds() {
+            
+            // If the messages can fit in the field value limit
+            if(oldMsg.content.length <= 1024 || newMsg.content.length <= 1024) {
+
                 // Add the editEmbed data
-                editEmbed.setTitle(`Message was edited in ${newMsg.channel.name}`)
+                const editEmbed = new Discord.EmbedBuilder()
+                .setColor(0x00ff00)
+                .setTitle(`Message was edited in ${newMsg.channel.name}`)
                 .setAuthor({name: `${author.username}#${author.discriminator}`, iconURL: author.displayAvatarURL({dynamic:true})})
                 .setDescription(`${newMsg.author} has edited a message in ${newMsg.channel} | [Jump To Message](${newMsg.url})`)
                 .addFields(
@@ -243,85 +409,56 @@ module.exports = {
                         name: `New Message`,
                         value: ` ${newMsg.content}`,
                     }
-                );
+                )
+                .setTimestamp();
+
+                // Add the embed's character count to the embed count var
+                embedCharCount += Discord.embedLength(editEmbed.data);
+
+                // Add the embed to the array
+                embedsArr.push(editEmbed);
+
+            // If the messages can't fit within the field value limit
+            } else {
+
+                // Create the starting embed
+                const editEmbed = new Discord.EmbedBuilder()
+                .setColor(0x00ff00)
+                .setTitle(`Message was edited in ${newMsg.channel.name}`)
+                .setAuthor({name: `${author.username}#${author.discriminator}`, iconURL: author.displayAvatarURL({dynamic:true})})
+                .setDescription(`${newMsg.author} has edited a message in ${newMsg.channel} | [Jump To Message](${newMsg.url})`)
+                .setTimestamp();
+
+                // Add the embed's character count to the embed count var
+                embedCharCount += Discord.embedLength(editEmbed.data);
+
+                // Add the starting embed to the array
+                embedsArr.push(editEmbed);
+
+                // Create the old message's embed
+                const oldMsgEmbed = new Discord.EmbedBuilder()
+                .setColor(0x00ff00)
+                .setTitle(`Original Message`)
+                .setDescription(`${oldMsg.content || "*Unable to fetch original message*"}`);
+
+                // Add the oldMsgEmbed's character count to the embed count var
+                embedCharCount += Discord.embedLength(oldMsgEmbed.data);
+
+                // Add the old message embed to the array
+                embedsArr.push(oldMsgEmbed);
+
+                // Create the new message's embed
+                const newMsgEmbed = new Discord.EmbedBuilder()
+                .setColor(0x00ff00)
+                .setTitle(`New Message`)
+                .setDescription(`${newMsg.content}`)
+
+                // Add the newMsgEmbed's character count to the embed count var
+                embedCharCount += Discord.embedLength(newMsgEmbed.data);
+
+                // Add the new message embed to the array
+                embedsArr.push(newMsgEmbed);
             }
-        } else {
-            // Add the editEmbed data
-            editEmbed.setTitle(`Message was edited in ${newMsg.channel.name}`)
-            .setAuthor({name: `${author.username}#${author.discriminator}`, iconURL: author.displayAvatarURL({dynamic:true})})
-            .setDescription(`${newMsg.author} has edited a message in ${newMsg.channel} | [Jump To Message](${newMsg.url})`)
-            .addFields(
-                {
-                    name: `Original Message`,
-                    value: ` ${oldMsg.content || "*Unable to fetch original message*"}`,
-                },
-                {
-                    name: `New Message`,
-                    value: ` ${newMsg.content}`,
-                }
-
-            );
-        }
-        // If the edit was made in the super channel send to super logs
-        if(newMsg.channel.name.includes("master-control") || newMsg.channel.name.includes("employees")) {
-            superLog.send({embeds: [editEmbed]});
-        } else {
-            // Send the edit embed to the mod log channel
-            modLog.send({embeds: [editEmbed]}).then(() => {
-
-                // Loop through the bannedUrl collection
-                bannedUrls.forEach((domain) => {
-                    // Add each domain to the bannedUrlArr var
-                    bannedUrlArr.push(domain);
-                });
-
-                // Loop through the triggerList collection
-                triggerList.forEach((value, trigger) => {
-                    // Add each trigger to the triggerArr var
-                    triggerArr.push(trigger);
-                });
-
-                if (newMsg.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/)) {
-                    // Get the excluded roles
-                    const url_role_whitelist = client.settings.get("url_role_whitelist").split(",");
-                    // If user has an excluded role then ignore
-                    if(newMsg.member.roles.cache.some(r => url_role_whitelist.includes(r.id))) {
-                        return;
-                    }
-
-                    // If not blacklisted then ignore
-                    if(!newMsg.content.toLowerCase().match(bannedUrlArr.map(domain => `\\b${domain}\\b`).join("|"))) {
-                        return;
-                        
-                    // If blacklisted url then handle it
-                    } else {
-                        const regexMatch = newMsg.content.toLowerCase().match(/(?!w{1,}\.)(\w+\.?)([a-zA-Z0-9-]+)(\.\w+)/);
-                        // If not then call the handleUrl function from the ModerationController file
-                        this.handleUrl(newMsg, client, regexMatch, deleteSet);
-                    };
-                } else {
-                    // Get the excluded channel names
-                    const excludedChannels = client.settings.get("excluded_channels").split(",");
-
-                    // If the edit is in en excluded channel
-                    if(excludedChannels.some(c => newMsg.channel.name.includes(c))) {
-                        return;
-
-                    } else {
-                        // If there is no trigger then ignore
-                        if(!triggerArr.some(trigger => newMsg.content.toLowerCase().match(`\\b${trigger}\\b`))) {
-                            return;
-                        // If there is a trigger than handle it
-                        } else {
-
-                            // Store the trigger words
-                            const triggers = triggerArr.filter((trig) => newMsg.content.toLowerCase().match(`\\b(${trig})\\b`));
-
-                            TriggersController.triggerHit(newMsg, triggers, client);
-                        }
-                    }
-                }
-            });
         }
     },
     kickHandler: function(interaction) {
@@ -497,7 +634,7 @@ module.exports = {
         const banLengthRegex = /(\d+\s*\D+$|^permanent$|^perma$|^perm$|^p{1}$){1}/; //regex for ban time format
 
         // Check if the mod input for a permanent ban
-        if(banUnit.toLowerCase() === "perm") {
+        if(banUnit.toLowerCase().match(banLengthRegex)) {
             banValue = 999; // assign value
             banUnit = `years`; // set unit
             duration = `an indefinite amount of time`; // set duration for description
@@ -1155,49 +1292,92 @@ module.exports = {
             });
         }
     },
-    handleUrl: function(m, c, rm, deleteSet) {
+    handleUrl: async function(m, c, rm, deleteSet) {
         const message = m, client = c, regexMatch = rm;
         const actionLog = message.guild.channels.cache.find((c => c.name.includes(client.settings.get("mod_log_channel_name")))); //mod log channel
+        let embedArr = [];
 
         // Add the message id to the deleteSet
         deleteSet.add(message.id);
 
-        // Create the embed
-        const urlEmbed = {
-            color: 0xff5500,
-            title: `Message Deleted in ${message.channel.name}`,
-            author: {
-                name: message.author.tag,
-                icon_url: message.author.displayAvatarURL({dynamic:true}),
-            },
-            description: `I have deleted a message by ${message.author} in ${message.channel} because it contained a link that is blacklisted!`,
-            fields: [
-                {
-                    name: `Author`,
-                    value: `${message.author}`,
-                    inline: true,
-                },
-                {
-                    name: `Channel`,
-                    value: `${message.channel}`,
-                    inline: true,
-                },
-                {
-                    name: `Link`,
-                    value: `${regexMatch[0]}`,
-                    inline: false,
-                },
-                {
-                    name: `Full Message`,
-                    value: `${regexMatch.input}`,
-                    inline: false,
-                },
-            ],
-            timestamp: new Date(),
-        };
+        // Check if the message can fit within the field value character limit
+        if(regexMatch.input.length <= 1024) {
+            // Create the embed
+            const urlEmbed = new Discord.EmbedBuilder()
+                .setColor(0xff5500)
+                .setTitle(`Message Deleted in ${message.channel.name}`)
+                .setAuthor({name: `${message.author.username}#${message.author.discriminator}`, iconURL: message.author.displayAvatarURL({dynamic:true})})
+                .setDescription(`I have deleted a message by ${message.author} in ${message.channel} because it contained a link that is blacklisted!`)
+                .addFields(
+                    {
+                        name: `Author`,
+                        value: `${message.author}`,
+                        inline: true,
+                    },
+                    {
+                        name: `Channel`,
+                        value: `${message.channel}`,
+                        inline: true,
+                    },
+                    {
+                        name: `Link`,
+                        value: `${regexMatch[0]}`,
+                        inline: false,
+                    },
+                    {
+                        name: `Full Message`,
+                        value: `${regexMatch.input}`,
+                        inline: false,
+                    },
+                )
+                .setTimestamp();
+
+                // Add the embed to the array
+                embedArr.push(urlEmbed);
+
+            // If the message is too big for the field value
+        } else {
+            // Create the embed for the information
+            const urlEmbed = new Discord.EmbedBuilder()
+                .setColor(0xff5500)
+                .setTitle(`Message Deleted in ${message.channel.name}`)
+                .setAuthor({name: `${message.author.username}#${message.author.discriminator}`, iconURL: message.author.displayAvatarURL({dynamic:true})})
+                .setDescription(`I have deleted a message by ${message.author} in ${message.channel} because it contained a link that is blacklisted!`)
+                .addFields(
+                    {
+                        name: `Author`,
+                        value: `${message.author}`,
+                        inline: true,
+                    },
+                    {
+                        name: `Channel`,
+                        value: `${message.channel}`,
+                        inline: true,
+                    },
+                    {
+                        name: `Link`,
+                        value: `${regexMatch[0]}`,
+                        inline: false,
+                    }
+                )
+                .setTimestamp();
+
+                // Add the embed to the array
+                embedArr.push(urlEmbed);
+
+            // Create the second embed for the message
+            const msgEmbed = new Discord.EmbedBuilder()
+            .setColor(0xff5500)
+            .setTitle(`Message`)
+            .setDescription(`${regexMatch.input}`);
+
+            // Add the embed to the array
+            embedArr.push(msgEmbed);
+
+        }
 
         // Send the embed to the mod log
-        actionLog.send({embeds: [urlEmbed]}).then((msg) => {
+        await actionLog.send({embeds: embedArr}).then((msg) => {
             
             // Create a new table if one doesn't exist; force: false to prevent overwrite; alter: true to make the table match the model
             Models.warning.sync({ force: false, alter: true }).then(() => {
@@ -1218,7 +1398,7 @@ module.exports = {
             message.delete({reason: "Blacklisted URL"}).then(() => {
 
                 // Let the user know why their message was deleted
-                message.channel.send(`${message.member.displayName} please refrain from posting blacklisted urls!`);
+                message.channel.send(`${message.member.displayName}, we do not allow that website to be shared on our Discord, please refrain from posting links to that website!`);
             });
         });
     },
