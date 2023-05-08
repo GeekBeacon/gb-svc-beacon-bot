@@ -31,6 +31,9 @@ const Warning = sequelize.define('warning', {
     mod_id: {
         type: Sequelize.TEXT
     },
+    dm: {
+        type: Sequelize.BOOLEAN
+    },
 
     /****** Fields for triggers warnings ******/
     triggers: {

@@ -328,8 +328,10 @@ client.on("interactionCreate", async interaction => {
         // If the interaction is a modal submission
         } else if (interaction.isModalSubmit()) {
 
-            // Call the updateSetting function from the DatabaseController
-            DatabaseController.updateSetting(interaction);
+            if(interaction.customId === `settingsModal`) {
+                // Call the updateSetting function from the DatabaseController
+                DatabaseController.updateSetting(interaction);
+            }
         }
 
     // If not an interaction format we can handle

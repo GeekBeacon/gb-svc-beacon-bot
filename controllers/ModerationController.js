@@ -862,11 +862,48 @@ module.exports = {
         });
         
     },
-    warnHandler: function(interaction) {
+    warnHandler: async function(interaction) {
         const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
         const user = interaction.options.getUser(`user`); //var for the user
-        const reason = interaction.options.getString(`reason`); //var for warning reason
+        let dm = interaction.options.getString(`dm`); //var for dm bool
         const member = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(user.id);
+        
+        // Create the modal
+        const reasonModal = new Discord.ModalBuilder()
+            .setCustomId(`reasonModal`)
+            .setTitle(`Warning Reason`);
+
+        // Create the input field
+        const reasonInput = new Discord.TextInputBuilder()
+            .setCustomId(`reason`)
+            .setLabel(`Reason`)
+            .setStyle(Discord.TextInputStyle.Paragraph);
+
+        // Create the action row with the input field
+        const inputActionRow = new Discord.ActionRowBuilder().addComponents(reasonInput);
+
+        // Add the input to the modal
+        reasonModal.addComponents(inputActionRow);
+
+        // Display the modal
+        await interaction.showModal(reasonModal);
+
+        // Wait for the user's response from the modal (3 mins)
+        const modalResponse = await interaction.awaitModalSubmit({ time: 180000 });
+
+        const reason = modalResponse.fields.getTextInputValue(`reason`);
+
+        // If the mod wanted to send the dm
+        if(dm === `yes`) {
+            // Message the user
+            await user.send(`Hello ${user.username},\nA new warning has been given to you in **${interaction.guild}** by *${interaction.member}* with the following reason:\n\n>>> ${reason}`).then(() => {
+                // If the message was sent, set dm to true
+                dm = true;
+            }).catch((e) => {
+                // If the message failed to send, set dm to false
+                dm = false;
+            });
+        }
 
         // Create a new table if one doesn't exist !! Add alter true to add any new columns in the model ~~
         Models.warning.sync({ force: false, alter: true }).then(() => { 
@@ -877,8 +914,9 @@ module.exports = {
                 nickname: member.nickname, // add the nickname of the member
                 type: "Note", // assign the type of warning
                 reason: reason, // add the reason for the warning
-                mod_id: interaction.member.id
-            }).then((item) => {
+                mod_id: interaction.member.id,
+                dm: dm
+            }).then(async (item) => {
                 // Create the warn embed
                 const warnEmbed = {
                     color: 0xFF5500,
@@ -900,6 +938,11 @@ module.exports = {
                             inline: true,
                         },
                         {
+                            name: `Sent DM?`,
+                            value: `${dm}`,
+                            inline: true,
+                        },
+                        {
                             name: `Warning`,
                             value: `${reason}`,
                             inline: false,
@@ -912,10 +955,9 @@ module.exports = {
                 };
 
                 actionLog.send({embeds: [warnEmbed]}); //send embed
-                interaction.reply({content: `${user.username} was successfully warned!`, ephemeral: true});
+                await modalResponse.reply({content: `${user.username} was successfully warned!\nDM Sent: \`${dm}\``, ephemeral: true});
             });
         });
-        
     },
     timeoutHandler: function(interaction) {
         const member = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(interaction.options.getUser(`user`).id); //get the member

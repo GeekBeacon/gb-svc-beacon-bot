@@ -54,10 +54,13 @@ module.exports = {
                 .setRequired(true)
             )
             .addStringOption(option => 
-                option.setName(`reason`)
-                .setDescription(`The reason you are warning the user.`)
-                .setMaxLength(1024)
+                option.setName(`dm`)
+                .setDescription(`Do you want to dm this to the user?`)
                 .setRequired(true)
+                .addChoices(
+                    {name: `No`, value: `no`},
+                    {name: `Yes`, value: `yes`}
+                )
             )
         )
         .setDefaultMemberPermissions(Discord.PermissionFlagsBits.ManageMessages),
