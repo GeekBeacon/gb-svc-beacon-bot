@@ -205,7 +205,9 @@ module.exports = {
         }
     },
     purgeHandler: function(interaction) {
+        const modLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
         const superLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("super_log_channel_name")))); //super log channel
+        const superChannels = interaction.client.settings.get("super_only_channel_names").split(","); //super only channels
         const count = interaction.options.getInteger(`amount`); //get the number of messages to delete
         const channel = interaction.options.getChannel(`channel`); //get the channel the user requested to purge
 
@@ -249,8 +251,15 @@ module.exports = {
                         timestamp: new Date(),
                     };
 
-                    // Send the embed to the super log channel
-                    superLog.send({embeds: [bulkEmbed]});
+                    // If the channel purge was used in is a super only channel
+                    if(superChannels.some((chan) => c.name.toLowerCase().includes(chan.toLowerCase()))) {
+                        // Send the embed to the super log channel
+                        superLog.send({embeds: [bulkEmbed]});
+                    // If the channel purge was used in was any other channel
+                    } else {
+                        // Send the embed to the mod log channel
+                        modLog.send({embeds: [bulkEmbed]});
+                    }
 
                     // If the requested amount of messages were deleted
                     if(messages.size === count) {
