@@ -866,7 +866,15 @@ module.exports = {
         const actionLog = interaction.guild.channels.cache.find((c => c.name.includes(interaction.client.settings.get("mod_log_channel_name")))); //mod log channel
         const user = interaction.options.getUser(`user`); //var for the user
         let dm = interaction.options.getString(`dm`); //var for dm bool
+        let dmStr = false; //
         const member = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(user.id);
+
+        // Change dm to a bool value
+        if(dm === "yes") {
+            dm = true;
+        } else if(dm === "no") {
+            dm = false;
+        }
         
         // Create the modal
         const reasonModal = new Discord.ModalBuilder()
@@ -894,14 +902,14 @@ module.exports = {
         const reason = modalResponse.fields.getTextInputValue(`reason`);
 
         // If the mod wanted to send the dm
-        if(dm === `yes`) {
+        if(dm === true) {
             // Message the user
             await user.send(`Hello ${user.username},\nA new warning has been given to you in **${interaction.guild}** by *${interaction.member}* with the following reason:\n\n>>> ${reason}`).then(() => {
                 // If the message was sent, set dm to true
-                dm = true;
+                dmStr = true;
             }).catch((e) => {
                 // If the message failed to send, set dm to false
-                dm = false;
+                dmStr = false;
             });
         }
 
@@ -939,7 +947,7 @@ module.exports = {
                         },
                         {
                             name: `Sent DM?`,
-                            value: `${dm}`,
+                            value: `${dmStr}`,
                             inline: true,
                         },
                         {
@@ -954,8 +962,8 @@ module.exports = {
                     }
                 };
 
-                actionLog.send({embeds: [warnEmbed]}); //send embed
-                await modalResponse.reply({content: `${user.username} was successfully warned!\nDM Sent: \`${dm}\``, ephemeral: true});
+                await actionLog.send({embeds: [warnEmbed]}); //send embed
+                await modalResponse.reply({content: `${user.username} was successfully warned!\nDM Sent: \`${dmStr}\``, ephemeral: true});
             });
         });
     },
