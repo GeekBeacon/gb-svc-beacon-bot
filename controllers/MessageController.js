@@ -42,7 +42,7 @@ module.exports = {
 
         // If not a bot and not in a text channel
         } else if(!message.author.bot && message.channel.type === "DM") {
-            return message.channel.send(`Oh hello, ${message.author.username}!\n\nIt seems you tried to message me within a dm, I appreciate you sliding up into my dms, but at this time I do not support any dm-based commands!`);
+            return message.channel.send(`Oh hello, ${message.author.username}!\n\nIt seems you tried to message me within a dm, I appreciate you sliding up into my dms, but at this time I do not support any dm-based interactions!`);
         }
 
         

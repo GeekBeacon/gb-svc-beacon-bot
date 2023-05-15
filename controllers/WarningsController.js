@@ -205,14 +205,23 @@ module.exports = {
                         } else if (warning.type === "Note") {
                             // Find the moderator
                             moderator = interaction.client.guilds.cache.get(interaction.guild.id).members.cache.get(warning.mod_id.toString());
+                            let dmSent = warning.dm;
 
                             // Add the color for the embed
                             specificEmbed.setColor(embedColor);
+
+                            // Make dm sent bool human readable
+                            if(dmSent === 1) {
+                                dmSent = `True`;
+                            } else if(dmSent === 0) {
+                                dmSent = "False";
+                            }
 
                             // Add the remaining fields
                             specificEmbed.addFields(
                                 {name: `Created By`, value: `${moderator}`, inline: true},
                                 {name: `Date Warned`, value: `${Discord.time(warning.createdAt, "R")}`, inline: true},
+                                {name: `DM Sent?`, value: `${dmSent}`, inline: true},
                                 {name: `Warning Reason`, value: `${warning.reason}`, inline: false}
                             );
                         } else if (warning.type === "Banned URL") {

@@ -192,7 +192,7 @@ module.exports = {
 
                                 // Build the modal
                                 const settingModal = new Discord.ModalBuilder()
-                                    .setCustomId(`${item.get("name")}`)
+                                    .setCustomId(`settingsModal`)
                                     .setTitle(`Updating ${item.get(`name`)}`);
 
                                 // Build the setting value input field
