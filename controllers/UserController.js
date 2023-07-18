@@ -187,14 +187,14 @@ module.exports = {
                         // Update the usernames field in the db entry
                         Models.nameChange.update({usernames: `${user.usernames},${newUser.tag}`}, {where: {user_id: newUser.id}}).then(() => {
                             // Look for the member in the db
-                            Models.user.findOne({where: {user_id: newMember.user.id}, raw: true}).then((memb) => {
+                            Models.user.findOne({where: {user_id: newUser.id}, raw: true}).then((memb) => {
                                 // Check if the member was found (has posted/points)
                                 if(memb) {
                                     // Send the embed to the mod log channel
                                     actionLog.send({embeds: [usernameChangedEmbed]});
                                 // If the user has no points
                                 } else {
-                                    Models.warning.findOne({where: {user_id: newMember.user.id}, raw: true}).then((membr) => {
+                                    Models.warning.findOne({where: {user_id: newUser.id}, raw: true}).then((membr) => {
                                         // Check if the member has any warnings
                                         if(membr) {
                                             // Send the embed to the mod log channel
